@@ -1,10 +1,29 @@
 {
-  "_comment": "REPLACE_ME — placeholder so the template builds without Firebase. Drop your real google-services.json from the Firebase console here to enable FCM. The build script skips applying com.google.gms.google-services while this REPLACE_ME sentinel is present.",
   "project_info": {
-    "project_number": "REPLACE_ME",
-    "project_id": "REPLACE_ME",
-    "storage_bucket": "REPLACE_ME"
+    "project_number": "59818402120",
+    "project_id": "homebrewer-6a67c",
+    "storage_bucket": "homebrewer-6a67c.firebasestorage.app"
   },
-  "client": [],
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:59818402120:android:50794c9950a6fcc33f937d",
+        "android_client_info": {
+          "package_name": "com.shadaeiou.homebrewer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyADEm6rjTFs7-Un2h534SOmpEegnrlIbQ8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
   "configuration_version": "1"
 }

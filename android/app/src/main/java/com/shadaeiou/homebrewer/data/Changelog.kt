@@ -8,6 +8,13 @@ data class ReleaseNote(
 
 val CHANGELOG: List<ReleaseNote> = listOf(
     ReleaseNote(
+        version = "0.1.2",
+        date = "2026-05-07",
+        bullets = listOf(
+            "Connected Firebase project — installed clients now subscribe to update pushes",
+        ),
+    ),
+    ReleaseNote(
         version = "0.1.0",
         date = "2026-05-07",
         bullets = listOf(
