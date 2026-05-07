@@ -1,0 +1,10 @@
+{
+  "_comment": "REPLACE_ME — placeholder so the template builds without Firebase. Drop your real google-services.json from the Firebase console here to enable FCM. The build script skips applying com.google.gms.google-services while this REPLACE_ME sentinel is present.",
+  "project_info": {
+    "project_number": "REPLACE_ME",
+    "project_id": "REPLACE_ME",
+    "storage_bucket": "REPLACE_ME"
+  },
+  "client": [],
+  "configuration_version": "1"
+}
