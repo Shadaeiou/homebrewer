@@ -1,0 +1,12 @@
+[
+  {
+    "version": "0.2.0",
+    "date": "2026-05-07",
+    "bullets": [
+      "Migrated from Jetpack Compose to Godot 4.3",
+      "New project structure: godot/ project + headless screenshot harness + GUT tests",
+      "Phase 1 bootstrap: launches to a Hello Homebrewer screen with version + changelog",
+      "FCM update push paused until Phase 2 (Android Custom Build template)"
+    ]
+  }
+]
