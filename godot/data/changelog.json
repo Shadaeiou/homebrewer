@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.2.14",
+    "date": "2026-05-08",
+    "bullets": [
+      "Push notifications: now actually prompts for the Android notification permission on first launch (was silently dropped on Android 13+)."
+    ]
+  },
+  {
     "version": "0.2.13",
     "date": "2026-05-08",
     "bullets": [

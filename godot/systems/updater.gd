@@ -27,6 +27,12 @@ func _ready() -> void:
 	_http.timeout = 15.0
 	add_child(_http)
 	_http.request_completed.connect(_on_request_completed)
+	if OS.get_name() == "Android":
+		# POST_NOTIFICATIONS is a runtime permission on Android 13+ (API 33+).
+		# Without granting it, FCM messages are silently dropped — the system
+		# notification never surfaces. On older Android the permission is
+		# install-time and request_permission returns true immediately.
+		OS.request_permission("android.permission.POST_NOTIFICATIONS")
 	# Defer slightly so the home scene is fully laid out before we emit.
 	await get_tree().create_timer(1.0).timeout
 	check_for_updates()
