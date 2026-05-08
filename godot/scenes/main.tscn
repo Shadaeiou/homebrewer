@@ -123,7 +123,7 @@ script = ExtResource("9_bottle")
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
-text = "Start brewing — fill the kettle"
+text = "Start a new brew"
 
 [node name="VersionLabel" type="Label" parent="Margin/Body"]
 unique_name_in_owner = true

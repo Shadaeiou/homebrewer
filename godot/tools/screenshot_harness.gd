@@ -17,6 +17,24 @@ extends SceneTree
 const SCENES := [
 	{"name": "main", "path": "res://scenes/main.tscn", "frames": 5},
 	{
+		"name": "brew_flow_start",
+		"path": "res://scenes/brew_flow.tscn",
+		"frames": 3,
+		"setup": "brew_flow_start",
+	},
+	{
+		"name": "brew_flow_mid",
+		"path": "res://scenes/brew_flow.tscn",
+		"frames": 3,
+		"setup": "brew_flow_mid",
+	},
+	{
+		"name": "brew_flow_complete",
+		"path": "res://scenes/brew_flow.tscn",
+		"frames": 3,
+		"setup": "brew_flow_complete",
+	},
+	{
 		"name": "fill_kettle_ready",
 		"path": "res://scenes/minigames/fill_kettle.tscn",
 		"frames": 3,
@@ -40,10 +58,34 @@ const OUT_DIR := "res://../screenshots"
 const VIEWPORT_SIZE := Vector2i(540, 960)
 
 func _initialize() -> void:
+	# `--script` mode bypasses ProjectSettings autoload loading. Re-add the
+	# autoloads we depend on so scripts that reference them globally don't
+	# crash. Order matters when one autoload depends on another.
+	_bootstrap_autoloads()
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
 	for spec in SCENES:
 		await _capture(spec)
 	quit()
+
+func _bootstrap_autoloads() -> void:
+	var autoloads := [
+		["Palette", "res://systems/palette.gd"],
+		["Lighting", "res://systems/lighting.gd"],
+		["Changelog", "res://systems/changelog.gd"],
+		["Version", "res://systems/version.gd"],
+		["Updater", "res://systems/updater.gd"],
+		["Recipes", "res://data/recipes.gd"],
+		["BrewSession", "res://scripts/sim/brew_session.gd"],
+	]
+	for entry in autoloads:
+		var alias_name: String = entry[0]
+		var path: String = entry[1]
+		if root.has_node(alias_name):
+			continue
+		var script: Script = load(path)
+		var instance: Node = script.new()
+		instance.name = alias_name
+		root.add_child(instance)
 
 func _capture(spec: Dictionary) -> void:
 	var scene_name: String = spec.get("name", "unnamed")
@@ -85,9 +127,38 @@ func _capture(spec: Dictionary) -> void:
 	instance.queue_free()
 
 func _apply_setup(scene: Node, kind: String) -> void:
-	# Drive a fill-kettle scene into a specific state for the screenshot,
-	# without touching real input. We poke the controller's internal API
-	# directly — this is harness-only so it's fine to reach in.
+	# `--script` mode can't resolve autoload identifiers at parse time, so
+	# we look them up via root each time. This runs only in the harness.
+	var session: Node = root.get_node_or_null("BrewSession")
+	var recipes: Node = root.get_node_or_null("Recipes")
+	match kind:
+		"brew_flow_start":
+			session.reset()
+			session.start(recipes.default_recipe())
+			if scene.has_method("_render_stage_list"):
+				scene._render_stage_list()
+				scene._render_current()
+		"brew_flow_mid":
+			session.reset()
+			session.start(recipes.default_recipe())
+			for _i in range(4):
+				session.record_ideal_outcome()
+			if scene.has_method("_render_stage_list"):
+				scene._render_stage_list()
+				scene._render_current()
+		"brew_flow_complete":
+			session.reset()
+			session.start(recipes.default_recipe())
+			while session.active and not session.is_complete():
+				session.record_ideal_outcome()
+			if scene.has_method("_render_stage_list"):
+				scene._render_stage_list()
+				scene._render_current()
+				scene._show_result(session.final_grade, session.final_summary)
+		_:
+			_apply_fill_kettle_setup(scene, kind)
+
+func _apply_fill_kettle_setup(scene: Node, kind: String) -> void:
 	if not scene.has_method("_on_pour_pressed"):
 		return
 	match kind:

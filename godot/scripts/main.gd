@@ -15,7 +15,7 @@ func _ready() -> void:
 	start_brewing_button.pressed.connect(_on_start_brewing)
 
 func _on_start_brewing() -> void:
-	get_tree().change_scene_to_file("res://scenes/minigames/fill_kettle.tscn")
+	get_tree().change_scene_to_file("res://scenes/brew_flow.tscn")
 
 func _on_update_available(latest_name: String, latest_code: int, _release_url: String) -> void:
 	update_label.text = "Update available: v%s (build %d)" % [latest_name, latest_code]

@@ -192,7 +192,18 @@ func _reset() -> void:
 	_update_gauge()
 
 func _return_home() -> void:
-	get_tree().change_scene_to_file("res://scenes/main.tscn")
+	# If we're in an active brew, report the outcome (or nothing if the
+	# player abandoned without finishing) and return to the brew flow.
+	# Otherwise, go straight to home.
+	if BrewSession.active and BrewSession.current_stage_id() == "prepare":
+		if state == State.DONE:
+			BrewSession.record_stage_outcome({
+				"water_l": water_body.fill_litres,
+				"grade": result_grade_label.text,
+			})
+		get_tree().change_scene_to_file("res://scenes/brew_flow.tscn")
+	else:
+		get_tree().change_scene_to_file("res://scenes/main.tscn")
 
 func _update_labels() -> void:
 	current_label.text = "%.2f L" % water_body.fill_litres

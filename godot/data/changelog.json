@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.2.26",
+    "date": "2026-05-08",
+    "bullets": [
+      "Brewing flow! \"Start a new brew\" on the home screen now walks through nine stages — measure water, mash, boil, cool, pitch, ferment, bottle, condition, taste — with the kettle mini-game for the first one and \"Continue\" placeholders for the others.",
+      "Each completed stage shows its grade in the stage list. Final grade screen with computed OG / IBU / ABV / volume from the recipe target.",
+      "Recipe: Basic Pale Ale (target 4.0 L, ~5% ABV, IBU 35). More recipes land later as progression."
+    ]
+  },
+  {
     "version": "0.2.25",
     "date": "2026-05-08",
     "bullets": [

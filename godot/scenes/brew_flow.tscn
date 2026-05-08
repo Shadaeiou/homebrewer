@@ -1,0 +1,163 @@
+[gd_scene load_steps=2 format=3 uid="uid://b7brewfl1ow"]
+
+[ext_resource type="Script" path="res://scripts/brew_flow.gd" id="1_flow"]
+
+[node name="BrewFlow" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_flow")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.13, 0.10, 0.08, 1)
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="Body" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="Margin/Body"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96, 0.78, 0.32, 1)
+theme_override_font_sizes/font_size = 28
+text = "Brewing"
+horizontal_alignment = 1
+
+[node name="RecipeLabel" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.78, 0.70, 1)
+theme_override_font_sizes/font_size = 13
+text = "Recipe"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Divider" type="HSeparator" parent="Margin/Body"]
+layout_mode = 2
+
+[node name="StageList" type="VBoxContainer" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="CurrentCard" type="PanelContainer" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="CurrentMargin" type="MarginContainer" parent="Margin/Body/CurrentCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 14
+
+[node name="CurrentCol" type="VBoxContainer" parent="Margin/Body/CurrentCard/CurrentMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CurrentLabel" type="Label" parent="Margin/Body/CurrentCard/CurrentMargin/CurrentCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96, 0.78, 0.32, 1)
+theme_override_font_sizes/font_size = 16
+text = "Stage 1 / 9"
+
+[node name="CurrentDescription" type="Label" parent="Margin/Body/CurrentCard/CurrentMargin/CurrentCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.92, 0.95, 1)
+theme_override_font_sizes/font_size = 13
+text = "..."
+autowrap_mode = 3
+
+[node name="PrimaryButton" type="Button" parent="Margin/Body/CurrentCard/CurrentMargin/CurrentCol"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+text = "Start"
+
+[node name="Spacer" type="Control" parent="Margin/Body"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="AbandonButton" type="Button" parent="Margin/Body"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "Abandon brew"
+
+[node name="ResultPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -220.0
+offset_top = -180.0
+offset_right = 220.0
+offset_bottom = 180.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ResultMargin" type="MarginContainer" parent="ResultPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="ResultCol" type="VBoxContainer" parent="ResultPanel/ResultMargin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ResultHeader" type="Label" parent="ResultPanel/ResultMargin/ResultCol"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.78, 0.70, 1)
+theme_override_font_sizes/font_size = 14
+text = "Tasting"
+horizontal_alignment = 1
+
+[node name="ResultGrade" type="Label" parent="ResultPanel/ResultMargin/ResultCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 84
+text = "B"
+horizontal_alignment = 1
+
+[node name="ResultSummary" type="Label" parent="ResultPanel/ResultMargin/ResultCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.92, 0.95, 1)
+theme_override_font_sizes/font_size = 14
+text = ""
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="ResultBackButton" type="Button" parent="ResultPanel/ResultMargin/ResultCol"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Back to home"
