@@ -1,6 +1,6 @@
 [
   {
-    "version": "0.2.16",
+    "version": "0.2.17",
     "date": "2026-05-08",
     "bullets": [
       "Fixed the FCM + in-app updater pipeline: a bad type annotation in the export plugin was silently disabling everything in the APK (no notifications, Update button did nothing). Plugin loads cleanly now."

@@ -150,8 +150,27 @@ jobs:
         working-directory: godot
         run: |
           mkdir -p ../build
+          set +e
           godot --headless --export-release "Android" ../build/homebrewer.apk
-          ls -la ../build/
+          export_rc=$?
+          set -e
+          echo "--- post-export overlay artifacts ---"
+          for f in \
+            android/build/app/res/xml/file_paths.xml \
+            android/build/app/src/com/shadaeiou/homebrewer/Installer.java \
+            android/build/app/src/com/shadaeiou/homebrewer/HomebrewerFileProvider.java \
+            android/build/app/src/com/shadaeiou/homebrewer/HomebrewerInit.java \
+            android/build/app/src/com/shadaeiou/homebrewer/PushService.java; do
+            if [ -e "$f" ]; then
+              echo "OK   $f ($(wc -c < "$f") bytes)"
+            else
+              echo "MISS $f"
+            fi
+          done
+          echo "--- merged AndroidManifest.xml first 80 lines ---"
+          find android/build -name AndroidManifest.xml -path '*intermediates*' -exec head -80 {} \; -exec echo --- \; | head -120 || true
+          ls -la ../build/ || true
+          exit $export_rc
 
       - name: Verify APK signing fingerprint matches keystore
         env:
