@@ -137,16 +137,8 @@ jobs:
           if [ -d godot/android/build_overlay ]; then
             cp -r godot/android/build_overlay/. "$BUILD_DIR/"
           fi
-          echo "--- top-level build dir layout ---"
-          ls "$BUILD_DIR"
-          echo "--- settings.gradle ---"
-          cat "$BUILD_DIR/settings.gradle" 2>&1 || true
-          echo "--- where do .gradle / AndroidManifest.xml / build.gradle live? ---"
-          find "$BUILD_DIR" -maxdepth 3 \( -name '*.gradle' -o -name 'AndroidManifest.xml' -o -name 'res' -type d \) | head -40
-          echo "--- our Java sources in build dir ---"
-          find "$BUILD_DIR" -name '*.java' -path '*/shadaeiou/*' || echo "(none found)"
-          echo "--- our resources in build dir ---"
-          find "$BUILD_DIR" -name 'file_paths.xml' || echo "(none found)"
+          echo "--- our overlay files in build dir ---"
+          find "$BUILD_DIR" -name '*.java' -path '*/shadaeiou/*' -o -name 'file_paths.xml' | sort
 
       - name: Import resources
         working-directory: godot
@@ -162,19 +154,17 @@ jobs:
           set -e
           echo "--- post-export overlay artifacts ---"
           for f in \
-            android/build/app/res/xml/file_paths.xml \
-            android/build/app/src/com/shadaeiou/homebrewer/Installer.java \
-            android/build/app/src/com/shadaeiou/homebrewer/HomebrewerFileProvider.java \
-            android/build/app/src/com/shadaeiou/homebrewer/HomebrewerInit.java \
-            android/build/app/src/com/shadaeiou/homebrewer/PushService.java; do
+            android/build/res/xml/file_paths.xml \
+            android/build/src/com/shadaeiou/homebrewer/Installer.java \
+            android/build/src/com/shadaeiou/homebrewer/HomebrewerFileProvider.java \
+            android/build/src/com/shadaeiou/homebrewer/HomebrewerInit.java \
+            android/build/src/com/shadaeiou/homebrewer/PushService.java; do
             if [ -e "$f" ]; then
               echo "OK   $f ($(wc -c < "$f") bytes)"
             else
               echo "MISS $f"
             fi
           done
-          echo "--- merged AndroidManifest.xml first 80 lines ---"
-          find android/build -name AndroidManifest.xml -path '*intermediates*' -exec head -80 {} \; -exec echo --- \; | head -120 || true
           ls -la ../build/ || true
           exit $export_rc
 
