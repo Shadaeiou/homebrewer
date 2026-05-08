@@ -17,6 +17,7 @@ config/version="0.2.0"
 
 Changelog="*res://systems/changelog.gd"
 Version="*res://systems/version.gd"
+Updater="*res://systems/updater.gd"
 
 [display]
 

@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.2.9",
+    "date": "2026-05-08",
+    "bullets": [
+      "In-app updater: home screen now shows an Update banner when a newer build is on GitHub.",
+      "Tapping Update opens the release page in your browser to download the APK."
+    ]
+  },
+  {
     "version": "0.2.8",
     "date": "2026-05-08",
     "bullets": [

@@ -2,10 +2,19 @@ extends Control
 
 @onready var version_label: Label = %VersionLabel
 @onready var changelog_container: VBoxContainer = %ChangelogContainer
+@onready var update_banner: PanelContainer = %UpdateBanner
+@onready var update_label: Label = %UpdateLabel
+@onready var update_button: Button = %UpdateButton
 
 func _ready() -> void:
 	version_label.text = Version.full()
 	_render_changelog()
+	Updater.update_available.connect(_on_update_available)
+	update_button.pressed.connect(Updater.open_release_page)
+
+func _on_update_available(latest_name: String, latest_code: int, _release_url: String) -> void:
+	update_label.text = "Update available: v%s (build %d)" % [latest_name, latest_code]
+	update_banner.visible = true
 
 func _render_changelog() -> void:
 	for child in changelog_container.get_children():
