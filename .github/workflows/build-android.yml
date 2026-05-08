@@ -83,6 +83,12 @@ jobs:
           export/android/debug_keystore_user = "androiddebugkey"
           export/android/debug_keystore_pass = "android"
           EOF
+          echo "--- editor_settings-4.tres ---"
+          cat "$CONFIG_DIR/editor_settings-4.tres"
+          echo "--- ANDROID_HOME contents ---"
+          ls "$ANDROID_HOME"
+          ls "$ANDROID_HOME/build-tools" || true
+          ls "$ANDROID_HOME/platform-tools" || true
 
       - name: Decode signing keystore
         env:
@@ -132,7 +138,7 @@ jobs:
         working-directory: godot
         run: |
           mkdir -p ../build
-          godot --headless --export-release "Android" ../build/homebrewer.apk
+          godot --headless --verbose --export-release "Android" ../build/homebrewer.apk
           ls -la ../build/
 
       - name: Upload APK artifact
