@@ -137,6 +137,10 @@ jobs:
           if [ -d godot/android/build_overlay ]; then
             cp -r godot/android/build_overlay/. "$BUILD_DIR/"
           fi
+          echo "--- our Java sources in build dir ---"
+          find "$BUILD_DIR/app/src" -name '*.java' -path '*/shadaeiou/*' || echo "(none found)"
+          echo "--- our resources in build dir ---"
+          find "$BUILD_DIR/app/res" -type f || echo "(none found)"
 
       - name: Import resources
         working-directory: godot

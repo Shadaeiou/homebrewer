@@ -1,31 +1,29 @@
 @tool
 extends EditorExportPlugin
 
-# Firebase BOM keeps the messaging artifact's transitive dependency versions
-# (firebase-iid, play-services-tasks, etc.) in sync with each other.
-const FIREBASE_BOM := "com.google.firebase:firebase-bom:33.5.1"
-const FIREBASE_MESSAGING := "com.google.firebase:firebase-messaging"
+# Note: parameter types intentionally untyped. Earlier versions used
+# `EditorExportPreset` / `EditorExportPlatform` annotations and the script
+# failed to compile during headless export ("Could not find type
+# EditorExportPreset in the current scope"), which silently disabled the
+# whole plugin and left the APK without Firebase deps or our manifest
+# entries.
 
-func _supports_platform(platform: EditorExportPlatform) -> bool:
+func _supports_platform(platform) -> bool:
 	return platform.get_class() == "EditorExportPlatformAndroid"
 
 func _get_name() -> String:
 	return "Firebase Messaging"
 
-func _get_android_dependencies(_p_preset: EditorExportPreset, _p_debug: bool) -> PackedStringArray:
-	# The BOM line is `platform(...)` in gradle. Godot's wrapper passes the
-	# raw coordinate; firebase-messaging without a version picks it up from
-	# the BOM which we declare separately at the project level — but since
-	# we can't add a `platform(...)` here, pin firebase-messaging directly.
+func _get_android_dependencies(_p_preset, _p_debug) -> PackedStringArray:
 	return PackedStringArray([
 		"com.google.firebase:firebase-messaging:24.0.3",
 	])
 
-func _get_android_dependencies_maven_repos(_p_preset: EditorExportPreset, _p_debug: bool) -> PackedStringArray:
+func _get_android_dependencies_maven_repos(_p_preset, _p_debug) -> PackedStringArray:
 	# google() and mavenCentral() are already declared by Godot's stock template.
 	return PackedStringArray()
 
-func _get_android_manifest_application_element_contents(_p_preset: EditorExportPreset, _p_debug: bool) -> String:
+func _get_android_manifest_application_element_contents(_p_preset, _p_debug) -> String:
 	return """
 <service
     android:name=\"com.shadaeiou.homebrewer.PushService\"
@@ -52,7 +50,7 @@ func _get_android_manifest_application_element_contents(_p_preset: EditorExportP
 </provider>
 """.strip_edges()
 
-func _get_android_manifest_element_contents(_p_preset: EditorExportPreset, _p_debug: bool) -> String:
+func _get_android_manifest_element_contents(_p_preset, _p_debug) -> String:
 	return """
 <uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\" />
 <uses-permission android:name=\"android.permission.REQUEST_INSTALL_PACKAGES\" />
