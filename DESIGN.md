@@ -2,7 +2,7 @@
 
 The canonical game design document. Internal only — not shipped to the player.
 
-This is the **first pass**: Sections 0–3 plus Appendices A and B. Sections 4–9 (Time & Equipment Constraints, Economy, UX/UI, Technical Architecture, Save Schema, Mini-Game Build Plan) are the next pass. When a section locks, it stays locked unless the design explicitly revisits it. When implementation starts, this document is the spec; if the spec is wrong, fix the spec, then fix the code.
+This is being assembled in passes. Sections 0–3 + Appendices A and B were the first pass. Section 4 (Time, Concurrency, Conditioning) is being filled in piece by piece as design conversations resolve. Sections 5–9 (Economy, UX/UI, Technical Architecture, Save Schema, Mini-Game Build Plan) are queued. When a section locks, it stays locked unless the design explicitly revisits it. When implementation starts, this document is the spec; if the spec is wrong, fix the spec, then fix the code.
 
 `CLAUDE.md` continues to define repo rules (commit to main, every player-visible commit bumps `changelog.json`, etc.). This document defines what the game **is**.
 
@@ -14,6 +14,7 @@ This is the **first pass**: Sections 0–3 plus Appendices A and B. Sections 4�
 - **Section 1** — the world, who's in it, the phone interface that ties social/customer/news/shopping together.
 - **Section 2** — what one career looks like across decades of in-game time, and what prestige carries forward when you start over.
 - **Section 3** — the brewing simulation. The outcome model, the equipment-as-properties model, the care system, skill axes, the risk profile, the discovery principle, the three v1 styles, the twelve v1 mini-games and their consequences.
+- **Section 4** — time and concurrency. Two clocks (scene + day), how parallel brews coexist, why conditioning is passive and how the keg unlock breaks the apartment-tier wait. Drives most save-state and scheduling decisions downstream.
 - **Appendix A** — the first brewing day, narrated step by step with concrete failure modes for each step. The canonical worked example. If anything in Section 3 contradicts Appendix A, Appendix A wins; fix Section 3.
 - **Appendix B** — the five days of the first brew's fermentation period, with the daily checklist + discovery UX shown moment by moment. Validates the daily rhythm.
 
@@ -542,7 +543,7 @@ This is the canonical example from Appendix A — see Step 4 in the walkthrough.
 - Set burner heat (HIGH/MED/LOW)
 - Watch for hot break (visual cue → tap to acknowledge → starts the 60-min timer)
 - Optionally adjust heat as needed (more taps during the boil)
-- Avoid leaving the screen mid-boil — leaving pauses the boil but anything in-flight may have consequences
+- Pay attention during the boil — eyes off the foam climb or off a hop addition's window has consequences. (Closing the app pauses the scene cleanly; see Section 4.1. The risk is in-scene inattention, not real-life breaks.)
 
 **This is mostly a recognition + dial interaction.** Not really a "skill challenge" because the precise timing of the tap doesn't reward sub-second precision; it's about *whether you noticed.*
 
@@ -556,6 +557,92 @@ This is the canonical example from Appendix A — see Step 4 in the walkthrough.
 - Watched and called accurately → on-target
 
 The full consequence chains for the other nine mini-games will be specified in Section 9.
+
+---
+
+## Section 4 — Time, Concurrency, Conditioning
+
+This section formalizes how time advances, how multiple brews coexist, and why conditioning is structurally different from fermentation. Equipment-as-scheduling-constraint detail, the cleanliness state machine, and anomaly-generation rules are queued for a later pass within Section 4.
+
+### 4.1 Two clocks
+
+The game runs on **two independent clocks** that never overlap.
+
+**Scene clock.** Active inside mini-game scenes only — brewing-day stages (mash, boil, transfer, etc.) and bottling. Real-time at scene-defined pace, with event-driven acceleration: time accelerates aggressively between events and slows as events approach. A 60-min boil renders the quiet middle in seconds and the hop-addition windows in real-time.
+
+Closing the app **pauses the scene cleanly.** The brew freezes. No real-world clock ticks. Returning resumes exactly where the player left off. Consistent with Tenet 5 and Section 0's "everything happens at your pace."
+
+In-scene inattention — eyes off the foam climb, missing a hop drop's actual window — *does* have consequences. The discipline is "during play," not "between plays."
+
+**Day clock.** Advances one in-game day per "Get some rest" tap on the dashboard. The day clock is **global** — every active fermenter, every conditioning batch, every calendar deadline, every social/news/forum content pool ticks together. There is no per-brew day clock.
+
+The two clocks never overlap: while a scene is active, the day clock is paused. While the dashboard is open and rest hasn't been tapped, the scene clock is paused.
+
+### 4.2 Concurrency and slot occupancy
+
+A brew progresses through three slot states:
+
+| State | Occupies |
+|---|---|
+| Brewing day (mash through cool) | Active scene (no fermenter yet) |
+| Pitched, fermenting | One fermenter |
+| Bottled, conditioning | One conditioning rack slot (does NOT occupy a fermenter) |
+
+The key consequence: **once you bottle, the fermenter is free.** You can start the next brew the same in-game day. The bottled batch progresses passively in the rack while the next batch ferments.
+
+**Equipment as a scheduling constraint.** How many fermenters you own = how many parallel fermentations you can run. At apartment scale this is one. At garage scale, multiple. At pro scale, many in parallel. The conditioning rack at apartment scale is implicitly 1–2 batches' worth of bottles (24–48 12oz bottles); upgrading bottle storage / kegging changes this.
+
+(Detailed per-equipment scheduling rules — when slots clear, what shares with what, how cleaning state gates re-use — are filled in alongside the equipment property-bag formalization later in Section 4.)
+
+### 4.3 Conditioning is passive
+
+Fermentation **earns** its day-by-day rhythm: airlock patterns to read, anomalies to potentially catch, a "when to bottle" decision. Each day has potential signal. Conditioning doesn't. After Day 2 — priming sugar dissolved, no leaks visible, sediment dropping — nothing changes inside a sealed bottle until carbonation completes. A daily-check UI would be lying about there being something to do.
+
+Conditioning is therefore a **passive progress bar**, not a daily-rhythm system. The dashboard shows the brew with a "Ready in N days" indicator and the conditioning rack visible. The day clock advances the bar with every "Get some rest" tap; no daily checklist entry, no nag.
+
+The rack is **passively informative.** If a bottle gushes, leaks, or breaks, the player sees it on the rack — sediment puddle, missing bottle, hairline crack. No checklist prompt; the player notices in passing or doesn't. (Tenet 4: ambient cue, no auto-disclosure.)
+
+Two optional player interactions during conditioning:
+
+- **Open a tester bottle** (any time). Costs 1 bottle from the batch. Calls Palate skill. Returns:
+  - **Carb level** — under / about / over. Reading is fuzzy at low Palate ("flat-ish, will need more time"); precise at high Palate ("about 4 days out from where you want it").
+  - **Flavor-so-far** — limited at low Palate ("tastes like beer"); more legible higher up.
+  - New brewers will misjudge. A tester at day 7 of a 14-day condition often reads "still flat-ish" even when the bottle would be drinkable at 10. Tasting too early and concluding "needs another two weeks" is a common first-brewer mistake; so is sampling once and never again, missing the fact that priming was heavy and the bottles are over-carbing toward gushers.
+- **Skip to ready** — fast-forwards the day clock until the recipe's `condition_days` target lands. No risk roll attached. Quietly subordinate to other things happening in the world: if any other active brew has a daily event pending, the skip stops there; otherwise it rips.
+
+Conditioning anomalies — gushers, bottle bombs, leaks, oxidation, under-carb — are **baked in at bottling time** (priming sugar quantity, sanitation state, capper quality, fill level, oxidation during transfer). They are *not* generated as daily rolls. The dice were rolled when the bottles were sealed; the conditioning period is just where the result becomes legible. This is faithful to real homebrewing: a bottle is either going to gush or not based on what went into it.
+
+### 4.4 Conditioning at garage scale and beyond
+
+Bottle conditioning is slow because it's slow in real life. **Keg + CO2 force-carbonation is the conditioning-killer.** When the player unlocks a corny keg (and a CO2 tank to drive it) at garage tier, conditioning collapses from ~14 days to ~24–48 hours of force-carb. This is a tangible "I leveled up my brewery" beat — the player feels their release cadence accelerate from monthly to weekly.
+
+Conditioning is intentionally slow at apartment scale to make this upgrade feel powerful. Don't fix conditioning; let the keg fix it.
+
+### 4.5 The first-brew implication
+
+The player's *first* brew is the only time conditioning is the dominant activity in the game world. There is no second brew running in parallel; the fermenter has been emptied and the next brew hasn't been planned yet. ~14 days of dashboard with one passive bar would be dead air.
+
+The first conditioning period is therefore the **canonical onboarding window for non-brewing systems:**
+- Forum reading and Knowledge XP intro
+- Shop browsing — planning brew #2's ingredient list, eyeing first equipment upgrades
+- Calendar gets populated with Tim's tasting and Mom's stout-order
+- More NPC chatter (Marcus's party comes and goes; Tim's brewing-club follow-up; first hint of broader community)
+- News and trend signals begin appearing
+
+The player isn't waiting on beer — they're meeting their world. By the time those bottles are ready, the player has a planned next-brew, a calendar with deadlines, an active forum thread or two, and is ready to brew again. The 14 dead days become 14 onboarding days.
+
+From brew #2 onward, the issue evaporates. The player's natural cadence is brew → ferment → bottle → start next brew → ferment while bottles condition. Conditioning days are always shared with active fermentation or active brewing-day prep, and the global day clock means a single "Get some rest" tap advances both batches.
+
+### 4.6 Real-time engagement per brew, apartment scale
+
+| Phase | Real-time engagement |
+|---|---|
+| Brewing day (active scene) | ~10 minutes |
+| Fermentation (5–10 daily taps × ~90s) | 8–15 minutes |
+| Bottling day (active scene) | ~5 minutes |
+| Conditioning (passive bar; 0–2 optional tester probes) | ~1–2 minutes |
+| Tasting (active scene) | ~2 minutes |
+| **Total per brew** | **~25–35 minutes**, distributed across ~20–25 in-game days, played across however many real-life sessions the player chooses. |
 
 ---
 
@@ -1091,12 +1178,18 @@ That last one is the design's secret sauce. The player isn't waiting; they're ke
 
 ---
 
-# What's next (sections 4–9)
+# What's next
 
-The remaining sections, queued for the next pass:
+What's landed so far:
 
-- **Section 4 — Time, Equipment Constraints, Cleanliness, Anomaly Generation.** The time-acceleration model formalized; equipment as a scheduling constraint (one fermenter = one active ferment); cleanliness state machine; anomaly generation rules.
-- **Section 5 — Economy & Progression.** Ingredient pricing, equipment cost curves, customer payouts, competition prizes, the bankruptcy thresholds, the trends-system mechanics.
+- Sections 0–3 (Vision, World, Player Journey, Brewing Mechanics)
+- Section 4.1–4.6 (Two clocks, concurrency rules, conditioning model, keg-unlock implication, first-brew onboarding window, per-brew real-time totals)
+- Appendices A and B
+
+Still queued, in roughly the order they need to land:
+
+- **Rest of Section 4 — Equipment scheduling rules, cleanliness state machine, anomaly generation.** Full equipment-as-scheduling-constraint specification (when slots clear, what shares with what, how cleaning state gates re-use). The cleanliness state machine for every piece of equipment. Anomaly generation rules (how the world decides "today, the radiator is off") and how those anomalies attach to in-flight brews.
+- **Section 5 — Economy & Progression.** Ingredient pricing, equipment cost curves, customer payouts, competition prizes, bankruptcy thresholds, trends-system mechanics.
 - **Section 6 — UX/UI.** Dashboard layout, brewery view, phone overlay, time control, handbook, recipe view, mini-game scene templates.
 - **Section 7 — Technical Architecture.** Autoload inventory, scene graph, time service, content-pool generator, calendar service, save service.
 - **Section 8 — Save Schema.** What persists, table layout (or JSON shape), migration story, prestige reset semantics.
