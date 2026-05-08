@@ -137,10 +137,16 @@ jobs:
           if [ -d godot/android/build_overlay ]; then
             cp -r godot/android/build_overlay/. "$BUILD_DIR/"
           fi
+          echo "--- top-level build dir layout ---"
+          ls "$BUILD_DIR"
+          echo "--- settings.gradle ---"
+          cat "$BUILD_DIR/settings.gradle" 2>&1 || true
+          echo "--- where do .gradle / AndroidManifest.xml / build.gradle live? ---"
+          find "$BUILD_DIR" -maxdepth 3 \( -name '*.gradle' -o -name 'AndroidManifest.xml' -o -name 'res' -type d \) | head -40
           echo "--- our Java sources in build dir ---"
-          find "$BUILD_DIR/app/src" -name '*.java' -path '*/shadaeiou/*' || echo "(none found)"
+          find "$BUILD_DIR" -name '*.java' -path '*/shadaeiou/*' || echo "(none found)"
           echo "--- our resources in build dir ---"
-          find "$BUILD_DIR/app/res" -type f || echo "(none found)"
+          find "$BUILD_DIR" -name 'file_paths.xml' || echo "(none found)"
 
       - name: Import resources
         working-directory: godot
