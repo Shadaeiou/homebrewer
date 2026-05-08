@@ -1,7 +1,14 @@
-[gd_scene load_steps=3 format=3 uid="uid://b8x4v9q2hcwma"]
+[gd_scene load_steps=10 format=3 uid="uid://b8x4v9q2hcwma"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
-[ext_resource type="Texture2D" path="res://assets/sprites/consumables/beer_bottle.png" id="2_bottle"]
+[ext_resource type="Texture2D" path="res://assets/sprites/equipment/stove_basic.png" id="2_stove"]
+[ext_resource type="Texture2D" path="res://assets/sprites/equipment/pot_basic.png" id="3_pot"]
+[ext_resource type="Texture2D" path="res://assets/sprites/equipment/mash_paddle.png" id="4_paddle"]
+[ext_resource type="Texture2D" path="res://assets/sprites/equipment/hydrometer.png" id="5_hydro"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ingredients/hop_cone.png" id="6_hop"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ingredients/malt_grain.png" id="7_malt"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ingredients/yeast_packet.png" id="8_yeast"]
+[ext_resource type="Texture2D" path="res://assets/sprites/consumables/beer_bottle.png" id="9_bottle"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -52,10 +59,73 @@ text = "A homebrew brewing simulation. Phase 1 bootstrap."
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="HeroSprite" type="TextureRect" parent="Margin/Body"]
+[node name="StarterKit" type="GridContainer" parent="Margin/Body"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 320)
-texture = ExtResource("2_bottle")
+columns = 4
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+
+[node name="Stove" type="TextureRect" parent="Margin/Body/StarterKit"]
+layout_mode = 2
+custom_minimum_size = Vector2(112, 112)
+size_flags_horizontal = 3
+texture = ExtResource("2_stove")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Pot" type="TextureRect" parent="Margin/Body/StarterKit"]
+layout_mode = 2
+custom_minimum_size = Vector2(112, 112)
+size_flags_horizontal = 3
+texture = ExtResource("3_pot")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="MashPaddle" type="TextureRect" parent="Margin/Body/StarterKit"]
+layout_mode = 2
+custom_minimum_size = Vector2(112, 112)
+size_flags_horizontal = 3
+texture = ExtResource("4_paddle")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Hydrometer" type="TextureRect" parent="Margin/Body/StarterKit"]
+layout_mode = 2
+custom_minimum_size = Vector2(112, 112)
+size_flags_horizontal = 3
+texture = ExtResource("5_hydro")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Hop" type="TextureRect" parent="Margin/Body/StarterKit"]
+layout_mode = 2
+custom_minimum_size = Vector2(112, 112)
+size_flags_horizontal = 3
+texture = ExtResource("6_hop")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Malt" type="TextureRect" parent="Margin/Body/StarterKit"]
+layout_mode = 2
+custom_minimum_size = Vector2(112, 112)
+size_flags_horizontal = 3
+texture = ExtResource("7_malt")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Yeast" type="TextureRect" parent="Margin/Body/StarterKit"]
+layout_mode = 2
+custom_minimum_size = Vector2(112, 112)
+size_flags_horizontal = 3
+texture = ExtResource("8_yeast")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Bottle" type="TextureRect" parent="Margin/Body/StarterKit"]
+layout_mode = 2
+custom_minimum_size = Vector2(112, 112)
+size_flags_horizontal = 3
+texture = ExtResource("9_bottle")
 expand_mode = 1
 stretch_mode = 5
 

@@ -33,5 +33,26 @@
     "prompt": "amber glass beer bottle with a blank cream paper label, dark brown glass, gold foil cap, no text",
     "target_size": 128,
     "palette_size": 24
+  },
+  {
+    "name": "yeast_packet",
+    "category": "ingredients",
+    "prompt": "single small foil packet of brewing yeast, silver foil with a cream paper label, packet standing upright, blank label, only one packet, isolated, not a sprite sheet",
+    "target_size": 96,
+    "palette_size": 16
+  },
+  {
+    "name": "mash_paddle",
+    "category": "equipment",
+    "prompt": "single wooden mash paddle for stirring beer wort, long wooden handle, flat paddle blade with holes, slightly stained, isolated tool, only one object, vertical orientation",
+    "target_size": 160,
+    "palette_size": 20
+  },
+  {
+    "name": "hydrometer",
+    "category": "equipment",
+    "prompt": "single glass hydrometer for measuring beer specific gravity, slim glass cylinder with paper scale inside and weighted bulb at bottom, vertical orientation, isolated tool, only one object",
+    "target_size": 144,
+    "palette_size": 16
   }
 ]

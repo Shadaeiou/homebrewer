@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.2.20",
+    "date": "2026-05-08",
+    "bullets": [
+      "Home screen now shows a starter brewing kit grid: stove, pot, mash paddle, hydrometer, hops, malt, yeast, and a finished bottle.",
+      "Three new sprites: yeast packet, mash paddle, hydrometer."
+    ]
+  },
+  {
     "version": "0.2.19",
     "date": "2026-05-08",
     "bullets": [
