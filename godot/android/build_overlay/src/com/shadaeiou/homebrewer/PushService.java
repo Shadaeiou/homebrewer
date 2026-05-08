@@ -5,7 +5,6 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Build;
 
 import androidx.core.app.NotificationCompat;
@@ -15,11 +14,9 @@ import com.google.firebase.messaging.RemoteMessage;
 
 /**
  * Receives FCM messages on the "app-updates" topic and surfaces them as a
- * heads-up notification. Tapping the notification opens the latest GitHub
- * release page so the user can grab the APK.
- *
- * Phase 2C will replace the browser hand-off with an in-app DownloadManager +
- * install intent flow once the rest of the build pipeline is verified stable.
+ * heads-up notification. Tapping fires InstallReceiver, which kicks off
+ * DownloadManager + the install intent so the user updates without leaving
+ * the app.
  */
 public class PushService extends FirebaseMessagingService {
 
@@ -34,8 +31,10 @@ public class PushService extends FirebaseMessagingService {
         ensureChannel();
 
         String title = "Homebrewer update available";
-        String body = "Tap to download the latest build.";
+        String body = "Tap to install the new build.";
         String releaseUrl = DEFAULT_RELEASE_URL;
+        String apkUrl = null;
+        String versionName = null;
 
         if (message.getNotification() != null) {
             if (message.getNotification().getTitle() != null) {
@@ -52,14 +51,23 @@ public class PushService extends FirebaseMessagingService {
             if (t != null && !t.isEmpty()) title = t;
             if (b != null && !b.isEmpty()) body = b;
             if (u != null && !u.isEmpty()) releaseUrl = u;
+            apkUrl = message.getData().get("apk_url");
+            versionName = message.getData().get("version_name");
         }
 
-        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(releaseUrl));
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        PendingIntent pi = PendingIntent.getActivity(
+        // Tap target: our InstallReceiver, which calls Installer.start to
+        // run DownloadManager + the install intent. Falls back to opening
+        // the release page in a browser if the message lacks an apk_url
+        // (e.g. an older CI sender that didn't include it).
+        Intent broadcast = new Intent(ctx, InstallReceiver.class);
+        broadcast.setAction(InstallReceiver.ACTION);
+        if (apkUrl != null) broadcast.putExtra(InstallReceiver.EXTRA_APK_URL, apkUrl);
+        if (versionName != null) broadcast.putExtra(InstallReceiver.EXTRA_VERSION_NAME, versionName);
+        broadcast.putExtra(InstallReceiver.EXTRA_RELEASE_URL, releaseUrl);
+        PendingIntent pi = PendingIntent.getBroadcast(
             ctx,
             0,
-            intent,
+            broadcast,
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 

@@ -46,13 +46,21 @@ def main(argv: list[str]) -> int:
     creds = service_account.Credentials.from_service_account_info(sa, scopes=[FCM_SCOPE])
     creds.refresh(google.auth.transport.requests.Request())
 
+    tag = f"v{version_name}+{version_code}"
+    release_url = f"https://github.com/Shadaeiou/homebrewer/releases/tag/{tag}"
+    apk_url = f"https://github.com/Shadaeiou/homebrewer/releases/download/{tag}/homebrewer.apk"
+
     payload = {
         "message": {
             "topic": TOPIC,
             "data": {
                 "type": "update",
-                "versionName": version_name,
-                "versionCode": version_code,
+                "title": f"Homebrewer {version_name} available",
+                "body": "Tap to install the new build.",
+                "version_name": version_name,
+                "version_code": version_code,
+                "release_url": release_url,
+                "apk_url": apk_url,
             },
             "android": {"priority": "HIGH"},
         }

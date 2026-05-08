@@ -48,6 +48,14 @@ func _get_android_manifest_application_element_contents(_p_preset, _p_debug) -> 
         android:name=\"android.support.FILE_PROVIDER_PATHS\"
         android:resource=\"@xml/file_paths\" />
 </provider>
+
+<receiver
+    android:name=\"com.shadaeiou.homebrewer.InstallReceiver\"
+    android:exported=\"false\">
+    <intent-filter>
+        <action android:name=\"com.shadaeiou.homebrewer.INSTALL_FROM_NOTIFICATION\" />
+    </intent-filter>
+</receiver>
 """.strip_edges()
 
 func _get_android_manifest_element_contents(_p_preset, _p_debug) -> String:

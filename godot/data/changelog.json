@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.2.21",
+    "date": "2026-05-08",
+    "bullets": [
+      "Tapping the update notification now installs the new build in-place — no more browser detour."
+    ]
+  },
+  {
     "version": "0.2.20",
     "date": "2026-05-08",
     "bullets": [
