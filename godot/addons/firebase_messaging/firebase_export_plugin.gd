@@ -40,7 +40,7 @@ func _get_android_manifest_application_element_contents(_p_preset, _p_debug) -> 
     android:initOrder=\"100\" />
 
 <provider
-    android:name=\"androidx.core.content.FileProvider\"
+    android:name=\"com.shadaeiou.homebrewer.HomebrewerFileProvider\"
     android:authorities=\"com.shadaeiou.homebrewer.fileprovider\"
     android:exported=\"false\"
     android:grantUriPermissions=\"true\">
