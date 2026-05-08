@@ -592,7 +592,27 @@ The key consequence: **once you bottle, the fermenter is free.** You can start t
 
 **Equipment as a scheduling constraint.** How many fermenters you own = how many parallel fermentations you can run. At apartment scale this is one. At garage scale, multiple. At pro scale, many in parallel. The conditioning rack at apartment scale is implicitly 1–2 batches' worth of bottles (24–48 12oz bottles); upgrading bottle storage / kegging changes this.
 
-(Detailed per-equipment scheduling rules — when slots clear, what shares with what, how cleaning state gates re-use — are filled in alongside the equipment property-bag formalization later in Section 4.)
+**Brewing-day requires a free fermenter at start.** The player can't begin a brewing-day scene unless at least one fermenter is free at the moment they tap **Start brewing** — even though the fermenter isn't physically used until pitch time several scene-steps later. The "at-start" rule trades a bit of realism (an expert juggler could in theory queue up a brew to pitch the moment another finishes) for a much simpler UX: no committing to a brewing day with no destination, no failure state of "your wort is cool but there's nowhere to put it." Real experienced homebrewers plan this way too.
+
+#### Bottles as a tracked inventory
+
+Bottles are a real consumable, not handwaved. The starter kit ships with **24 12oz bottles**; a 5-gallon batch fills exactly that. Bottles in the conditioning rack or storage closet are *in use*; bottles already drunk/sold/returned are *available*. Bottling consumes available bottles; bottles return to availability as conditioned beer is drunk, sold, or given away. Running low surfaces a soft cue ("you're low on bottles") in the morning summary; hitting zero hard-blocks the next bottling until the player frees some up.
+
+Recovery options are realistic:
+- **Drink some down.** The beer is yours; you can pour and drink without scoring weight beyond Palate XP (treat as an informal Pour & Taste). Returns one bottle per pour.
+- **NPC asks for beer.** Marcus, Mom, etc. occasionally request bottles — story moments that consume bottles for relationship gains; the NPC returns empties over the following in-game week or two.
+- **Customer sales / gifts.** Bulk bottles out of inventory; empties may or may not return depending on the customer (locals return; bar accounts don't).
+- **Buy more.** The shop carries a case of 24 empty bottles for ~$12 (final pricing in Section 5).
+
+The keg upgrade in 4.4 collapses this whole subsystem; the bottle-inventory pressure is therefore an apartment-scale-and-early-garage-scale concern by design.
+
+#### Daily checklist fan-out
+
+The day clock is global (4.1), but the checklist is per-brew. Each **active fermenter** contributes its own line ("Check fermenter — Pale Ale, day 3/5"); conditioning batches don't add lines (per 4.3, the rack is the passive surface). At apartment scale this is at most one entry. At garage scale with three fermenters, three entries — correct, because three parallel brews IS more daily work, and that's a chosen consequence of scaling up. Anomalies are per-brew (a cold spot affects whichever fermenter is in the cold spot, not all of them; an infection scare on one batch doesn't taint the others).
+
+When no fermenter is active (between brews), the brewing section of the checklist quiets entirely; the day's content shifts to phone, forum, news, social, and shop browsing — the canonical onboarding window from 4.5 happens organically here as well as during the first conditioning period.
+
+(Detailed per-equipment scheduling rules — kettle / spoon / capper cleanliness gating, how soiled equipment delays the next brewing day — are filled in alongside the equipment property-bag formalization later in Section 4.)
 
 ### 4.3 Conditioning is passive
 
@@ -614,9 +634,13 @@ Conditioning anomalies — gushers, bottle bombs, leaks, oxidation, under-carb �
 
 ### 4.4 Conditioning at garage scale and beyond
 
-Bottle conditioning is slow because it's slow in real life. **Keg + CO2 force-carbonation is the conditioning-killer.** When the player unlocks a corny keg (and a CO2 tank to drive it) at garage tier, conditioning collapses from ~14 days to ~24–48 hours of force-carb. This is a tangible "I leveled up my brewery" beat — the player feels their release cadence accelerate from monthly to weekly.
+Bottle conditioning is slow because it's slow in real life. **Keg + CO2 force-carbonation is the conditioning-killer.** When the player unlocks a corny keg (and a CO2 tank to drive it) at garage tier, three problems collapse at once:
 
-Conditioning is intentionally slow at apartment scale to make this upgrade feel powerful. Don't fix conditioning; let the keg fix it.
+1. **Conditioning** compresses from ~14 days to ~24–48 hours of force-carb.
+2. The **bottle-inventory bottleneck** (4.2) evaporates — kegs hold the beer, bottles stay free for the batches that still want them.
+3. The **bottle-fill and cap mini-games** are skipped on kegged batches; bottling day collapses to a single transfer + force-carb action.
+
+This is a tangible "I leveled up my brewery" beat — the player feels their release cadence accelerate from monthly to weekly *and* their post-fermentation labor drop from ~5 minutes per batch to under a minute. Conditioning is intentionally slow at apartment scale to make this upgrade feel powerful. Don't fix conditioning; let the keg fix it.
 
 ### 4.5 The first-brew implication
 
@@ -1183,7 +1207,7 @@ That last one is the design's secret sauce. The player isn't waiting; they're ke
 What's landed so far:
 
 - Sections 0–3 (Vision, World, Player Journey, Brewing Mechanics)
-- Section 4.1–4.6 (Two clocks, concurrency rules, conditioning model, keg-unlock implication, first-brew onboarding window, per-brew real-time totals)
+- Section 4.1–4.6 (Two clocks; concurrency + brewing-day-start rule + bottle inventory + checklist fan-out; conditioning model; triple-good keg unlock; first-brew onboarding window; per-brew real-time totals)
 - Appendices A and B
 
 Still queued, in roughly the order they need to land:
