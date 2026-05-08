@@ -33,6 +33,8 @@ public class HomebrewerInit extends ContentProvider {
         if (ctx == null) {
             return false;
         }
+        // Capture application context for the Installer (DownloadManager + install intent flow).
+        Installer.init(ctx);
         FirebaseOptions options = new FirebaseOptions.Builder()
             .setApplicationId("1:59818402120:android:50794c9950a6fcc33f937d")
             .setApiKey("AIzaSyADEm6rjTFs7-Un2h534SOmpEegnrlIbQ8")

@@ -11,6 +11,8 @@ extends Node
 
 const RELEASES_URL := "https://api.github.com/repos/Shadaeiou/homebrewer/releases?per_page=10"
 
+const APK_ASSET_NAME := "homebrewer.apk"
+
 signal update_available(latest_name: String, latest_code: int, release_url: String)
 signal update_check_finished(found: bool)
 
@@ -18,6 +20,7 @@ var _http: HTTPRequest
 var latest_name: String = ""
 var latest_code: int = 0
 var latest_url: String = ""
+var latest_apk_url: String = ""
 
 func _ready() -> void:
 	_http = HTTPRequest.new()
@@ -53,6 +56,7 @@ func _on_request_completed(result: int, response_code: int, _headers: PackedStri
 	var best_code := 0
 	var best_name := ""
 	var best_url := ""
+	var best_apk_url := ""
 	for entry in parsed:
 		if typeof(entry) != TYPE_DICTIONARY:
 			continue
@@ -65,6 +69,11 @@ func _on_request_completed(result: int, response_code: int, _headers: PackedStri
 			best_code = code
 			best_name = parsed_pair["name"]
 			best_url = entry.get("html_url", "")
+			best_apk_url = ""
+			for asset in entry.get("assets", []):
+				if typeof(asset) == TYPE_DICTIONARY and asset.get("name", "") == APK_ASSET_NAME:
+					best_apk_url = asset.get("browser_download_url", "")
+					break
 
 	if best_code == 0:
 		update_check_finished.emit(false)
@@ -73,6 +82,7 @@ func _on_request_completed(result: int, response_code: int, _headers: PackedStri
 	latest_name = best_name
 	latest_code = best_code
 	latest_url = best_url
+	latest_apk_url = best_apk_url
 
 	if best_code > Version.version_code:
 		update_available.emit(best_name, best_code, best_url)
@@ -95,3 +105,16 @@ func open_release_page() -> void:
 	if latest_url.is_empty():
 		return
 	OS.shell_open(latest_url)
+
+## On Android, downloads the APK via DownloadManager and fires the system
+## install intent so the user updates without leaving the app. On other
+## platforms (and as a fallback if the Java helper isn't available — e.g.
+## the editor or a desktop preview) opens the release page in a browser.
+func install_update() -> void:
+	if OS.get_name() == "Android" and not latest_apk_url.is_empty():
+		var Installer = JavaClassWrapper.wrap("com.shadaeiou.homebrewer.Installer")
+		if Installer != null:
+			Installer.start(latest_apk_url, latest_name)
+			return
+		push_warning("Updater: Installer class not found, falling back to browser")
+	open_release_page()

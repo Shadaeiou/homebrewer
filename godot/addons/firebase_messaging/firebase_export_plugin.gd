@@ -40,7 +40,20 @@ func _get_android_manifest_application_element_contents(_p_preset: EditorExportP
     android:authorities=\"com.shadaeiou.homebrewer.init\"
     android:exported=\"false\"
     android:initOrder=\"100\" />
+
+<provider
+    android:name=\"androidx.core.content.FileProvider\"
+    android:authorities=\"com.shadaeiou.homebrewer.fileprovider\"
+    android:exported=\"false\"
+    android:grantUriPermissions=\"true\">
+    <meta-data
+        android:name=\"android.support.FILE_PROVIDER_PATHS\"
+        android:resource=\"@xml/file_paths\" />
+</provider>
 """.strip_edges()
 
 func _get_android_manifest_element_contents(_p_preset: EditorExportPreset, _p_debug: bool) -> String:
-	return """<uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\" />""".strip_edges()
+	return """
+<uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\" />
+<uses-permission android:name=\"android.permission.REQUEST_INSTALL_PACKAGES\" />
+""".strip_edges()

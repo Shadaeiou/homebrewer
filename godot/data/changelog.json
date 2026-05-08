@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.2.12",
+    "date": "2026-05-08",
+    "bullets": [
+      "In-app install: tap Update on the home banner and the new build downloads inside the app, then prompts to install — no browser detour."
+    ]
+  },
+  {
     "version": "0.2.11",
     "date": "2026-05-08",
     "bullets": [
