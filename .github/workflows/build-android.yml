@@ -83,12 +83,6 @@ jobs:
           export/android/debug_keystore_user = "androiddebugkey"
           export/android/debug_keystore_pass = "android"
           EOF
-          echo "--- editor_settings-4.tres ---"
-          cat "$CONFIG_DIR/editor_settings-4.tres"
-          echo "--- ANDROID_HOME contents ---"
-          ls "$ANDROID_HOME"
-          ls "$ANDROID_HOME/build-tools" || true
-          ls "$ANDROID_HOME/platform-tools" || true
 
       - name: Decode signing keystore
         env:
@@ -134,31 +128,11 @@ jobs:
         working-directory: godot
         run: godot --headless --import
 
-      - name: Diag — dump export_presets.cfg + keystore status
-        working-directory: godot
-        run: |
-          echo "--- export_presets.cfg (post-injection, secrets-redacted) ---"
-          sed -E \
-            -e 's|(keystore/release=).*|\1<KEYSTORE_PATH>|' \
-            -e 's|(keystore/release_user=).*|\1<ALIAS>|' \
-            -e 's|(keystore/release_password=).*|\1<PASSWORD>|' \
-            export_presets.cfg
-          echo "--- keystore file ---"
-          ls -la "$KEYSTORE_PATH" || echo "MISSING: $KEYSTORE_PATH"
-          file "$KEYSTORE_PATH" || true
-
-      - name: Export debug APK (diag — does it pass config check without release signing?)
-        working-directory: godot
-        continue-on-error: true
-        run: |
-          mkdir -p ../build
-          godot --headless --verbose --export-debug "Android" ../build/homebrewer-debug.apk 2>&1 | tail -80 || true
-
       - name: Export release APK
         working-directory: godot
         run: |
           mkdir -p ../build
-          godot --headless --verbose --export-release "Android" ../build/homebrewer.apk
+          godot --headless --export-release "Android" ../build/homebrewer.apk
           ls -la ../build/
 
       - name: Upload APK artifact
