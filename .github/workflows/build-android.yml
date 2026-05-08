@@ -134,6 +134,26 @@ jobs:
         working-directory: godot
         run: godot --headless --import
 
+      - name: Diag — dump export_presets.cfg + keystore status
+        working-directory: godot
+        run: |
+          echo "--- export_presets.cfg (post-injection, secrets-redacted) ---"
+          sed -E \
+            -e 's|(keystore/release=).*|\1<KEYSTORE_PATH>|' \
+            -e 's|(keystore/release_user=).*|\1<ALIAS>|' \
+            -e 's|(keystore/release_password=).*|\1<PASSWORD>|' \
+            export_presets.cfg
+          echo "--- keystore file ---"
+          ls -la "$KEYSTORE_PATH" || echo "MISSING: $KEYSTORE_PATH"
+          file "$KEYSTORE_PATH" || true
+
+      - name: Export debug APK (diag — does it pass config check without release signing?)
+        working-directory: godot
+        continue-on-error: true
+        run: |
+          mkdir -p ../build
+          godot --headless --verbose --export-debug "Android" ../build/homebrewer-debug.apk 2>&1 | tail -80 || true
+
       - name: Export release APK
         working-directory: godot
         run: |
