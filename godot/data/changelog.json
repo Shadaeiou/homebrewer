@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.2.22",
+    "date": "2026-05-08",
+    "bullets": [
+      "First mini-game: Fill the kettle. Hold POUR to open the faucet, watch the water rise, tap DONE when the level matches the 4.00 L target. Grade is A+ to F based on accuracy; overflowing the kettle ends the round.",
+      "Side-view brew kettle drawn procedurally — hammered-metal body, D-handles, rivets, animated water surface with meniscus, splashes where the stream hits the water.",
+      "Side gauge with target band so you can see how close you are without watching the readout.",
+      "Reachable via the new \"Start brewing — fill the kettle\" button on the home screen."
+    ]
+  },
+  {
     "version": "0.2.21",
     "date": "2026-05-08",
     "bullets": [

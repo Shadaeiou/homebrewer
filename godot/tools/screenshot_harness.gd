@@ -16,6 +16,24 @@ extends SceneTree
 
 const SCENES := [
 	{"name": "main", "path": "res://scenes/main.tscn", "frames": 5},
+	{
+		"name": "fill_kettle_ready",
+		"path": "res://scenes/minigames/fill_kettle.tscn",
+		"frames": 3,
+		"setup": "fill_kettle_ready",
+	},
+	{
+		"name": "fill_kettle_pouring",
+		"path": "res://scenes/minigames/fill_kettle.tscn",
+		"frames": 12,
+		"setup": "fill_kettle_pouring",
+	},
+	{
+		"name": "fill_kettle_done_a",
+		"path": "res://scenes/minigames/fill_kettle.tscn",
+		"frames": 4,
+		"setup": "fill_kettle_done_a",
+	},
 ]
 
 const OUT_DIR := "res://../screenshots"
@@ -31,6 +49,7 @@ func _capture(spec: Dictionary) -> void:
 	var scene_name: String = spec.get("name", "unnamed")
 	var path: String = spec.get("path", "")
 	var frames: int = int(spec.get("frames", 3))
+	var setup_kind: String = spec.get("setup", "")
 
 	var packed := load(path)
 	if packed == null:
@@ -40,6 +59,11 @@ func _capture(spec: Dictionary) -> void:
 	var instance: Node = packed.instantiate()
 	root.add_child(instance)
 	root.content_scale_size = VIEWPORT_SIZE
+
+	# Wait one frame for _ready() so @onready vars resolve before we poke at state.
+	await process_frame
+	if setup_kind != "":
+		_apply_setup(instance, setup_kind)
 
 	for i in frames:
 		await process_frame
@@ -59,3 +83,39 @@ func _capture(spec: Dictionary) -> void:
 		print("[harness] wrote %s" % globalized)
 
 	instance.queue_free()
+
+func _apply_setup(scene: Node, kind: String) -> void:
+	# Drive a fill-kettle scene into a specific state for the screenshot,
+	# without touching real input. We poke the controller's internal API
+	# directly — this is harness-only so it's fine to reach in.
+	if not scene.has_method("_on_pour_pressed"):
+		return
+	match kind:
+		"fill_kettle_ready":
+			pass  # default — empty kettle, faucet closed
+		"fill_kettle_pouring":
+			scene._on_pour_pressed()
+			# Pre-fill the water body so the screenshot shows partial fill,
+			# stream falling, and meniscus already established.
+			var water_p := scene.get_node("Stage/Kettle/Water")
+			if water_p:
+				water_p.fill_litres = 2.4
+				water_p.pour_intensity = 1.0
+				water_p.time_since_last_pour = 0.0
+				if scene.has_method("_update_labels"):
+					scene._update_labels()
+				if scene.has_method("_update_gauge"):
+					scene._update_gauge()
+		"fill_kettle_done_a":
+			# Land near target for an "A"-grade result modal.
+			var water_d := scene.get_node("Stage/Kettle/Water")
+			if water_d:
+				water_d.fill_litres = 4.07
+				water_d.pour_intensity = 0.0
+				water_d.time_since_last_pour = 2.0
+			scene.state = scene.State.PLAYING
+			if scene.has_method("_update_labels"):
+				scene._update_labels()
+			if scene.has_method("_update_gauge"):
+				scene._update_gauge()
+			scene._on_done()

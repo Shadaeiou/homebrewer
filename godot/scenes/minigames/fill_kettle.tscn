@@ -1,0 +1,314 @@
+[gd_scene load_steps=6 format=3 uid="uid://b7fillk1mini2"]
+
+[ext_resource type="Script" path="res://scripts/minigames/fill_kettle/controller.gd" id="1_ctrl"]
+[ext_resource type="Script" path="res://scripts/minigames/fill_kettle/kettle.gd" id="2_kettle"]
+[ext_resource type="Script" path="res://scripts/minigames/fill_kettle/water_body.gd" id="3_water"]
+[ext_resource type="Script" path="res://scripts/minigames/fill_kettle/faucet.gd" id="4_faucet"]
+[ext_resource type="Script" path="res://scripts/minigames/fill_kettle/water_stream.gd" id="5_stream"]
+
+[node name="FillKettle" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_ctrl")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.13, 0.10, 0.08, 1)
+
+[node name="WallTrim" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 0.62
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.18, 0.13, 0.10, 1)
+
+[node name="Stage" type="Node2D" parent="."]
+
+[node name="Kettle" type="Node2D" parent="Stage"]
+position = Vector2(270, 730)
+script = ExtResource("2_kettle")
+
+[node name="Water" type="Node2D" parent="Stage/Kettle"]
+script = ExtResource("3_water")
+kettle_path = NodePath("..")
+
+[node name="Faucet" type="Node2D" parent="Stage"]
+position = Vector2(310, 220)
+script = ExtResource("4_faucet")
+
+[node name="Stream" type="Node2D" parent="Stage/Faucet"]
+script = ExtResource("5_stream")
+max_length = 620.0
+
+[node name="Splashes" type="CPUParticles2D" parent="Stage"]
+position = Vector2(310, 720)
+amount = 28
+lifetime = 0.55
+local_coords = false
+emission_shape = 1
+emission_sphere_radius = 4.0
+direction = Vector2(0, -1)
+spread = 80.0
+gravity = Vector2(0, 220)
+initial_velocity_min = 80.0
+initial_velocity_max = 160.0
+scale_amount_min = 1.5
+scale_amount_max = 3.5
+color = Color(0.78, 0.92, 1.0, 0.85)
+emitting = false
+
+[node name="Header" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 16.0
+offset_bottom = 96.0
+grow_horizontal = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_right = 24
+
+[node name="HeaderRow" type="HBoxContainer" parent="Header"]
+layout_mode = 2
+
+[node name="HeaderLeft" type="VBoxContainer" parent="Header/HeaderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MiniGameTitle" type="Label" parent="Header/HeaderRow/HeaderLeft"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96, 0.78, 0.32, 1)
+theme_override_font_sizes/font_size = 22
+text = "Fill the kettle"
+
+[node name="TargetLabel" type="Label" parent="Header/HeaderRow/HeaderLeft"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.78, 0.70, 1)
+theme_override_font_sizes/font_size = 14
+text = "Target: 4.00 L"
+
+[node name="HeaderRight" type="VBoxContainer" parent="Header/HeaderRow"]
+layout_mode = 2
+
+[node name="CurrentCaption" type="Label" parent="Header/HeaderRow/HeaderRight"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.62, 0.58, 1)
+theme_override_font_sizes/font_size = 12
+text = "in kettle"
+horizontal_alignment = 2
+
+[node name="CurrentLabel" type="Label" parent="Header/HeaderRow/HeaderRight"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.92, 0.95, 1)
+theme_override_font_sizes/font_size = 26
+text = "0.00 L"
+horizontal_alignment = 2
+
+[node name="Gauge" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -82.0
+offset_top = -250.0
+offset_right = -28.0
+offset_bottom = 250.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="GaugeBg" type="ColorRect" parent="Gauge"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.08, 0.08, 0.10, 0.85)
+
+[node name="GaugeFill" type="ColorRect" parent="Gauge"]
+unique_name_in_owner = true
+offset_left = 0.0
+offset_top = 500.0
+offset_right = 54.0
+offset_bottom = 500.0
+color = Color(0.45, 0.78, 0.95, 0.85)
+
+[node name="TargetZone" type="ColorRect" parent="Gauge"]
+unique_name_in_owner = true
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 54.0
+offset_bottom = 0.0
+color = Color(0.55, 0.95, 0.55, 0.35)
+
+[node name="GaugeBorderTop" type="ColorRect" parent="Gauge"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 2.0
+grow_horizontal = 2
+color = Color(0.55, 0.55, 0.60, 1)
+
+[node name="GaugeBorderBottom" type="ColorRect" parent="Gauge"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -2.0
+grow_horizontal = 2
+grow_vertical = 0
+color = Color(0.55, 0.55, 0.60, 1)
+
+[node name="GaugeBorderLeft" type="ColorRect" parent="Gauge"]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_right = 2.0
+grow_vertical = 2
+color = Color(0.55, 0.55, 0.60, 1)
+
+[node name="GaugeBorderRight" type="ColorRect" parent="Gauge"]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -2.0
+grow_horizontal = 0
+grow_vertical = 2
+color = Color(0.55, 0.55, 0.60, 1)
+
+
+[node name="Footer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -156.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 16
+
+[node name="FooterCol" type="VBoxContainer" parent="Footer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="InstructionLabel" type="Label" parent="Footer/FooterCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.78, 0.70, 1)
+theme_override_font_sizes/font_size = 14
+text = "Hold POUR to fill the kettle. Tap DONE when ready."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="ButtonRow" type="HBoxContainer" parent="Footer/FooterCol"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="BackButton" type="Button" parent="Footer/FooterCol/ButtonRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(80, 56)
+layout_mode = 2
+text = "Back"
+
+[node name="PourButton" type="Button" parent="Footer/FooterCol/ButtonRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "POUR"
+
+[node name="DoneButton" type="Button" parent="Footer/FooterCol/ButtonRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(96, 56)
+layout_mode = 2
+text = "DONE"
+
+[node name="ResultPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -160.0
+offset_right = 200.0
+offset_bottom = 160.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ResultMargin" type="MarginContainer" parent="ResultPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="ResultCol" type="VBoxContainer" parent="ResultPanel/ResultMargin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ResultHeader" type="Label" parent="ResultPanel/ResultMargin/ResultCol"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.78, 0.70, 1)
+theme_override_font_sizes/font_size = 14
+text = "Result"
+horizontal_alignment = 1
+
+[node name="ResultGradeLabel" type="Label" parent="ResultPanel/ResultMargin/ResultCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 80
+text = "A"
+horizontal_alignment = 1
+
+[node name="ResultDetailLabel" type="Label" parent="ResultPanel/ResultMargin/ResultCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.92, 0.95, 1)
+theme_override_font_sizes/font_size = 14
+text = ""
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="ResultButtons" type="HBoxContainer" parent="ResultPanel/ResultMargin/ResultCol"]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="RetryButton" type="Button" parent="ResultPanel/ResultMargin/ResultCol/ResultButtons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 48)
+layout_mode = 2
+text = "Try again"
+
+[node name="ReturnButton" type="Button" parent="ResultPanel/ResultMargin/ResultCol/ResultButtons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 48)
+layout_mode = 2
+text = "Back"

@@ -5,12 +5,17 @@ extends Control
 @onready var update_banner: PanelContainer = %UpdateBanner
 @onready var update_label: Label = %UpdateLabel
 @onready var update_button: Button = %UpdateButton
+@onready var start_brewing_button: Button = %StartBrewingButton
 
 func _ready() -> void:
 	version_label.text = Version.full()
 	_render_changelog()
 	Updater.update_available.connect(_on_update_available)
 	update_button.pressed.connect(Updater.install_update)
+	start_brewing_button.pressed.connect(_on_start_brewing)
+
+func _on_start_brewing() -> void:
+	get_tree().change_scene_to_file("res://scenes/minigames/fill_kettle.tscn")
 
 func _on_update_available(latest_name: String, latest_code: int, _release_url: String) -> void:
 	update_label.text = "Update available: v%s (build %d)" % [latest_name, latest_code]

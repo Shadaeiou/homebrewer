@@ -129,6 +129,12 @@ texture = ExtResource("9_bottle")
 expand_mode = 1
 stretch_mode = 5
 
+[node name="StartBrewingButton" type="Button" parent="Margin/Body"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+text = "Start brewing — fill the kettle"
+
 [node name="VersionLabel" type="Label" parent="Margin/Body"]
 unique_name_in_owner = true
 layout_mode = 2
