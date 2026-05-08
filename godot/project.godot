@@ -19,6 +19,10 @@ Changelog="*res://systems/changelog.gd"
 Version="*res://systems/version.gd"
 Updater="*res://systems/updater.gd"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/firebase_messaging/plugin.cfg")
+
 [display]
 
 window/size/viewport_width=540

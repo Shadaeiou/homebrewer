@@ -124,6 +124,25 @@ jobs:
           sed -i "s|^version/code=.*|version/code=$CODE|" godot/export_presets.cfg
           sed -i "s|^version/name=.*|version/name=\"$NAME\"|" godot/export_presets.cfg
 
+      - name: Install Android build template (gradle build mode)
+        run: |
+          # use_gradle_build=true expects godot/android/build/ to be the unzipped
+          # android_source.zip from the templates we already installed. The
+          # editor's Project > Install Android Build Template menu does this on
+          # a workstation; in CI we replicate it manually so the working tree
+          # stays small (build/ is gitignored).
+          SOURCE_ZIP="$HOME/.local/share/godot/export_templates/${{ env.GODOT_VERSION }}.stable/android_source.zip"
+          BUILD_DIR=godot/android/build
+          rm -rf "$BUILD_DIR"
+          mkdir -p "$BUILD_DIR"
+          unzip -q "$SOURCE_ZIP" -d "$BUILD_DIR"
+          # Godot uses .build_version next to build/ to detect the installed template.
+          echo "${{ env.GODOT_VERSION }}.stable" > godot/android/.build_version
+          # Apply our overlay (Java sources, etc.) on top of the stock template.
+          if [ -d godot/android/build_overlay ]; then
+            cp -r godot/android/build_overlay/. "$BUILD_DIR/"
+          fi
+
       - name: Import resources
         working-directory: godot
         run: godot --headless --import
@@ -134,6 +153,33 @@ jobs:
           mkdir -p ../build
           godot --headless --export-release "Android" ../build/homebrewer.apk
           ls -la ../build/
+
+      - name: Verify APK signing fingerprint matches keystore
+        env:
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          # If the new (gradle-built) APK isn't signed with the same key as the
+          # existing release, users can't install over their current build.
+          # Bail loudly before the release upload step.
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort | tail -1)
+          NEW_FP=$("$APKSIGNER" verify --print-certs build/homebrewer.apk \
+                   | awk -F': ' '/SHA-256 digest/ {print $2; exit}' \
+                   | tr -d ': ' | tr 'A-Z' 'a-z')
+          EXPECTED_FP=$(keytool -list -v -keystore "$KEYSTORE_PATH" \
+                        -alias "$KEY_ALIAS" -storepass "$KEY_PASSWORD" 2>/dev/null \
+                        | awk '/SHA256:/ {print $2; exit}' \
+                        | tr -d ': ' | tr 'A-Z' 'a-z')
+          echo "APK fingerprint:      $NEW_FP"
+          echo "Keystore fingerprint: $EXPECTED_FP"
+          if [ -z "$NEW_FP" ] || [ -z "$EXPECTED_FP" ]; then
+            echo "::error::Could not extract one of the fingerprints"
+            exit 1
+          fi
+          if [ "$NEW_FP" != "$EXPECTED_FP" ]; then
+            echo "::error::APK signing fingerprint does not match the release keystore. Refusing to ship — installs would break."
+            exit 1
+          fi
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4

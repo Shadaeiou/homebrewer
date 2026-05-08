@@ -1,0 +1,4 @@
+# Godot installs the Android build template into godot/android/build/ at CI time
+# (.github/workflows/build-android.yml unzips android_source.zip + applies overlay).
+# It's a couple hundred files of stock Godot template — don't commit.
+build/
