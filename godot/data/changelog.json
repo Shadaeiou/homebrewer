@@ -1,6 +1,6 @@
 [
   {
-    "version": "0.2.10",
+    "version": "0.2.11",
     "date": "2026-05-08",
     "bullets": [
       "Push notifications: when a new build ships you'll now get an Android notification, tap it to grab the APK.",

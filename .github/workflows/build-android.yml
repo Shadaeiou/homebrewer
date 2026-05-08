@@ -163,9 +163,16 @@ jobs:
           # existing release, users can't install over their current build.
           # Bail loudly before the release upload step.
           APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort | tail -1)
+          echo "--- raw apksigner output ---"
+          "$APKSIGNER" verify --print-certs build/homebrewer.apk
+          echo "--- end ---"
+          # Pull a 64-char hex string from the SHA-256 digest line. Robust
+          # against extra whitespace, leading "Signer #1 certificate" prefix,
+          # and uppercase variants.
           NEW_FP=$("$APKSIGNER" verify --print-certs build/homebrewer.apk \
-                   | awk -F': ' '/SHA-256 digest/ {print $2; exit}' \
-                   | tr -d ': ' | tr 'A-Z' 'a-z')
+                   | grep -i 'SHA-256 digest' | head -1 \
+                   | grep -oiE '[0-9a-f]{64}' | head -1 \
+                   | tr 'A-Z' 'a-z')
           EXPECTED_FP=$(keytool -list -v -keystore "$KEYSTORE_PATH" \
                         -alias "$KEY_ALIAS" -storepass "$KEY_PASSWORD" 2>/dev/null \
                         | awk '/SHA256:/ {print $2; exit}' \
