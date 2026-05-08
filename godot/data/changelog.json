@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.2.25",
+    "date": "2026-05-08",
+    "bullets": [
+      "Home-screen equipment icons are now all procedural: stove (with burner + red knobs), kettle (side-view), mash paddle, hydrometer (amber wort sample), beer bottle (gold cap + label). Same palette + lighting as the in-game kettle.",
+      "Steam rises from the kettle when there's water in it. Soft cream puffs that grow and fade as they drift upward."
+    ]
+  },
+  {
     "version": "0.2.24",
     "date": "2026-05-08",
     "bullets": [

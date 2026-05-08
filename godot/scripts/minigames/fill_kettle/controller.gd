@@ -24,6 +24,7 @@ enum State { READY, PLAYING, DONE }
 @onready var faucet: FillKettleFaucet = $Stage/Faucet
 @onready var stream: FillKettleWaterStream = $Stage/Faucet/Stream
 @onready var splashes: CPUParticles2D = $Stage/Splashes
+@onready var steam: CPUParticles2D = $Stage/Steam
 
 @onready var target_label: Label = %TargetLabel
 @onready var current_label: Label = %CurrentLabel
@@ -91,6 +92,18 @@ func _process(delta: float) -> void:
 		splashes.emitting = true
 	else:
 		splashes.emitting = false
+
+	# Steam: rises from just above the current water surface whenever the
+	# kettle has water in it. Don't touch `amount` at runtime — assigning
+	# CPUParticles2D.amount resets the particle pool every frame, killing
+	# every particle before it can fade in.
+	if water_body.fill_litres > 0.05:
+		var stage := steam.get_parent() as Node2D
+		var surface_world: Vector2 = kettle.global_position + Vector2(0, water_body.surface_y())
+		steam.position = stage.to_local(surface_world) + Vector2(0, -8)
+		steam.emitting = true
+	else:
+		steam.emitting = false
 
 func _stream_target_length() -> float:
 	# Convert kettle interior coordinates (kettle origin) to the stream's

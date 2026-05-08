@@ -25,13 +25,13 @@ const SCENES := [
 	{
 		"name": "fill_kettle_pouring",
 		"path": "res://scenes/minigames/fill_kettle.tscn",
-		"frames": 12,
+		"frames": 30,
 		"setup": "fill_kettle_pouring",
 	},
 	{
 		"name": "fill_kettle_done_a",
 		"path": "res://scenes/minigames/fill_kettle.tscn",
-		"frames": 4,
+		"frames": 30,
 		"setup": "fill_kettle_done_a",
 	},
 ]
@@ -95,11 +95,9 @@ func _apply_setup(scene: Node, kind: String) -> void:
 			pass  # default — empty kettle, faucet closed
 		"fill_kettle_pouring":
 			scene._on_pour_pressed()
-			# Pre-fill the water body so the screenshot shows partial fill,
-			# stream falling, and meniscus already established.
 			var water_p := scene.get_node("Stage/Kettle/Water")
 			if water_p:
-				water_p.fill_litres = 2.4
+				water_p.fill_litres = 1.4
 				water_p.pour_intensity = 1.0
 				water_p.time_since_last_pour = 0.0
 				if scene.has_method("_update_labels"):
