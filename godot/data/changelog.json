@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.2.13",
+    "date": "2026-05-08",
+    "bullets": [
+      "Fixed the build number on the home screen — was always reading 0."
+    ]
+  },
+  {
     "version": "0.2.12",
     "date": "2026-05-08",
     "bullets": [
