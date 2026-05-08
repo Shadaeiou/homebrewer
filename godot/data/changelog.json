@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.2.8",
+    "date": "2026-05-08",
+    "bullets": [
+      "First sprite art lands: an amber beer bottle on the home screen.",
+      "AI sprite pipeline online — pixel-art SDXL workflow generating equipment + ingredient sprites."
+    ]
+  },
+  {
     "version": "0.2.0",
     "date": "2026-05-07",
     "bullets": [

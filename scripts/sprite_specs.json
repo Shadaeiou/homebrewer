@@ -1,0 +1,37 @@
+[
+  {
+    "name": "stove_basic",
+    "category": "equipment",
+    "prompt": "single small white two-burner home gas stovetop, one isolated stove, front view, one round burner lit with blue flame, simple, no oven, just the stovetop, only one object",
+    "target_size": 192,
+    "palette_size": 32
+  },
+  {
+    "name": "pot_basic",
+    "category": "equipment",
+    "prompt": "stainless steel cooking pot with two handles, half full of bubbling amber wort, side view, slightly dented",
+    "target_size": 160,
+    "palette_size": 32
+  },
+  {
+    "name": "hop_cone",
+    "category": "ingredients",
+    "prompt": "single green hop cone flower, vertical orientation, leafy bracts, vivid green",
+    "target_size": 96,
+    "palette_size": 16
+  },
+  {
+    "name": "malt_grain",
+    "category": "ingredients",
+    "prompt": "one single isolated burlap sack full of golden barley malt grain, only one sack centered in frame, sack tied at top, a few loose grains in front, single item, only one object, isolated, not a sprite sheet",
+    "target_size": 128,
+    "palette_size": 24
+  },
+  {
+    "name": "beer_bottle",
+    "category": "consumables",
+    "prompt": "amber glass beer bottle with a blank cream paper label, dark brown glass, gold foil cap, no text",
+    "target_size": 128,
+    "palette_size": 24
+  }
+]
