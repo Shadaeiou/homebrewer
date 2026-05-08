@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.2.24",
+    "date": "2026-05-08",
+    "bullets": [
+      "Visual polish pass — single global palette + light direction across every procedural-drawn surface, brass faucet (was gray), kettle with proper lit/shadow sides and a counter shadow.",
+      "Post-process layer on the kettle mini-game: vignette, warm color grade, soft bloom on bright highlights, subtle film grain.",
+      "Replaced the top-down pot icon on the home screen with a side-view procedural kettle that matches the in-game style."
+    ]
+  },
+  {
     "version": "0.2.22",
     "date": "2026-05-08",
     "bullets": [

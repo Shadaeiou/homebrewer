@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3 uid="uid://b7fillk1mini2"]
+[gd_scene load_steps=7 format=3 uid="uid://b7fillk1mini2"]
 
 [ext_resource type="Script" path="res://scripts/minigames/fill_kettle/controller.gd" id="1_ctrl"]
 [ext_resource type="Script" path="res://scripts/minigames/fill_kettle/kettle.gd" id="2_kettle"]
 [ext_resource type="Script" path="res://scripts/minigames/fill_kettle/water_body.gd" id="3_water"]
 [ext_resource type="Script" path="res://scripts/minigames/fill_kettle/faucet.gd" id="4_faucet"]
 [ext_resource type="Script" path="res://scripts/minigames/fill_kettle/water_stream.gd" id="5_stream"]
+[ext_resource type="PackedScene" path="res://scenes/components/post_process.tscn" id="6_postp"]
 
 [node name="FillKettle" type="Control"]
 layout_mode = 3
@@ -312,3 +313,5 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 48)
 layout_mode = 2
 text = "Back"
+
+[node name="PostProcess" parent="." instance=ExtResource("6_postp")]

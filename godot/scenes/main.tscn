@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Texture2D" path="res://assets/sprites/equipment/stove_basic.png" id="2_stove"]
-[ext_resource type="Texture2D" path="res://assets/sprites/equipment/pot_basic.png" id="3_pot"]
+[ext_resource type="Script" path="res://scripts/icons/procedural_kettle_icon.gd" id="3_pot"]
 [ext_resource type="Texture2D" path="res://assets/sprites/equipment/mash_paddle.png" id="4_paddle"]
 [ext_resource type="Texture2D" path="res://assets/sprites/equipment/hydrometer.png" id="5_hydro"]
 [ext_resource type="Texture2D" path="res://assets/sprites/ingredients/hop_cone.png" id="6_hop"]
@@ -73,13 +73,11 @@ texture = ExtResource("2_stove")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Pot" type="TextureRect" parent="Margin/Body/StarterKit"]
+[node name="Pot" type="Control" parent="Margin/Body/StarterKit"]
 layout_mode = 2
 custom_minimum_size = Vector2(112, 112)
 size_flags_horizontal = 3
-texture = ExtResource("3_pot")
-expand_mode = 1
-stretch_mode = 5
+script = ExtResource("3_pot")
 
 [node name="MashPaddle" type="TextureRect" parent="Margin/Body/StarterKit"]
 layout_mode = 2

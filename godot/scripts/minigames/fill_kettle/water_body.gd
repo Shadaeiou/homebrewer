@@ -1,11 +1,11 @@
 extends Node2D
 class_name FillKettleWaterBody
 
-## Renders the water sitting inside the kettle, with an animated wavy surface
-## and a meniscus where the surface meets the kettle walls.
+## Renders water inside the kettle: animated wavy surface (envelope-tapered to
+## the walls so it pins to the meniscus), two-tone gradient, a meniscus arc
+## where the water meets each side wall, and a polyline crest highlight.
 ##
-## `fill_litres` is the player-visible amount; `litres_to_pixels` converts to
-## the rendered surface height. The kettle determines the inner geometry.
+## All colors come from Palette; surface phase is local time-based.
 
 @export var kettle_path: NodePath
 @export var capacity_litres: float = 6.0
@@ -17,11 +17,6 @@ var time_since_last_pour: float = 999.0
 
 var _kettle: FillKettleVessel
 var _phase: float = 0.0
-
-const WATER_DEEP := Color(0.20, 0.50, 0.78, 0.82)
-const WATER_SHALLOW := Color(0.55, 0.80, 0.95, 0.78)
-const WATER_HIGHLIGHT := Color(0.92, 0.97, 1.00, 0.55)
-const MENISCUS := Color(0.82, 0.92, 1.00, 0.85)
 
 func _ready() -> void:
 	_kettle = get_node(kettle_path)
@@ -45,18 +40,14 @@ func _draw() -> void:
 
 	var samples := 24
 	var amplitude: float = 1.5 + pour_intensity * 3.5
-	# Decay agitation over ~1.5s after pouring stops.
 	var idle_decay: float = clampf(1.0 - time_since_last_pour / 1.5, 0.0, 1.0)
 	amplitude = maxf(amplitude * (0.4 + 0.6 * idle_decay), 0.6)
-	# Clamp amplitude to never exceed 40% of available fill depth — otherwise
-	# a wave crest can dip below the cap polygon's bottom or below the right-
-	# wall start, which makes the surface poly self-intersect.
+	# Geometric clamp so the wave can't punch below the cap layer.
 	var fill_depth: float = _kettle.inner_bottom_y - surface
 	amplitude = minf(amplitude, maxf(fill_depth * 0.4, 0.0))
 
-	# Build surface points sampled across the inner width at `surface`.
-	# Wave amplitude tapers to zero at the walls (sin envelope) so the surface
-	# is pinned to the meniscus and the polygon never folds at the corners.
+	# Build surface points; envelope amplitude → 0 at walls so polygon never
+	# self-intersects at the corners and the surface "pins" to the meniscus.
 	var top_points := PackedVector2Array()
 	for i in range(samples + 1):
 		var t: float = float(i) / float(samples)
@@ -71,49 +62,49 @@ func _draw() -> void:
 		) * envelope
 		top_points.append(Vector2(x, y + wave))
 
-	# Closed polygon: top wave (left→right) + right wall (top→bottom, including
-	# bottom-right corner) + bottom (right→left) + left wall (bottom→top).
-	# Explicit corners at inner_bottom_y so Godot's triangulator never sees a
-	# wonky closing diagonal.
+	# Closed polygon: top wave (left→right) → right wall (down) → bottom edge
+	# (right→left) → left wall (up). Explicit corners so triangulation is happy.
 	var poly := PackedVector2Array()
 	for p in top_points:
 		poly.append(p)
-	# Right wall: from a hair below surface down to inner_bottom corner
 	var wall_steps := 5
 	for i in range(1, wall_steps + 1):
 		var t: float = float(i) / float(wall_steps)
 		var y: float = lerpf(surface, _kettle.inner_bottom_y, t)
 		poly.append(Vector2(_kettle.inner_right_x_at(y), y))
-	# Bottom edge — explicitly close at the inner-bottom-left corner
 	poly.append(Vector2(_kettle.inner_left_x_at(_kettle.inner_bottom_y), _kettle.inner_bottom_y))
-	# Left wall: from inner_bottom up to surface
 	for i in range(1, wall_steps + 1):
 		var t: float = float(i) / float(wall_steps)
 		var y: float = lerpf(_kettle.inner_bottom_y, surface, t)
 		poly.append(Vector2(_kettle.inner_left_x_at(y), y))
 
-	draw_colored_polygon(poly, WATER_DEEP)
+	draw_colored_polygon(poly, Palette.WATER_DEEP)
 
-	# Lighter cap layer to fake a gradient (top portion of fill volume).
-	# Skip when there's barely any water — the cap polygon collapses.
-	var cap_depth: float = minf((_kettle.inner_bottom_y - surface) * 0.45, 60.0)
+	# Mid-tone band (lighter blue layered on top to fake a gradient)
+	var cap_depth: float = minf(fill_depth * 0.45, 60.0)
 	if cap_depth > amplitude + 4.0:
 		var cap := PackedVector2Array()
 		for p in top_points:
 			cap.append(p)
 		cap.append(Vector2(_kettle.inner_right_x_at(surface + cap_depth), surface + cap_depth))
 		cap.append(Vector2(_kettle.inner_left_x_at(surface + cap_depth), surface + cap_depth))
-		draw_colored_polygon(cap, WATER_SHALLOW)
+		draw_colored_polygon(cap, Palette.WATER_MID)
 
-	# Surface highlight: a polyline along the wave crest. Drawn as a thick
-	# bright line rather than a closed polygon so it can never self-intersect
-	# even when the wave amplitude grows during a heavy pour.
+	# Surface highlight band — narrow lighter strip just below the wave crest.
+	# Drawn as a polyline so it can never self-intersect.
 	var crest := PackedVector2Array()
 	for p in top_points:
 		crest.append(p + Vector2(0, 1.5))
-	draw_polyline(crest, WATER_HIGHLIGHT, 2.0)
+	draw_polyline(crest, Palette.WATER_LIGHT, 2.0, true)
 
-	# Meniscus: small lifted curve where water meets each wall
+	# Top specular highlight — thinner, lighter, offset toward the light.
+	var spec_offset: Vector2 = Lighting.highlight_offset(0.5)
+	var spec := PackedVector2Array()
+	for p in top_points:
+		spec.append(p + spec_offset + Vector2(0, 0.5))
+	draw_polyline(spec, Palette.WATER_HIGHLIGHT, 1.0, true)
+
+	# Meniscus arcs at each wall.
 	for side in [-1, 1]:
 		var x_anchor: float = _kettle.inner_left_x_at(surface) if side == -1 else _kettle.inner_right_x_at(surface)
 		var pts := PackedVector2Array()
@@ -123,4 +114,4 @@ func _draw() -> void:
 			var dx: float = lerpf(0.0, 6.0 * float(side), 1.0 - t)
 			var dy: float = -3.0 * sin(t * PI)
 			pts.append(Vector2(x_anchor - dx, surface + dy))
-		draw_polyline(pts, MENISCUS, 2.0)
+		draw_polyline(pts, Palette.WATER_MENISCUS, 2.0, true)
