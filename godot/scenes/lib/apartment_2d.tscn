@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3 uid="uid://b8apartmenthcwma"]
+
+[ext_resource type="Script" path="res://scripts/lib/apartment_2d.gd" id="1_apt"]
+
+[node name="Apartment2D" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 1200.0
+offset_bottom = 620.0
+script = ExtResource("1_apt")

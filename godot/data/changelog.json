@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.2.70",
+    "date": "2026-05-09",
+    "bullets": [
+      "Pivot: the apartment is one big room now, not a separate scene per task. Closet on the far left (where the fermenter goes between bottling and tasting), bottling table next to it, kitchen sink with brass faucet, stove with 4 burners + oven door, and a small window with a night sky on the far right. The camera pans to whichever station the active step needs.",
+      "Fill kettle now opens at the sink station with the kettle on the counter under the faucet — same brass-handle-tap interaction, same drift math, but you can see the rest of the apartment around it. Other brewing-day steps will pan to their own stations as they get graphified (Pour LME → stove, Cool wort → sink + ice, Transfer + pitch → counter with fermenter, Bottling → table).",
+      "Future upgrade scope: when you graduate to garage / pro scale, the room grows new stations rather than being replaced. The apartment IS the world."
+    ]
+  },
+  {
     "version": "0.2.69",
     "date": "2026-05-09",
     "bullets": [

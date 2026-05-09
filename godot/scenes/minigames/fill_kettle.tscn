@@ -1,9 +1,6 @@
-[gd_scene load_steps=5 format=3 uid="uid://b8fillkettlehcwma"]
+[gd_scene load_steps=2 format=3 uid="uid://b8fillkettlehcwma"]
 
 [ext_resource type="Script" path="res://scripts/minigames/fill_kettle/fill_kettle.gd" id="1_fk"]
-[ext_resource type="Script" path="res://scripts/lib/kitchen_scene.gd" id="2_kitchen"]
-[ext_resource type="Script" path="res://scripts/lib/equipment/kettle_2d.gd" id="3_kettle"]
-[ext_resource type="Script" path="res://scripts/lib/equipment/faucet_2d.gd" id="4_faucet"]
 
 [node name="FillKettle" type="Control"]
 layout_mode = 3
@@ -21,7 +18,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.07, 0.07, 0.09, 1)
+color = Color(0.04, 0.04, 0.05, 1)
 
 [node name="Header" type="VBoxContainer" parent="."]
 layout_mode = 1
@@ -43,7 +40,7 @@ theme_override_font_sizes/font_size = 22
 [node name="Hint" type="Label" parent="Header"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Tap the faucet handle to start the water. Stop near the 2½ gallon band — eyeballing it from a stockpot, so you'll have to feel for it."
+text = "Tap the brass faucet handle to start the water. Stop near the gold band — eyeballing it from a stockpot."
 theme_override_font_sizes/font_size = 11
 modulate = Color(0.78, 0.74, 0.70, 1)
 autowrap_mode = 3
@@ -55,8 +52,9 @@ text = "0.00 / 2.5 gal"
 theme_override_font_sizes/font_size = 16
 horizontal_alignment = 1
 
-[node name="KitchenScene" type="Control" parent="."]
+[node name="ApartmentViewport" type="Control" parent="."]
 unique_name_in_owner = true
+clip_contents = true
 layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.0
@@ -66,25 +64,6 @@ anchor_bottom = 0.0
 offset_top = 110.0
 offset_bottom = 730.0
 grow_horizontal = 2
-script = ExtResource("2_kitchen")
-
-[node name="Kettle" type="Control" parent="KitchenScene"]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 28.0
-offset_top = 152.0
-offset_right = 272.0
-offset_bottom = 384.0
-script = ExtResource("3_kettle")
-
-[node name="Faucet" type="Control" parent="KitchenScene"]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 110.0
-offset_top = 44.0
-offset_right = 230.0
-offset_bottom = 154.0
-script = ExtResource("4_faucet")
 
 [node name="Controls" type="VBoxContainer" parent="."]
 layout_mode = 1
