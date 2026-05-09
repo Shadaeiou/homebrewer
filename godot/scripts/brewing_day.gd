@@ -44,6 +44,7 @@ const ALL_GRAIN_PREFIX := [
 ## back to PLACEHOLDER_SCENE.
 const MINIGAME_SCENES := {
 	"fill_kettle": preload("res://scenes/minigames/fill_kettle.tscn"),
+	"add_lme":     preload("res://scenes/minigames/pour_lme.tscn"),
 }
 
 @onready var _recipe_title: Label = %RecipeTitle

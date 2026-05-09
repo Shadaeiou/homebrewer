@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.2.55",
+    "date": "2026-05-09",
+    "bullets": [
+      "New mini-game: Pour LME (the Add malt extract stage). The order matters — turn burner OFF, start stirring, THEN pour. Get it wrong and you'll scorch the kettle. Watch for the colored result line for 1.5 seconds before the stage advances so you can see what happened.",
+      "Optional toggles (Read recipe aloud, Pre-warm LME tin) raise your care factor without changing the procedure."
+    ]
+  },
+  {
     "version": "0.2.54",
     "date": "2026-05-09",
     "bullets": [
