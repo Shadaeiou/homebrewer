@@ -95,15 +95,6 @@ flat = true
 modulate = Color(0.95, 0.91, 0.84, 0.85)
 theme_override_font_sizes/font_size = 13
 
-[node name="JournalButton" type="Button" parent="Hud/HudIcons"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(64, 40)
-layout_mode = 2
-text = "Journal"
-flat = true
-modulate = Color(0.95, 0.91, 0.84, 0.85)
-theme_override_font_sizes/font_size = 13
-
 [node name="RestButton" type="Button" parent="Hud/HudIcons"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(64, 40)

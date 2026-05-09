@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.2.77",
+    "date": "2026-05-09",
+    "bullets": [
+      "Sink-base cabinet redrawn as a real double-door — two narrow doors directly under the basin, knobs on the inner edges so the doors swing outward from the center seam. Adjacent cabinets keep their standard 24\" doors with knobs on the seam edges.",
+      "The brewing journal is now a physical green leather notebook sitting on the bottling table. Tap it to read entries, log sessions, and (eventually) flip through discovered recipes. The HUD Journal button is gone; the journal travels with you in the apartment, not in a menu.",
+      "Inventory now tracks owned equipment (kettle, fermenter, bottling bucket, capper, auto-siphon) alongside ingredients. A new station-picker modal opens when you tap the sink with no brew in progress: it lists which of your equipment fits there. Pick the kettle to start a fresh brew. Same picker pattern will roll out to the stove and bottling table as those mini-games graphify.",
+      "EquipmentDefs registers each piece with its display name, hint, and which stations it's compatible with — the source of truth the picker reads from."
+    ]
+  },
+  {
     "version": "0.2.76",
     "date": "2026-05-09",
     "bullets": [

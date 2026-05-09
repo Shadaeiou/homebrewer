@@ -26,6 +26,11 @@ const TASTING_SCENE          := preload("res://scenes/minigames/tasting.tscn")
 const JOURNAL_SCENE          := preload("res://scenes/journal.tscn")
 const PHONE_OVERLAY_SCENE    := preload("res://scenes/phone/phone_overlay.tscn")
 const CHECK_FERMENTER_MODAL  := preload("res://scenes/modals/check_fermenter.tscn")
+const STATION_PICKER_MODAL   := preload("res://scenes/modals/station_picker.tscn")
+
+## Pseudo-station-ID used internally by the journal hotspot. Negative so
+## it can't collide with a real Apartment2D station enum value.
+const JOURNAL_STATION_ID: int = -100
 
 const STARTER_RECIPE_ID := "apartment_pale_ale"
 const PAN_THRESHOLD: float = 8.0  # Pixels of motion before we treat the press as a pan, not a tap.
@@ -36,7 +41,6 @@ const PAN_THRESHOLD: float = 8.0  # Pixels of motion before we treat the press a
 @onready var _morning_summary: Label = %MorningSummary
 @onready var _action_prompt: Label = %ActionPrompt
 @onready var _phone_button: Button = %PhoneButton
-@onready var _journal_button: Button = %JournalButton
 @onready var _rest_button: Button = %RestButton
 @onready var _version_label: Label = %VersionLabel
 @onready var _update_banner: PanelContainer = %UpdateBanner
@@ -60,7 +64,6 @@ var _did_pan: bool = false
 func _ready() -> void:
 	_version_label.text = Version.full()
 	_phone_button.pressed.connect(_on_phone_pressed)
-	_journal_button.pressed.connect(_on_journal_pressed)
 	_rest_button.pressed.connect(_on_rest_pressed)
 	_dev_reset_button.pressed.connect(func(): _reset_confirm_dialog.popup_centered())
 	_reset_confirm_dialog.confirmed.connect(func(): SaveService.wipe_and_reset())
@@ -111,6 +114,10 @@ func _compute_station_rects() -> void:
 	_station_rects[Apartment2D.STATION_BOTTLING_TABLE] = Rect2(
 		bottling.x - 120, bottling.y - 80, 240, 160,
 	)
+	# Journal sits on the bottling table — its own hotspot, takes
+	# priority over the bottling-table hotspot since it overlaps.
+	var jr: Rect2 = _apartment.journal_rect_world()
+	_station_rects[JOURNAL_STATION_ID] = jr.grow(8.0)
 
 # ---- Camera placement & pan ----
 
@@ -163,8 +170,14 @@ func _on_viewport_gui_input(event: InputEvent) -> void:
 
 func _handle_tap(viewport_pos: Vector2) -> void:
 	# Convert viewport coord to apartment-local coord, hit-test stations.
+	# Check the journal first since it overlaps the bottling-table rect.
 	var local: Vector2 = viewport_pos - _apartment.position
+	if _station_rects.has(JOURNAL_STATION_ID) and _station_rects[JOURNAL_STATION_ID].has_point(local):
+		_on_journal_tapped()
+		return
 	for station in _station_rects.keys():
+		if int(station) == JOURNAL_STATION_ID:
+			continue
 		var rect: Rect2 = _station_rects[station]
 		if rect.has_point(local):
 			_on_station_tapped(int(station))
@@ -173,7 +186,7 @@ func _handle_tap(viewport_pos: Vector2) -> void:
 func _on_station_tapped(station: int) -> void:
 	match station:
 		Apartment2D.STATION_SINK:
-			_on_kettle_tapped()
+			_on_sink_tapped()
 		Apartment2D.STATION_CLOSET:
 			_on_closet_tapped()
 		Apartment2D.STATION_STOVE:
@@ -183,15 +196,27 @@ func _on_station_tapped(station: int) -> void:
 
 # ---- Per-station behavior ----
 
-func _on_kettle_tapped() -> void:
+func _on_sink_tapped() -> void:
+	# Resume an in-flight brew without prompting — that's the natural
+	# direct continuation. Otherwise open the inventory picker so the
+	# player chooses what to put in the basin.
 	var resumable: Dictionary = _find_brew_in_stage(BrewState.STAGE_BREWING_DAY)
 	if not resumable.is_empty():
 		_open_brewing_day(String(resumable.get("brew_id", "")))
 		return
 	var issues: Array = GameState.start_brewing_issues(STARTER_RECIPE_ID)
 	if not issues.is_empty():
+		# Don't even open the picker — the player can't act yet.
 		_render_action_prompt()
 		return
+	_open_picker_for(Apartment2D.STATION_SINK, "What goes in the sink?",
+		_on_sink_item_picked)
+
+func _on_sink_item_picked(equipment_id: String) -> void:
+	if equipment_id == "kettle_5gal":
+		_start_new_brew()
+
+func _start_new_brew() -> void:
 	var recipe: RecipeDef = load("res://data/recipes/%s.tres" % STARTER_RECIPE_ID)
 	var brew_id: String = GameState.make_brew_id()
 	var seed: int = int(GameState.data.get("rng_state", {}).get("next_brew_seed", 0))
@@ -202,6 +227,15 @@ func _on_kettle_tapped() -> void:
 	GameState.data["brews_in_flight"].append(brew)
 	GameState.data["rng_state"]["next_brew_seed"] = randi()
 	_open_brewing_day(brew_id)
+
+func _open_picker_for(station: int, title: String, on_picked: Callable) -> void:
+	var main := get_tree().root.get_node_or_null("Main")
+	if main == null or not main.has_method("push_modal"):
+		return
+	main.push_modal(STATION_PICKER_MODAL, func(inst):
+		inst.station = station
+		inst.title_text = title
+		inst.item_picked.connect(on_picked))
 
 func _on_closet_tapped() -> void:
 	var brew: Dictionary = _find_brew_in_stage(BrewState.STAGE_FERMENTING)
@@ -216,13 +250,16 @@ func _on_closet_tapped() -> void:
 		main.push_modal(CHECK_FERMENTER_MODAL, func(inst): inst.brew_id = brew_id)
 
 func _on_stove_tapped() -> void:
-	# v1: the stove is part of the brewing-day scene (Pour LME, boil with
-	# hops). Outside a brew, tapping it doesn't do anything yet — say so.
 	var resumable: Dictionary = _find_brew_in_stage(BrewState.STAGE_BREWING_DAY)
 	if not resumable.is_empty():
 		_open_brewing_day(String(resumable.get("brew_id", "")))
 		return
 	_action_prompt.text = "Stove's cold. Start a brew at the kettle first."
+
+func _on_journal_tapped() -> void:
+	var main := get_tree().root.get_node_or_null("Main")
+	if main and main.has_method("mount_active_scene"):
+		main.mount_active_scene(JOURNAL_SCENE)
 
 func _on_bottling_table_tapped() -> void:
 	# v1: bottling happens through the closet's "Check fermenter" modal
@@ -356,11 +393,6 @@ func _brew_name(brew: Dictionary) -> String:
 
 func _on_rest_pressed() -> void:
 	TimeService.advance_day()
-
-func _on_journal_pressed() -> void:
-	var main := get_tree().root.get_node_or_null("Main")
-	if main and main.has_method("mount_active_scene"):
-		main.mount_active_scene(JOURNAL_SCENE)
 
 func _on_phone_pressed() -> void:
 	var main := get_tree().root.get_node_or_null("Main")

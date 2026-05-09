@@ -184,6 +184,11 @@ func _draw() -> void:
 	# Bottling table (free-standing furniture left of counter).
 	_draw_bottling_table()
 
+	# The brewer's journal sits on the bottling table — a physical
+	# notebook the player taps to read entries. Positioned where it
+	# wouldn't get knocked off during bottling work.
+	_draw_journal_notebook()
+
 	# Stove (right of counter).
 	_draw_stove(840.0)
 
@@ -199,22 +204,68 @@ func _draw_counter_strip(x_left: float, x_right: float) -> void:
 	var top := Rect2(x_left, COUNTER_Y, x_right - x_left, top_thickness)
 	draw_rect(top, Palette.WOOD_MID)
 	draw_rect(Rect2(top.position, Vector2(top.size.x, 1)), Palette.WOOD_LIGHT)
-	# Cabinet face below the counter (36" = 144 px).
+	# Cabinet face below the counter (36" = 144 px tall).
 	var cab_top: float = COUNTER_Y + top_thickness
 	var cab := Rect2(x_left, cab_top, x_right - x_left, FLOOR_Y - cab_top)
 	draw_rect(cab, Palette.WOOD_DARK)
-	# Cabinet door cuts at every 24" of counter width.
+	# Knob row sits 6" below the counter.
+	var knob_y: float = cab_top + 6.0 * PX_PER_INCH
+
+	# Sink-base cabinet — two narrow doors (12" each) directly under the
+	# basin, knobs on the inner edges (doors swing outward).
+	var sink_cx: float = STATION_X[STATION_SINK]
+	var sink_door_w: float = 12.0 * PX_PER_INCH  # 48
+	var sink_doors_left: float = sink_cx - sink_door_w
+	var sink_doors_right: float = sink_cx + sink_door_w
+	# Vertical separators bounding the sink-base unit.
+	for sep_x in [sink_doors_left, sink_cx, sink_doors_right]:
+		draw_line(
+			Vector2(sep_x, cab_top + 4),
+			Vector2(sep_x, FLOOR_Y - 4),
+			Color(0, 0, 0, 0.55), 2.0,
+		)
+	# Knobs on the INNER edges, 1.5" from the center seam.
+	var knob_inset: float = 1.5 * PX_PER_INCH  # 6 px from center seam
+	draw_circle(Vector2(sink_cx - knob_inset, knob_y), 2.5, Palette.BRASS_LIGHT)
+	draw_circle(Vector2(sink_cx + knob_inset, knob_y), 2.5, Palette.BRASS_LIGHT)
+
+	# Adjacent cabinets to the LEFT of the sink-base — fill with 24"-wide
+	# doors as much as fits, knobs on the inner edge of each door.
 	var door_w: float = 24.0 * PX_PER_INCH
-	var x: float = x_left + door_w
-	while x < x_right - 8.0:
+	var x: float = sink_doors_left - door_w
+	while x > x_left + 4.0:
 		draw_line(
 			Vector2(x, cab_top + 4),
 			Vector2(x, FLOOR_Y - 4),
 			Color(0, 0, 0, 0.55), 2.0,
 		)
-		# Tiny knob 6" below the counter.
-		draw_circle(Vector2(x - 14, cab_top + 6.0 * PX_PER_INCH), 2.5, Palette.BRASS_LIGHT)
+		# Knob near the door's right edge (so the door opens to the LEFT,
+		# away from the sink). Inset 4" from the seam on the right side.
+		draw_circle(Vector2(x + door_w - 4.0 * PX_PER_INCH, knob_y), 2.5, Palette.BRASS_LIGHT)
+		x -= door_w
+	# Knob for the left-most door (it might not have its own seam if it
+	# runs into x_left; place it 4" from sink_doors_left looking left).
+	draw_circle(
+		Vector2(sink_doors_left - 4.0 * PX_PER_INCH, knob_y),
+		2.5, Palette.BRASS_LIGHT,
+	)
+
+	# Adjacent cabinets to the RIGHT of the sink-base.
+	x = sink_doors_right + door_w
+	while x < x_right - 4.0:
+		draw_line(
+			Vector2(x, cab_top + 4),
+			Vector2(x, FLOOR_Y - 4),
+			Color(0, 0, 0, 0.55), 2.0,
+		)
+		draw_circle(Vector2(x - door_w + 4.0 * PX_PER_INCH, knob_y), 2.5, Palette.BRASS_LIGHT)
 		x += door_w
+	# Right-most door knob.
+	draw_circle(
+		Vector2(sink_doors_right + 4.0 * PX_PER_INCH, knob_y),
+		2.5, Palette.BRASS_LIGHT,
+	)
+
 	# Counter-cabinet shadow line.
 	draw_line(
 		Vector2(x_left, cab_top),
@@ -346,6 +397,57 @@ func _draw_wall_calendar(top_left: Vector2) -> void:
 			draw_rect(Rect2(px, py, 2, 2), Color(0.30, 0.27, 0.22, 0.85))
 	# Outline.
 	draw_rect(rect, Palette.METAL_OUTLINE, false, 1.0)
+
+## World position of the journal notebook (in apartment-local coords).
+## Dashboard hit-tests against this for the tap-to-open-journal flow.
+const JOURNAL_W: float = 9.0 * PX_PER_INCH   # 36 px (book width)
+const JOURNAL_H: float = 12.0 * PX_PER_INCH  # 48 px (book "depth" on table)
+func journal_rect_world() -> Rect2:
+	# Centered on the bottling table top, sitting on the front-right quadrant.
+	var bottling: Vector2 = station_anchor(STATION_BOTTLING_TABLE)
+	var top_y: float = FLOOR_Y - 30.0 * PX_PER_INCH  # bottling table top y
+	# Place the journal slightly back-right of the table center so it
+	# doesn't crowd the working space players use during bottling.
+	var x: float = bottling.x + 30.0
+	var y: float = top_y - 4.0  # sits on the tabletop with a small bevel
+	return Rect2(x - JOURNAL_W * 0.5, y - JOURNAL_H * 0.5, JOURNAL_W, JOURNAL_H)
+
+func _draw_journal_notebook() -> void:
+	var rect: Rect2 = journal_rect_world()
+	# Drop shadow under the notebook.
+	draw_rect(
+		Rect2(rect.position + Vector2(2, 3), rect.size),
+		Color(0, 0, 0, 0.45),
+	)
+	# Cover (forest-green leather).
+	var cover: Color = Color(0.18, 0.30, 0.22, 1)
+	draw_rect(rect, cover)
+	# Cover lit edge (top + left).
+	draw_rect(Rect2(rect.position, Vector2(rect.size.x, 2)), Color(0.32, 0.46, 0.34, 1))
+	draw_rect(Rect2(rect.position, Vector2(2, rect.size.y)), Color(0.28, 0.40, 0.30, 1))
+	# Spine binding strip on the left (slightly darker stripe).
+	draw_rect(
+		Rect2(rect.position + Vector2(4, 4), Vector2(3, rect.size.y - 8)),
+		Color(0.10, 0.18, 0.13, 1),
+	)
+	# Page edges showing on the right side (tan stripe).
+	draw_rect(
+		Rect2(rect.position + Vector2(rect.size.x - 3, 4), Vector2(3, rect.size.y - 8)),
+		Color(0.92, 0.86, 0.72, 1),
+	)
+	# Title impression on cover (faint gold rectangle).
+	var title_rect := Rect2(
+		rect.position + Vector2(rect.size.x * 0.25, rect.size.y * 0.30),
+		Vector2(rect.size.x * 0.55, 4),
+	)
+	draw_rect(title_rect, Palette.BRASS_LIGHT)
+	# Bookmark ribbon dangling off the bottom.
+	draw_rect(
+		Rect2(rect.position + Vector2(rect.size.x * 0.6, rect.size.y - 2), Vector2(3, 8)),
+		Color(0.78, 0.20, 0.20, 1),
+	)
+	# Outline.
+	draw_rect(rect, Color(0, 0, 0, 0.6), false, 1.0)
 
 func _draw_baseboard() -> void:
 	# Baseboard runs along the visible wall gaps just above floor: 4" tall.

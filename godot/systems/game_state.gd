@@ -175,6 +175,14 @@ func _initial_inventory() -> Dictionary:
 			"dish_soap": {"qty": 1, "unit": "bottle"},
 			"sponge":    {"qty": 1, "unit": "piece"},
 		},
+		"equipment": {
+			"kettle_5gal":      {"qty": 1},
+			"fermenter_bucket": {"qty": 1},
+			"bottling_bucket":  {"qty": 1},
+			"bottle_capper":    {"qty": 1},
+			"auto_siphon":      {"qty": 1},
+		},
+		"journal": {"owned": true},
 	}
 
 func _initial_recipe_knowledge() -> Dictionary:
