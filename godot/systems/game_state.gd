@@ -245,6 +245,38 @@ func start_brewing_issues(recipe_id: String) -> Array:
 			issues.append("Need yeast")
 	return issues
 
+const BOTTLES_PER_BATCH := 24  ## Per 4.2: 5gal APA fills exactly 24 12oz bottles.
+
+func bottling_issues(brew_id: String) -> Array:
+	## Returns blockers preventing bottling this brew right now. Per 4.2:
+	## "Running low on bottles surfaces a soft cue in the morning summary;
+	## hitting zero hard-blocks the next bottling until the player frees
+	## some up." This is the hard-block.
+	var issues: Array = []
+	var brew: Dictionary = {}
+	for b in data.get("brews_in_flight", []):
+		if String(b.get("brew_id", "")) == brew_id:
+			brew = b
+			break
+	if brew.is_empty():
+		issues.append("Brew not found")
+		return issues
+	if String(brew.get("stage", "")) != BrewState.STAGE_FERMENTING:
+		issues.append("Brew isn't fermenting")
+		return issues
+	var snap: Dictionary = brew.get("recipe_snapshot", {})
+	var elapsed: int = int(brew.get("days_elapsed_in_stage", 0))
+	if elapsed < int(snap.get("fermentation_days", 5)):
+		issues.append("Fermentation isn't done yet")
+		return issues
+	var bottles: Dictionary = data.get("inventory", {}).get("bottles", {})
+	var available: int = int(bottles.get("available", 0))
+	if available < BOTTLES_PER_BATCH:
+		issues.append("Need %d bottles — only %d free. Taste a conditioning brew to drink some down." % [
+			BOTTLES_PER_BATCH, available
+		])
+	return issues
+
 func make_brew_id() -> String:
 	## Stable, unique brew id. Time-based; collisions only on sub-millisecond
 	## double-fires which the UI prevents anyway.

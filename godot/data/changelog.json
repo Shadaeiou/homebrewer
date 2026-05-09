@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.2.66",
+    "date": "2026-05-09",
+    "bullets": [
+      "Fixed: bottling didn't check whether you actually had bottles. You could complete a 1st brew → leave it in conditioning → finish a 2nd brew → tap Bottle this brew with 0 free bottles, and the 2nd brew silently advanced to conditioning anyway. Now Bottle this brew is disabled in the Check fermenter modal until you have 24 free bottles, with a hint that says to taste a conditioning brew first to free them up.",
+      "If you somehow get past the modal (direct route-in, future affordances), the bottling scene's Confirm hard-aborts back to the dashboard rather than transitioning the brew."
+    ]
+  },
+  {
     "version": "0.2.65",
     "date": "2026-05-09",
     "bullets": [

@@ -120,6 +120,15 @@ func _carbonation_factor() -> float:
 		_:            return 1.0
 
 func _on_confirm_pressed() -> void:
+	# Defensive: the modal disables this path when bottles are short, but
+	# direct route-in (or future affordances) might land here without that
+	# check. Hard-abort + return to dashboard with state untouched.
+	var issues: Array = GameState.bottling_issues(brew_id)
+	if not issues.is_empty():
+		push_warning("[bottling] aborted: %s" % str(issues))
+		_return_to_dashboard()
+		return
+
 	var taken_ids: Array = []
 	for id in _options:
 		if _options[id].button_pressed:

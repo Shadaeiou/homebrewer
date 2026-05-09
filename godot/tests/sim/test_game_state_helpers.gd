@@ -97,6 +97,44 @@ func test_day_advance_ticks_conditioning_brew_days_elapsed() -> void:
 	GameState._on_day_advanced(2)
 	assert_eq(int(GameState.data["brews_in_flight"][0]["days_elapsed_in_stage"]), 2)
 
+func _ready_to_bottle_brew() -> String:
+	var recipe: RecipeDef = load("res://data/recipes/apartment_pale_ale.tres")
+	var b := BrewState.make_new("brew_b1", "apartment_pale_ale", recipe.to_snapshot(), 0, 1)
+	b["stage"] = BrewState.STAGE_FERMENTING
+	b["days_elapsed_in_stage"] = 5
+	GameState.data["brews_in_flight"].append(b)
+	return "brew_b1"
+
+func test_bottling_issues_empty_when_ready_and_bottles_available() -> void:
+	var bid := _ready_to_bottle_brew()
+	# Fresh career has 24 bottles available.
+	var issues: Array = GameState.bottling_issues(bid)
+	assert_eq(issues.size(), 0)
+
+func test_bottling_issues_blocks_when_bottles_short() -> void:
+	# A brew already in conditioning has all 24 bottles in_use; trying
+	# to bottle a second batch should fail with a clear "need 24" hint.
+	var bid := _ready_to_bottle_brew()
+	GameState.data["inventory"]["bottles"] = {"available": 0, "in_use": 24}
+	var issues: Array = GameState.bottling_issues(bid)
+	assert_true(issues.size() >= 1)
+	assert_string_contains(String(issues[0]), "Need 24 bottles")
+
+func test_bottling_issues_blocks_when_fermentation_incomplete() -> void:
+	var recipe: RecipeDef = load("res://data/recipes/apartment_pale_ale.tres")
+	var b := BrewState.make_new("brew_b2", "apartment_pale_ale", recipe.to_snapshot(), 0, 1)
+	b["stage"] = BrewState.STAGE_FERMENTING
+	b["days_elapsed_in_stage"] = 2  # not done yet
+	GameState.data["brews_in_flight"].append(b)
+	var issues: Array = GameState.bottling_issues("brew_b2")
+	assert_true(issues.size() >= 1)
+	assert_string_contains(String(issues[0]), "Fermentation")
+
+func test_bottling_issues_blocks_unknown_brew() -> void:
+	var issues: Array = GameState.bottling_issues("brew_does_not_exist")
+	assert_true(issues.size() >= 1)
+	assert_string_contains(String(issues[0]), "not found")
+
 func test_make_brew_id_unique_within_test() -> void:
 	# Time.get_ticks_msec advances monotonically; consecutive calls in the
 	# same frame may return the same value, so we just check non-empty +

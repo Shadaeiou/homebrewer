@@ -67,6 +67,15 @@ func _render() -> void:
 				_action_kind = "bottle"
 				_action_button.text = "Bottle this brew"
 				_action_button.visible = true
+				# Bottle availability is a hard-block per 4.2. Surface
+				# the reason inline so the player isn't left guessing.
+				var issues: Array = GameState.bottling_issues(brew_id)
+				if not issues.is_empty():
+					_action_button.disabled = true
+					_observation_label.text += "\n\n%s" % " ".join(
+						issues.map(func(s): return String(s)))
+				else:
+					_action_button.disabled = false
 			else:
 				_action_button.visible = false
 		BrewState.STAGE_BOTTLED_CONDITIONING:
