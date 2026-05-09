@@ -33,7 +33,7 @@ class_name Apartment2D
 const PX_PER_INCH: float = 4.0
 const PX_PER_FOOT: float = 48.0
 
-const PANORAMA_W: float = 1560.0
+const PANORAMA_W: float = 1620.0
 const PANORAMA_H: float = 620.0
 const FLOOR_Y: float = 540.0
 ## Counter top sits 36" above the floor (standard US kitchen counter).
@@ -52,12 +52,13 @@ const STATION_DECOR: int = 4
 const STATION_BED: int = 5
 const STATION_FRONT_DOOR: int = 6
 
-## Layout: front door at far left, then closet, bottling table, kitchen
-## counter (sink+stove), window/decor wall, bed at the right end. The
-## front door is visually distinct from the closet so it's obvious which
-## is the way out. Closet is shifted right of the front door so their
-## casings don't touch.
-const STATION_X: PackedFloat32Array = [264.0, 480.0, 720.0, 960.0, 1200.0, 1440.0, 120.0]
+## Layout: front door (far left, way out), bare wall, bottling table,
+## kitchen counter (sink+stove), bedroom wall (window above bed at same
+## cx), closet at the far right (storage). Front door and closet are at
+## opposite ends of the apartment so they're not next to each other.
+##
+## Indices:    closet, bottling, sink, stove,  decor,  bed,    front_door
+const STATION_X: PackedFloat32Array = [1500.0, 480.0, 720.0, 960.0, 1200.0, 1200.0, 120.0]
 
 ## Station counter-top y — where equipment naturally sits.
 func station_anchor(station: int) -> Vector2:
@@ -173,9 +174,10 @@ func _draw() -> void:
 	# shelf (which holds the journal).
 	_draw_wall_clock(Vector2(1080.0, COUNTER_Y - 36.0 * PX_PER_INCH))
 
-	# Wall calendar — on the same wall as the bottling-table shelf, but
-	# UP near the ceiling so it doesn't overlap the shelf or journal.
-	_draw_wall_calendar(Vector2(450.0, COUNTER_Y - 56.0 * PX_PER_INCH))
+	# Wall calendar — BELOW the bottling-table shelf, between the shelf
+	# and the table top. Centered on the bottling-table x.
+	_draw_wall_calendar(Vector2(STATION_X[STATION_BOTTLING_TABLE] - 28.0,
+		COUNTER_Y - 32.0 * PX_PER_INCH))
 
 	# Window on the decor wall (sill above counter).
 	_draw_window(STATION_X[STATION_DECOR])
@@ -222,10 +224,10 @@ func _draw_counter_strip(x_left: float, x_right: float) -> void:
 	var cab_top: float = COUNTER_Y + top_thickness
 	var cab := Rect2(x_left, cab_top, x_right - x_left, FLOOR_Y - cab_top)
 	draw_rect(cab, Palette.WOOD_DARK)
-	# Knob row sits ~halfway down the cabinet door (cabinet face is ~36"
-	# tall; placing knobs at counter-top level reads stylized but feels
-	# wrong — center of the door reads more natural).
-	var knob_y: float = cab_top + 18.0 * PX_PER_INCH
+	# Knob row 3" below the counter, near the top of the cabinet door
+	# (real base-cabinet knobs sit close to the top edge for hand reach;
+	# centered on the door reads as a button-on-a-door, not a knob).
+	var knob_y: float = cab_top + 3.0 * PX_PER_INCH
 
 	# Sink-base cabinet — two narrow doors (12" each) directly under the
 	# basin, knobs on the inner edges (doors swing outward).
@@ -616,13 +618,15 @@ func _draw_baseboard() -> void:
 	var bb_h: float = 4.0 * PX_PER_INCH  # 16 px
 	var bb_y: float = FLOOR_Y - bb_h
 	# Visible wall segments (everywhere NOT covered by furniture/closet):
-	# Front door + doormat at 48-192 (cx 120, casing+door=144, mat=144),
-	# closet at 200-328, bottling table at 360-600, counter+stove at
-	# 600-1020, bed at 1320-1560. Visible wall gaps:
+	# Layout: front door 48-192, bottling table 360-600, counter+stove
+	# 600-1020, bed 1080-1320, closet 1436-1564. Visible wall gaps where
+	# the baseboard runs along the floor:
 	var segments := [
-		Rect2(192, bb_y, 8, bb_h),      # tiny strip front-door → closet
-		Rect2(328, bb_y, 32, bb_h),     # closet → bottling table
-		Rect2(1020, bb_y, 300, bb_h),   # right of stove → bed
+		Rect2(0, bb_y, 48, bb_h),       # left of front door
+		Rect2(192, bb_y, 168, bb_h),    # front door → bottling table
+		Rect2(1020, bb_y, 60, bb_h),    # stove → bed
+		Rect2(1320, bb_y, 116, bb_h),   # bed → closet
+		Rect2(1564, bb_y, 56, bb_h),    # right of closet → end
 	]
 	for seg in segments:
 		draw_rect(seg, Palette.WOOD_DARK)

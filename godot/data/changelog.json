@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.2.81",
+    "date": "2026-05-09",
+    "bullets": [
+      "Apartment layout reorganized: front door at the far left (cx 120), bottling table (with shelf + journal + calendar above) at cx 480, kitchen counter + sink + stove at 600-1020, bed UNDER the window at cx 1200, closet at the far right at cx 1500. Front door and closet are now at opposite ends of the apartment so they're not adjacent.",
+      "Window sits directly above the bed — bedroom layout. Headboard tower at the left end of the bed reaches up under the window without overlapping it.",
+      "Calendar moved BELOW the bookshelf instead of above. Stack on the bottling-table wall is now: shelf with journal → calendar → bottling table on the floor. Same x for all three.",
+      "Lower cabinet door knobs moved to near the top of the door (3\" below the counter seam), where real base-cabinet knobs sit. They were rendering at the center of the door, which read as buttons-on-a-door instead of knobs.",
+      "Panorama widened to 1620 px to fit the bed + closet on the right end. Pan camera further right to see the closet."
+    ]
+  },
+  {
     "version": "0.2.80",
     "date": "2026-05-09",
     "bullets": [
