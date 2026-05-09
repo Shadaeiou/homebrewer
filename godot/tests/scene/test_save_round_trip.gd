@@ -73,6 +73,25 @@ func test_save_round_trip_is_idempotent() -> void:
 	var second_dict := _parse(_serialize())
 	assert_eq(first_dict, second_dict, "round-trip must be a fixed point")
 
+func test_day_clock_persists_through_round_trip() -> void:
+	# Get-some-rest taps must not vanish on relaunch. The day clock now
+	# rides on data["player_meta"]["day_clock"]; advance_day mirrors the
+	# runtime clock into it so save_now picks it up.
+	for _i in range(7):
+		TimeService.advance_day()
+	var loaded := _parse(_serialize())
+	assert_eq(int(loaded["player_meta"]["day_clock"]), 7)
+	# Round trip into a fresh state — adopt() should restore TimeService.
+	GameState.adopt(loaded)
+	assert_eq(TimeService.day_clock, 7,
+		"adopt() must restore TimeService.day_clock from player_meta")
+
+func test_adopt_defaults_missing_day_clock_to_zero() -> void:
+	# A pre-day_clock save (no field at all) shouldn't crash; default 0.
+	var stale := {"player_meta": {"save_format_version": 2}}
+	GameState.adopt(stale)
+	assert_eq(TimeService.day_clock, 0)
+
 func test_save_round_trip_preserves_six_skill_axes() -> void:
 	var loaded := _parse(_serialize())
 	for axis in ["sanitation", "temp_control", "timing", "process", "palate", "water_chem"]:

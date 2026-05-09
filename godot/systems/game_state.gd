@@ -49,6 +49,7 @@ func reset_to_new_career(destination_id: String = "home_town") -> void:
 	data = {
 		"player_meta": {
 			"save_format_version": SAVE_FORMAT_VERSION,
+			"day_clock": 0,                    # Persisted day count per 4.1.
 			"prestige_count": 0,
 			"current_destination_id": destination_id,
 			"settings": {
@@ -95,6 +96,7 @@ func reset_to_new_career(destination_id: String = "home_town") -> void:
 	}
 	# Sync the day clock — fresh career starts at day 0.
 	TimeService.day_clock = 0
+	data["player_meta"]["day_clock"] = 0
 	notify_state_loaded()
 
 func adopt(loaded_data: Dictionary) -> void:
@@ -104,10 +106,13 @@ func adopt(loaded_data: Dictionary) -> void:
 	## (bootstrap reseed, etc.) is done — UI consumers must render against
 	## fully-migrated state, not the raw load.
 	data = loaded_data
-	# Sync the day clock from the save's record. The save format doesn't store
-	# day_clock directly today — it's implicit in brew/calendar state — so we
-	# default to 0. When a v2 save format adds it, change here.
-	TimeService.day_clock = 0
+	# Pull day_clock back out of the save. Older saves that predate the
+	# day_clock field default to 0 — better than rolling back to Day 0
+	# silently, but a player with a stale save will simply restart at the
+	# day they last saved (which is their last "Get some rest" tap).
+	if not data.has("player_meta"):
+		data["player_meta"] = {}
+	TimeService.day_clock = int(data["player_meta"].get("day_clock", 0))
 
 func notify_state_loaded() -> void:
 	## Emit `state_loaded` so UI re-renders against the current data. Split
@@ -238,4 +243,10 @@ func make_brew_id() -> String:
 	return "brew_%d" % Time.get_ticks_msec()
 
 func _on_day_advanced(new_day: int) -> void:
+	# Mirror the runtime clock into persisted state so the next save captures
+	# the new day. SaveService also auto-saves on day_advanced; the order is:
+	# TimeService increments → fires day_advanced → we update player_meta →
+	# SaveService.save_now writes with the new day_clock baked in.
+	if data.has("player_meta"):
+		data["player_meta"]["day_clock"] = new_day
 	day_advanced.emit(new_day)

@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.2.53",
+    "date": "2026-05-09",
+    "bullets": [
+      "Fixed: the day counter resets to Day 0 every relaunch instead of remembering how many days you've slept through. The day clock now rides in the save file and gets restored on load. (Older saves that predate this field default to Day 0 — only the next session forward will start tracking.)"
+    ]
+  },
+  {
     "version": "0.2.52",
     "date": "2026-05-09",
     "bullets": [
