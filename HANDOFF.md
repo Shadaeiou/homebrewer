@@ -2,31 +2,30 @@
 
 This file is the current working state. Read this first, then [`DESIGN.md`](DESIGN.md), then [`CLAUDE.md`](CLAUDE.md), then continue.
 
-If you're a fresh Claude or you're picking this up a week from when it was written: **the design spec is locked, the architecture skeleton is committed, but no playable brewing flow exists yet.** Your job is to build mini-games and supporting scenes against the contract in DESIGN.md Section 7 + 8.
+## Status (2026-05-09, post-0.2.68)
 
-## Where we are
+The full apartment-pale-ale **gameplay loop is reachable end-to-end** in form-style placeholder UIs. Steps 1–9 of the original build sequence are landed; Step 10 is partially landed; Step 11 is parked. The current priority is **Step 12 — real mini-games with graphics** (added below).
 
-- **Spec** (`DESIGN.md`): Sections 0–4, 7, 8, plus Appendices A and B are locked. Sections 5 (Economy), 6 (UX/UI), 9 (Mini-Game Build Plan) are deferred per the doc's own register; numbers in those sections are best resolved during playtest with running code.
-- **Code skeleton at HEAD:**
-  - Autoloads: `TimeService` (two clocks per 4.1), `GameState` (fat persistent tree per 7.1 + 8.1), `SaveService` (atomic JSON main + JSONL journal per 8.5).
-  - Scene graph: `Main.tscn` hosts `BackgroundLayer` (with `Dashboard.tscn`), `ActiveSceneContainer` (empty), `PhoneLayer`, `ModalLayer` per 7.2.
-  - Sim engine pure-data layer in `godot/scripts/sim/`: `Drift`, `Grader`, `RiskProfile`, `SkillXP`, `CareFactor`, `BrewState`, `CalendarSurface`. No consumers yet.
-  - Dashboard is minimal: title, day counter, cash + bottles readout, "Get some rest" button (advances day clock + auto-saves), version + changelog.
-- **What is intentionally NOT yet built:**
-  - No brewing flow. No mini-games. No active scenes mount under `ActiveSceneContainer` yet.
-  - No static content Resources. `res://data/recipes/`, `res://data/equipment/`, `res://data/styles/`, `res://data/npcs/`, `res://data/water_profiles/`, `res://data/content/` are unpopulated.
-  - No tests. GUT is not vendored.
-  - No phone, no calendar UI, no NPC text threads.
+**What's playable now:**
+- Phone overlay → Shop → buy ingredients with $30 against $51 list (canonical Appendix A trade-off).
+- Dashboard → Today checklist + morning summary; tap brew row → Check fermenter modal.
+- Start brewing → walk seven brewing-day stages (sanitize, fill kettle, heat placeholder, add LME, boil with hops, cool wort, transfer + pitch) → fermenting → bottle (24-bottle hard-block) → conditioning → pour & taste → grades + journal entry.
+- Brewery journal viewer.
+- Phone Messages with the Marcus cold-open thread + recipe card.
+- Save migration v1→v2; day_clock persists; dev "Reset save" button on the dashboard.
+- 133 GUT tests / 383 asserts green. 13 screenshot captures verified.
+
+**What's NOT real yet:**
+- Every brewing-day mini-game is a **form**, not a real mini-game. Radio buttons + checkboxes that satisfy the math contract (`Outcome` dict — actual / care / risk / xp / journal_notes / skill_snapshot) but not the gestures, timing, or visuals from DESIGN.md 3.9. **This is what Step 12 fixes.**
+- No anomalies / cleanliness state machine / equipment scheduling (Step 11).
+- No Forum / News / Calendar phone apps (Step 10 leftover).
+- No commitments (Marcus's party deadline, Mom's stout, etc).
+- No inventory consumption — one Shop trip carries arbitrarily many brews.
+- Only one recipe (Apartment Pale Ale). West Coast IPA + Dry Stout per 3.8 are unbuilt; the recipe-driven prereq walker (0.2.68) is ready to handle them.
 
 ## Verification status
 
-The previous session was running in an environment without a `godot` binary, so:
-
-- The architecture skeleton commit (`f03e105`) was **not validated locally** by `scripts/dev-check.sh`. GDScript parse errors are possible.
-- Screenshot harness was rewritten but **not run**. No fresh `screenshots/main.png`.
-- No tests exist to fail/pass; nothing has been exercised.
-
-**First thing to do before building anything new: pull, run `scripts/dev-check.sh`, eyeball `screenshots/main.png`, fix anything that errors.**
+`scripts/dev-check.sh` exits clean (Godot 4.6.2 import + 133/133 GUT tests + 13 screenshot captures). Run on Windows via the `godot` shim in `~/bin`; the Linux/CI path wraps in Xvfb. Screenshots in `screenshots/` reflect current state of every scene that matters.
 
 ## Build sequence
 
@@ -156,6 +155,36 @@ This is when DESIGN.md 5 (Economy) and 6 (UX/UI) start needing real numbers and 
 
 The cleanliness state machine and anomaly generation are gating later mini-games (the cold-spot day from Appendix B Day 2 needs `ContentPool` + anomaly seeds wired to the calendar). Spec these out *before* implementing the fermentation rhythm in step 10.
 
+### 12. Real mini-games — replace the form-style placeholders
+
+**Highest current priority.** The form-style mini-games shipped 0.2.32–0.2.67 satisfy the `Outcome` math contract but are nothing like the four shapes from DESIGN.md 3.9 — they're radio buttons and checkboxes. Each form has a real-graphics commit pending. The Outcome contract stays unchanged across the swap; only the input affordance + visuals change.
+
+**The "render pipeline" is Claude.** Per the `homebrewer_assets.md` memory: physical-scene art (kitchen, kettle, fermenter, faucet, water, foam, scorch, krausen) is built procedurally in Godot — `Polygon2D` + `Line2D` + `_draw()` overrides + `Tween` / `AnimationPlayer` + shaders. The kept POC files are reference: `scripts/lib/draw_helpers.gd`, `scripts/icons/procedural_*.gd`, `systems/palette.gd`, `systems/lighting.gd`, `scenes/components/post_process.tscn`, `shaders/post_process.gdshader`. Sprite PNGs under `assets/sprites/` are **icons only** — never use them for scene-scale art.
+
+**Order to graphify** (one mini-game per commit; ship + playtest each before moving on):
+
+1. **Fill Kettle** (skill: `process`, shape: skill challenge). Kitchen counter scene with stockpot + faucet (or jug placement). Tap faucet → water stream animation, kettle fills procedurally, water level rises with line marks if pitcher chosen. "Stop" commits actual_volume_gal; quality of stop timing → care factor. Deliverable: visible water in a visible kettle.
+2. **Pour LME** (skill: `process` + `temp_control`, shape: procedure). Stove + kettle on burner. Drag stove dial OFF, drag spoon → kettle (autonomous stir loop kicks in), drag LME tin → kettle (controlled-pour gesture). The spoon stirring loop is the canonical single-touch demo per 3.9. SCORCH visual when player gets the order wrong (kettle darkens, smoke effect).
+3. **Sanitize** (skill: `sanitation`, shape: job execution). Bucket fermenter on the counter. Drag sponge / sanitizer / drip-rack onto the bucket; visible state shifts (USED → SERVICEABLE → CLEAN → SANITIZED rendered as bucket cleanliness sheen).
+4. **Cool Wort** (skill: `temp_control`, shape: decision + skill). Sink with kettle in ice OR fermenter top-off. Real-time temp gauge falls; stir gesture maintains circulation.
+5. **Transfer + Pitch** (skill: `process` + `sanitation`, shape: skill). Drag-pour gesture from kettle to fermenter; pour smoothness scored. Yeast packet sprinkle gesture or rehydrate flow.
+6. **Boil + Hops** (skill: `timing`, shape: mixed timing + decision). The most ambitious — real-time scene over ~30 compressed seconds. Heat dial + visible foam climb + hot break recognition tap + hop drops at scheduled prompts + boil-over response window + flameout. Hooks into TimeService.start_scene + event_pending.
+7. **Bottling**. Priming sugar add → siphon flow → cap-by-cap visual.
+8. **Pour & taste**. Glass pour visual, color/clarity check based on actuals, head retention from carbonation.
+
+**Each mini-game commit ships:**
+- The new scene with procedural art (no sprite assets).
+- Replace the form scene in `MINIGAME_SCENES` registry (or in `dashboard.gd` for bottling/tasting).
+- Tests for the visual scene's gesture → outcome path.
+- A standalone screenshot capture in the harness.
+- A `brewing_day_<stage>.png` composite if the stage lives in brewing-day.
+- Changelog entry — player-visible.
+
+**Scaffolding to land first** (one prep commit before mini-games start):
+- A `kitchen_scene.gd` shared visual root that draws the apartment kitchen background (counter, stove, sink, shelf) procedurally. Each brewing-stage mini-game mounts equipment over this background.
+- A small gesture-quality helper: smoothness + speed + arc scoring for drag inputs. Reusable across pour-style mini-games.
+- A `palette.gd` audit — the kept palette is the source of truth for color choices.
+
 ## Open questions punted to playtest
 
 These have placeholder numbers in DESIGN.md and the code; tune in playtest, don't lock in:
@@ -179,9 +208,9 @@ Per `CLAUDE.md`:
 5. Don't break signing (keystore is irreplaceable).
 6. Don't break the screenshot harness.
 
-## Pushing to main: known issue
+## Pushing to main
 
-The local Claude Code git proxy (`http://local_proxy@127.0.0.1:<port>`) blocks direct `git push origin main` with HTTP 403 due to `CCR_TEST_GITPROXY=1` in the session environment. Workaround: push via the GitHub MCP API tools (`mcp__github__push_files` for creates/updates, `mcp__github__delete_file` for deletes — one call per file, since push_files can't combine deletes). This is annoying and produces multiple remote commits per local commit. Live with it until the platform fixes the proxy default.
+Local Claude on the user's physical PC pushes directly with `git push origin main`. No proxy / no MCP fallback needed in that environment. (Cloud / sandbox sessions may have a 403 proxy issue with `CCR_TEST_GITPROXY=1`; if you hit that, fall back to `mcp__github__push_files` per file.)
 
 ## Things a fresh Claude should NOT do
 
@@ -194,4 +223,4 @@ The local Claude Code git proxy (`http://local_proxy@127.0.0.1:<port>`) blocks d
 
 ## When you finish reading this
 
-Confirm to the user that you're up to speed, then start on step 1 (validate the skeleton). Don't start writing new code until `dev-check.sh` is green.
+Confirm to the user that you're up to speed, then continue on Step 12 (real mini-games). Steps 1–11 are either landed or deprioritized; the priority now is replacing form-style placeholders with real procedural-graphics + gesture mini-games per Step 12's order. Don't start writing new code until `dev-check.sh` is green.
