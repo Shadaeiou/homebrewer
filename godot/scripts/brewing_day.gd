@@ -46,6 +46,7 @@ const MINIGAME_SCENES := {
 	"sanitize":    preload("res://scenes/minigames/sanitize.tscn"),
 	"fill_kettle": preload("res://scenes/minigames/fill_kettle.tscn"),
 	"add_lme":     preload("res://scenes/minigames/pour_lme.tscn"),
+	"cool_wort":   preload("res://scenes/minigames/cool_wort.tscn"),
 }
 
 @onready var _recipe_title: Label = %RecipeTitle

@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.2.57",
+    "date": "2026-05-09",
+    "bullets": [
+      "New mini-game: Cool the wort. Pick ice bath (slower, lands ~70°F) or top-off cooling (faster, ~80°F, but the cold water is a sanitation gamble unless you boil it first or use bottled). Each path has its own optional sub-actions; the readout previews your projected final temp and care factor as you pick."
+    ]
+  },
+  {
     "version": "0.2.56",
     "date": "2026-05-09",
     "bullets": [
