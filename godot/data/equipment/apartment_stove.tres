@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="EquipmentArchetype" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/equipment_archetype.gd" id="1_equip"]
+
+[resource]
+script = ExtResource("1_equip")
+archetype_id = "apartment_stove"
+display_name = "Apartment Gas Stove"
+category = "stove"
+properties = {
+"heat_levels": ["HIGH", "MED", "LOW"],
+"max_btu": 11000,
+"has_target_temp": false,
+"burner_count": 4
+}
+starting_state = "CLEAN"
+description = "Standard apartment gas stove. Three heat levels per burner — HIGH, MED, LOW. No precision dial; no target-temp setpoint. What you see is what you get."

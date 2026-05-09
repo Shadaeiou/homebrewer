@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EquipmentArchetype" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/equipment_archetype.gd" id="1_equip"]
+
+[resource]
+script = ExtResource("1_equip")
+archetype_id = "measuring_pitcher"
+display_name = "1L Measuring Pitcher"
+category = "pitcher"
+properties = {
+"capacity_l": 1.0,
+"precision_for_volume": 0.85,
+"has_markings": true
+}
+starting_state = "CLEAN"
+description = "Standard 1-litre measuring pitcher with stamped markings. Pouring kettle volume out of one of these is slow but accurate."

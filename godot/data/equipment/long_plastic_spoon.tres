@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EquipmentArchetype" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/equipment_archetype.gd" id="1_equip"]
+
+[resource]
+script = ExtResource("1_equip")
+archetype_id = "long_plastic_spoon"
+display_name = "Long Plastic Spoon"
+category = "spoon"
+properties = {
+"length_in": 18.0,
+"material": "PLASTIC",
+"sanitation_decay_per_use": "MEDIUM"
+}
+starting_state = "USED"
+description = "Long plastic spoon from the kitchen drawer. Reaches the bottom of the kettle without burning your hand."

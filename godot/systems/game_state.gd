@@ -17,6 +17,23 @@ signal state_loaded                       ## Fires after SaveService loads us fr
 
 const SAVE_FORMAT_VERSION := 1
 
+## Starter equipment per Appendix A's "Equipment present at start" table.
+## Loaded from .tres archetypes when reset_to_new_career() seeds the tree.
+const STARTER_EQUIPMENT_PATHS := [
+	"res://data/equipment/apartment_stove.tres",
+	"res://data/equipment/apartment_stockpot.tres",
+	"res://data/equipment/plastic_bucket_fermenter.tres",
+	"res://data/equipment/long_plastic_spoon.tres",
+	"res://data/equipment/bi_metal_thermometer.tres",
+	"res://data/equipment/wing_capper.tres",
+	"res://data/equipment/measuring_pitcher.tres",
+	"res://data/equipment/funnel.tres",
+]
+
+const STARTER_RECIPE_PATHS := [
+	"res://data/recipes/apartment_pale_ale.tres",
+]
+
 var data: Dictionary = {}                 ## The whole tree. Initialized via reset_to_new_career().
 
 func _ready() -> void:
@@ -46,7 +63,7 @@ func reset_to_new_career(destination_id: String = "home_town") -> void:
 		},
 		"skills": _initial_skills(),
 		"equipment": {
-			"owned": {},                  # Filled by the first-brew bootstrap (TBD)
+			"owned": _initial_equipment(),
 		},
 		"inventory": {
 			"ingredients": {},
@@ -54,7 +71,7 @@ func reset_to_new_career(destination_id: String = "home_town") -> void:
 			"consumables": {},
 		},
 		"recipe_knowledge": {
-			"known": {},
+			"known": _initial_recipe_knowledge(),
 			"invented": [],
 			"pinned_for_prestige": "",
 		},
@@ -101,6 +118,45 @@ func _initial_skills() -> Dictionary:
 		"palate":       {"level": 0, "xp": 0, "xp_to_next": 100, "unlocked": true},
 		"water_chem":   {"level": 0, "xp": 0, "xp_to_next": 100, "unlocked": false},
 	}
+
+func _initial_equipment() -> Dictionary:
+	## One instance per starter archetype. instance_id is deterministic
+	## (`<archetype_id>_1`) — when the player buys a second of the same
+	## archetype later, the new instance gets `_2`. Per-instance dynamic
+	## state (`state`, `sanitized_at_day`, `uses_since_clean`) lives here;
+	## static properties stay on the .tres archetype and are looked up
+	## by archetype_id.
+	var owned: Dictionary = {}
+	for path in STARTER_EQUIPMENT_PATHS:
+		var arche: EquipmentArchetype = load(path)
+		if arche == null:
+			push_error("[GameState] could not load equipment archetype: %s" % path)
+			continue
+		var instance_id: String = "%s_1" % arche.archetype_id
+		owned[instance_id] = {
+			"instance_id": instance_id,
+			"archetype_id": arche.archetype_id,
+			"state": arche.starting_state,
+			"sanitized_at_day": -1,
+			"uses_since_clean": 0,
+		}
+	return owned
+
+func _initial_recipe_knowledge() -> Dictionary:
+	## Seed every recipe in STARTER_RECIPE_PATHS as known + unlocked.
+	## v1 starts with just Apartment Pale Ale per 3.8 + Appendix A.
+	var known: Dictionary = {}
+	for path in STARTER_RECIPE_PATHS:
+		var recipe: RecipeDef = load(path)
+		if recipe == null:
+			push_error("[GameState] could not load recipe: %s" % path)
+			continue
+		known[recipe.recipe_id] = {
+			"recipe_id": recipe.recipe_id,
+			"unlocked_on_day": 0,
+			"times_brewed": 0,
+		}
+	return known
 
 func _on_day_advanced(new_day: int) -> void:
 	day_advanced.emit(new_day)

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="EquipmentArchetype" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/equipment_archetype.gd" id="1_equip"]
+
+[resource]
+script = ExtResource("1_equip")
+archetype_id = "funnel"
+display_name = "Plastic Funnel"
+category = "funnel"
+properties = {
+"max_diameter_in": 4.0,
+"material": "PLASTIC"
+}
+starting_state = "CLEAN"
+description = "Cheap plastic funnel. Fits the bucket fermenter neck. No filter, no aeration tube."
