@@ -1,0 +1,106 @@
+[gd_scene load_steps=2 format=3 uid="uid://b8bottlinghcwma"]
+
+[ext_resource type="Script" path="res://scripts/minigames/bottling/bottling.gd" id="1_bot"]
+
+[node name="Bottling" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_bot")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.07, 0.07, 0.09, 1)
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="Stack" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Header" type="HBoxContainer" parent="Margin/Stack"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="StageTitle" type="Label" parent="Margin/Stack/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Bottling day"
+theme_override_font_sizes/font_size = 22
+
+[node name="CloseButton" type="Button" parent="Margin/Stack/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Close"
+
+[node name="Hint" type="Label" parent="Margin/Stack"]
+layout_mode = 2
+text = "Add priming sugar, fill 24 bottles, cap them. Sanitation matters more here than during brewing — a sealed bottle is a perfect environment for whatever's in it."
+theme_override_font_sizes/font_size = 12
+modulate = Color(0.78, 0.74, 0.70, 1)
+autowrap_mode = 3
+
+[node name="PrimingHeader" type="Label" parent="Margin/Stack"]
+layout_mode = 2
+text = "Priming sugar"
+theme_override_font_sizes/font_size = 14
+modulate = Color(0.96, 0.78, 0.32, 1)
+
+[node name="PrimingGroup" type="VBoxContainer" parent="Margin/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="FillHeader" type="Label" parent="Margin/Stack"]
+layout_mode = 2
+text = "Fill method"
+theme_override_font_sizes/font_size = 14
+modulate = Color(0.96, 0.78, 0.32, 1)
+
+[node name="FillGroup" type="VBoxContainer" parent="Margin/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="OptionsHeader" type="Label" parent="Margin/Stack"]
+layout_mode = 2
+text = "Optional"
+theme_override_font_sizes/font_size = 14
+modulate = Color(0.96, 0.78, 0.32, 1)
+
+[node name="OptionsGroup" type="VBoxContainer" parent="Margin/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Readout" type="Label" parent="Margin/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Carbonation factor: 1.00 · care: 0.60"
+theme_override_font_sizes/font_size = 12
+modulate = Color(0.65, 0.62, 0.58, 1)
+
+[node name="ConfirmButton" type="Button" parent="Margin/Stack"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Bottle the brew"

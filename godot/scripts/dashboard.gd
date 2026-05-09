@@ -15,6 +15,8 @@ extends Control
 ## 6 (UX/UI) lands and as mini-games are built.
 
 const BREWING_DAY_SCENE := preload("res://scenes/brewing_day.tscn")
+const BOTTLING_SCENE     := preload("res://scenes/minigames/bottling.tscn")
+const TASTING_SCENE      := preload("res://scenes/minigames/tasting.tscn")
 
 const STARTER_RECIPE_ID := "apartment_pale_ale"
 
@@ -97,16 +99,17 @@ func _brew_row(brew: Dictionary) -> Control:
 	# Bridge UI for the post-brew gap: per Appendix B the dashboard will
 	# eventually surface a daily checklist with "Check fermenter" perception
 	# entries, ambient morning summary, anomaly cues, etc. Until that
-	# fermentation rhythm lands (step 10), at least show the brew exists
-	# and where it is in its arc.
+	# fermentation rhythm lands (step 10), at least show the brew exists,
+	# where it is in its arc, and a tappable action when it's ready.
 	var stage: String = String(brew.get("stage", ""))
 	var snapshot: Dictionary = brew.get("recipe_snapshot", {})
 	var name: String = String(snapshot.get("display_name", brew.get("recipe_id", "Brew")))
 	var elapsed: int = int(brew.get("days_elapsed_in_stage", 0))
+	var brew_id: String = String(brew.get("brew_id", ""))
 
 	var row := PanelContainer.new()
 	var inner := VBoxContainer.new()
-	inner.add_theme_constant_override("separation", 2)
+	inner.add_theme_constant_override("separation", 4)
 	row.add_child(inner)
 
 	var title := Label.new()
@@ -120,7 +123,31 @@ func _brew_row(brew: Dictionary) -> Control:
 	status.add_theme_font_size_override("font_size", 12)
 	status.add_theme_color_override("font_color", _stage_status_color(stage, elapsed, snapshot))
 	inner.add_child(status)
+
+	# Conditional action button when the brew has reached a tappable beat.
+	var ferm_days: int = int(snapshot.get("fermentation_days", 5))
+	var cond_days: int = int(snapshot.get("condition_days", 14))
+	if stage == BrewState.STAGE_FERMENTING and elapsed >= ferm_days:
+		var btn := Button.new()
+		btn.text = "Bottle this brew"
+		btn.pressed.connect(func(): _on_bottle_brew(brew_id))
+		inner.add_child(btn)
+	elif stage == BrewState.STAGE_BOTTLED_CONDITIONING and elapsed >= cond_days:
+		var btn := Button.new()
+		btn.text = "Pour & taste"
+		btn.pressed.connect(func(): _on_taste_brew(brew_id))
+		inner.add_child(btn)
 	return row
+
+func _on_bottle_brew(brew_id: String) -> void:
+	var main := get_tree().root.get_node_or_null("Main")
+	if main and main.has_method("mount_active_scene"):
+		main.mount_active_scene(BOTTLING_SCENE, func(inst): inst.brew_id = brew_id)
+
+func _on_taste_brew(brew_id: String) -> void:
+	var main := get_tree().root.get_node_or_null("Main")
+	if main and main.has_method("mount_active_scene"):
+		main.mount_active_scene(TASTING_SCENE, func(inst): inst.brew_id = brew_id)
 
 func _stage_status_text(stage: String, elapsed: int, snapshot: Dictionary) -> String:
 	match stage:

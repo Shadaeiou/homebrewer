@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.2.61",
+    "date": "2026-05-09",
+    "bullets": [
+      "Bottling and tasting are in. Once a brew hits its fermentation days the dashboard surfaces a Bottle this brew button on its row; tap it to open the bottling scene (priming sugar choice, fill method, sanitation toggles). Confirm bottles your batch, flips the brew to conditioning, frees the fermenter, and shifts the 24 bottles into in_use.",
+      "After conditioning days have elapsed, the row shows Pour & taste. The tasting scene reveals your actual OG / FG / IBU / ABV / carbonation, computes a self grade against your recipe targets and an external grade against the BJCP-style profile, then logs the whole brew (outcomes + grades + risk profile) to the journal file.",
+      "The full pipeline plays end to end now: start brewing → walk all seven brewing-day stages → fermenting (5 days of rest) → bottle → conditioning (14 days of rest) → pour & taste → brew logged, fermenter free, ready for the next batch.",
+      "Grades currently cap at C for fresh-career skills (per the design's skill ceiling). Mastering the relevant skills lifts the cap. Final grade colors green at A/A+, yellow at A-/B, gold at C, orange at D, red at F."
+    ]
+  },
+  {
     "version": "0.2.60",
     "date": "2026-05-09",
     "bullets": [
