@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.2.75",
+    "date": "2026-05-09",
+    "bullets": [
+      "Adopted a real-world scale rule: 4 pixels = 1 inch (48 px = 1 foot). Every wall object, piece of furniture, and equipment is sized against this rule so a 30\" door, a 36\" counter, a 12\" stockpot, and a 12\" wall clock are all consistent with each other. If something looks wrong, the fix is to size it in inches × 4, not eyeball it.",
+      "Closet door re-proportioned to a real 30\"×80\" interior door (was overly tall and narrow). Two stacked inset panels, brass knob at waist height. Stove shrunk to 30\"×36\" (was a giant 200×165). Window re-sized to 36\"×48\" with sill above counter, mullions in a + cross.",
+      "New decor on the kitchen wall: a 12\" wall clock above the sink, a paper wall calendar (red header, date grid) between the closet and the bottling table, two banks of upper cabinets above the splashback, a 30\"×18\" range hood mounted 24\" above the stove cooktop with vent slats and a drop shadow.",
+      "Sink got a real basin: stainless rim with a recessed bowl and a drain in the middle. The kettle no longer auto-parks IN the sink — it sits to the right of the basin on the counter (the rest spot). When you start brewing, fill_kettle moves it over the basin under the faucet.",
+      "Bottling table redrawn at 60\"×30\" with a proper apron under the top and square legs inset 4\" from each end (no more squashed parallelogram look). Baseboard runs along the visible wall gaps."
+    ]
+  },
+  {
     "version": "0.2.74",
     "date": "2026-05-09",
     "bullets": [

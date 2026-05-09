@@ -82,11 +82,16 @@ func _mount_apartment() -> void:
 	_viewport.add_child(_apartment)
 	await get_tree().process_frame
 	_recenter()
-	# Persistent kettle on the counter at sink station.
+	# Persistent kettle on the counter at the sink station's rest spot
+	# (right of the basin, so it's not "in" the sink). When the player
+	# starts a brew, the kettle slides to the appropriate station.
 	_kettle = Kettle2D.new()
 	_kettle.name = "Kettle"
 	_apartment.add_child(_kettle)
-	_apartment.place_kettle_at_station(_kettle, Apartment2D.STATION_SINK)
+	_apartment.place_kettle_at_station(
+		_kettle, Apartment2D.STATION_SINK,
+		Vector2(Apartment2D.KETTLE_REST_OFFSET_X, 0),
+	)
 	_compute_station_rects()
 
 func _compute_station_rects() -> void:
@@ -96,21 +101,21 @@ func _compute_station_rects() -> void:
 	var stove: Vector2 = _apartment.station_anchor(Apartment2D.STATION_STOVE)
 	var closet: Vector2 = _apartment.station_anchor(Apartment2D.STATION_CLOSET)
 	var bottling: Vector2 = _apartment.station_anchor(Apartment2D.STATION_BOTTLING_TABLE)
-	# Kettle (faucet area). Tall rect so faucet handle is hittable too.
+	# Sink/kettle area: covers basin + faucet + kettle rest spot.
 	_station_rects[Apartment2D.STATION_SINK] = Rect2(
-		sink.x - 70, sink.y - 200, 140, 220,
+		sink.x - 50, sink.y - 110, 160, 130,
 	)
-	# Stove: from counter top up ~140, full burner span.
+	# Stove (range): 30"w × 36"h footprint + a bit above for the hood.
 	_station_rects[Apartment2D.STATION_STOVE] = Rect2(
-		stove.x - 110, stove.y - 110, 220, 200,
+		stove.x - 60, stove.y - 30, 120, 144,
 	)
-	# Closet door: tall.
+	# Closet door: 30"w × 80"h.
 	_station_rects[Apartment2D.STATION_CLOSET] = Rect2(
-		closet.x - 80, closet.y - 280, 160, 360,
+		closet.x - 60, closet.y - 280, 120, 320,
 	)
-	# Bottling table: shallow furniture.
+	# Bottling table: 60"w × 30"h.
 	_station_rects[Apartment2D.STATION_BOTTLING_TABLE] = Rect2(
-		bottling.x - 90, bottling.y - 80, 180, 160,
+		bottling.x - 120, bottling.y - 80, 240, 160,
 	)
 
 # ---- Camera placement & pan ----
