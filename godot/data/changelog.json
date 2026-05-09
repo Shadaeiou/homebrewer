@@ -1,5 +1,17 @@
 [
   {
+    "version": "0.2.82",
+    "date": "2026-05-09",
+    "bullets": [
+      "Cabinet knobs no longer centered horizontally — they now sit on the swing side of each door (alternating left/right so adjacent doors look like hinge-pairs). Sink-base double-door knobs moved BELOW the basin recess so they're visible (a real sink-base door is shorter than the adjacent cabinet doors for exactly this reason).",
+      "Active-brews HUD: a sidebar list on the left side of the apartment shows every brew currently in flight with its name and current stage (Brew day / Fermenting N/M / Conditioning N/M). Tap a brew card to open its details panel.",
+      "Brew details panel: shows ingredient list with green checks (have it) or red x (missing), plus the full step list — sanitize, fill kettle, heat, add malt, boil with hops, cool wort, transfer + pitch, ferment, bottle, condition, taste — with completion checks and care-factor scores per finished step.",
+      "Fill kettle is a true close-up now. Distinct view from the apartment: kettle takes the lower half of the screen, faucet hangs above. Cross-section silhouette so you can see water level rising INSIDE the pot through the cutaway side wall. Tap the lever handle on the faucet to toggle on/off.",
+      "Liquid physics: surface waves are a sum-of-sines (5 Hz + 7.3 Hz with phase shift), amplitude scales with how full the kettle is. After the faucet shuts off, the slosh decays toward stillness over ~1 second. Splash particles spawn at the impact point while pouring — small drops drift outward and fall under gravity, fading as they age.",
+      "Removed the gold target band from the kettle — eyeballing the level is part of the game; you don't have any aim guides yet."
+    ]
+  },
+  {
     "version": "0.2.81",
     "date": "2026-05-09",
     "bullets": [

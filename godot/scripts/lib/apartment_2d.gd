@@ -242,10 +242,15 @@ func _draw_counter_strip(x_left: float, x_right: float) -> void:
 			Vector2(sep_x, FLOOR_Y - 4),
 			Color(0, 0, 0, 0.55), 2.0,
 		)
-	# Knobs on the INNER edges, 1.5" from the center seam.
+	# Knobs on the INNER edges, 1.5" from the center seam, sat lower than
+	# the adjacent base-cabinet knobs because the basin recess covers the
+	# top of the sink-base doors. Real sink-base doors are shorter for
+	# this reason; the knob lives near the (lower) top of that shorter
+	# door, which is below the basin in our rendering.
+	var sink_knob_y: float = cab_top + SINK_BASIN_H + 4.0
 	var knob_inset: float = 1.5 * PX_PER_INCH  # 6 px from center seam
-	draw_circle(Vector2(sink_cx - knob_inset, knob_y), 2.5, Palette.BRASS_LIGHT)
-	draw_circle(Vector2(sink_cx + knob_inset, knob_y), 2.5, Palette.BRASS_LIGHT)
+	draw_circle(Vector2(sink_cx - knob_inset, sink_knob_y), 2.5, Palette.BRASS_LIGHT)
+	draw_circle(Vector2(sink_cx + knob_inset, sink_knob_y), 2.5, Palette.BRASS_LIGHT)
 
 	# Adjacent regions to the left and right of the sink-base. Draw the
 	# doors inside each region with the helper; the sink-base region's
@@ -277,25 +282,32 @@ func _draw_cabinet_doors_in_vertical_region(x_left: float, x_right: float,
 		return
 	# Decide how many doors fit: enough that no door is wider than the
 	# target. Use ceil so a 132-wide region with a 96-wide target gets
-	# 2 doors, not 1 (which would give a single ridiculously wide door).
+	# 2 doors, not 1.
 	var n: int = max(1, int(ceil(width / target_door_w)))
 	var door_w: float = width / n
+	# Knobs go on the OPENING side: doors alternate hinge sides so the
+	# knobs end up in pairs (door 1 hinges left → knob right; door 2
+	# hinges right → knob left). When an odd door is alone, knob goes
+	# on the right by default.
+	var knob_inset: float = 2.0 * PX_PER_INCH  # 8 px from the door edge
 	for i in range(n):
 		var door_left: float = x_left + i * door_w
 		var door_right: float = door_left + door_w
-		# Internal seams only — skip the leftmost (region boundary; the
-		# caller draws region-boundary seams between adjacent regions).
+		# Internal seams only — skip the leftmost (region boundary).
 		if i > 0:
 			draw_line(
 				Vector2(door_left, seam_top_y),
 				Vector2(door_left, seam_bottom_y),
 				Color(0, 0, 0, 0.55), 2.0,
 			)
-		# Knob centered on each door.
-		draw_circle(
-			Vector2((door_left + door_right) * 0.5, knob_y),
-			2.5, Palette.BRASS_LIGHT,
-		)
+		# Knob on the side opposite the hinge: even-indexed doors hinge
+		# left (knob right), odd-indexed doors hinge right (knob left).
+		var knob_x: float
+		if i % 2 == 0:
+			knob_x = door_right - knob_inset
+		else:
+			knob_x = door_left + knob_inset
+		draw_circle(Vector2(knob_x, knob_y), 2.5, Palette.BRASS_LIGHT)
 
 func _draw_wall_cabinets(x_left: float, x_right: float) -> void:
 	# Upper cabinets sit 18" above counter (above the splashback) and are

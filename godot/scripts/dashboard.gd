@@ -27,6 +27,7 @@ const JOURNAL_SCENE          := preload("res://scenes/journal.tscn")
 const PHONE_OVERLAY_SCENE    := preload("res://scenes/phone/phone_overlay.tscn")
 const CHECK_FERMENTER_MODAL  := preload("res://scenes/modals/check_fermenter.tscn")
 const STATION_PICKER_MODAL   := preload("res://scenes/modals/station_picker.tscn")
+const BREW_DETAILS_MODAL     := preload("res://scenes/modals/brew_details.tscn")
 
 ## Pseudo-station-ID used internally by the journal hotspot. Negative so
 ## it can't collide with a real Apartment2D station enum value.
@@ -37,6 +38,7 @@ const PAN_THRESHOLD: float = 8.0  # Pixels of motion before we treat the press a
 
 @onready var _viewport: Control = %ApartmentViewport
 @onready var _day_label: Label = %DayLabel
+@onready var _brew_list: VBoxContainer = %BrewList
 @onready var _phone_button: Button = %PhoneButton
 @onready var _version_label: Label = %VersionLabel
 @onready var _update_banner: PanelContainer = %UpdateBanner
@@ -296,6 +298,45 @@ func _render_state() -> void:
 		_day_label.text = "Day 0"
 		return
 	_day_label.text = "Day %d" % TimeService.day_clock
+	_render_brew_list()
+
+func _render_brew_list() -> void:
+	for child in _brew_list.get_children():
+		child.queue_free()
+	var brews: Array = GameState.data.get("brews_in_flight", [])
+	if brews.is_empty():
+		return
+	for brew in brews:
+		_brew_list.add_child(_make_brew_card(brew))
+
+func _make_brew_card(brew: Dictionary) -> Control:
+	var snap: Dictionary = brew.get("recipe_snapshot", {})
+	var name: String = String(snap.get("display_name", brew.get("recipe_id", "Brew")))
+	var stage: String = String(brew.get("stage", ""))
+	var elapsed: int = int(brew.get("days_elapsed_in_stage", 0))
+	var card := Button.new()
+	card.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	card.custom_minimum_size = Vector2(0, 44)
+	card.add_theme_font_size_override("font_size", 12)
+	var stage_blurb: String = stage
+	match stage:
+		BrewState.STAGE_BREWING_DAY:
+			stage_blurb = "Brew day"
+		BrewState.STAGE_FERMENTING:
+			var ferm: int = int(snap.get("fermentation_days", 5))
+			stage_blurb = "Fermenting %d/%d" % [elapsed, ferm]
+		BrewState.STAGE_BOTTLED_CONDITIONING:
+			var cond: int = int(snap.get("condition_days", 14))
+			stage_blurb = "Conditioning %d/%d" % [elapsed, cond]
+	card.text = "%s\n%s" % [name, stage_blurb]
+	var brew_id: String = String(brew.get("brew_id", ""))
+	card.pressed.connect(func(): _on_brew_card_tapped(brew_id))
+	return card
+
+func _on_brew_card_tapped(brew_id: String) -> void:
+	var main := get_tree().root.get_node_or_null("Main")
+	if main and main.has_method("push_modal"):
+		main.push_modal(BREW_DETAILS_MODAL, func(inst): inst.brew_id = brew_id)
 
 func _find_brew_in_stage(stage: String) -> Dictionary:
 	for b in GameState.data.get("brews_in_flight", []):
