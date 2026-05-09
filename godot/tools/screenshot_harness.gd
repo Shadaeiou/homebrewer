@@ -13,6 +13,7 @@ extends SceneTree
 
 const SCENES := [
 	{"name": "main", "path": "res://scenes/main.tscn", "frames": 5},
+	{"name": "brewing_day", "path": "res://scenes/brewing_day.tscn", "frames": 5},
 ]
 
 const OUT_DIR := "res://../screenshots"
