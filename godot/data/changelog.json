@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.2.51",
+    "date": "2026-05-09",
+    "bullets": [
+      "Fill Kettle is back, rebuilt against the new outcome model. Pick a water source (tap or bottled jug), pick a method (faucet, funnel, 1L pitcher, or marked jug — each with different precision), optionally pour slowly or double-check the volume for a higher care factor.",
+      "Pouring rolls a real volume drift against your Process skill, the method's precision, and your care, and writes the result to the brew's outcomes. Lower-skill / lower-precision pours scatter wider; jug-pours land near-exact.",
+      "Stages other than Fill kettle still use the placeholder Continue button — they get their real mini-games in upcoming builds."
+    ]
+  },
+  {
     "version": "0.2.50",
     "date": "2026-05-09",
     "bullets": [

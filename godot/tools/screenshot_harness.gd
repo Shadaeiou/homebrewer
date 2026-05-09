@@ -14,6 +14,9 @@ extends SceneTree
 const SCENES := [
 	{"name": "main", "path": "res://scenes/main.tscn", "frames": 5},
 	{"name": "brewing_day", "path": "res://scenes/brewing_day.tscn", "frames": 5},
+	{"name": "brewing_day_fill_kettle", "path": "res://scenes/brewing_day.tscn",
+		"frames": 5, "props": {"initial_stage_index": 1}},
+	{"name": "fill_kettle", "path": "res://scenes/minigames/fill_kettle.tscn", "frames": 5},
 ]
 
 const OUT_DIR := "res://../screenshots"
@@ -61,6 +64,10 @@ func _capture(spec: Dictionary) -> void:
 		return
 
 	var instance: Node = packed.instantiate()
+	# Apply pre-_ready props so the scene wakes up with the harness's setup.
+	var props: Dictionary = spec.get("props", {})
+	for k in props:
+		instance.set(String(k), props[k])
 	root.add_child(instance)
 	root.content_scale_size = VIEWPORT_SIZE
 

@@ -40,9 +40,11 @@ const ALL_GRAIN_PREFIX := [
 	{"id": "mash_temp_hold", "title": "Mash temp hold"},
 ]
 
-## Filled in as mini-games land (step 7 = fill_kettle; later steps add the
-## others). Stages without a registered scene fall back to PLACEHOLDER_SCENE.
-const MINIGAME_SCENES := {}
+## Filled in as mini-games land. Stages without a registered scene fall
+## back to PLACEHOLDER_SCENE.
+const MINIGAME_SCENES := {
+	"fill_kettle": preload("res://scenes/minigames/fill_kettle.tscn"),
+}
 
 @onready var _recipe_title: Label = %RecipeTitle
 @onready var _stage_list: VBoxContainer = %StageList
@@ -50,6 +52,11 @@ const MINIGAME_SCENES := {}
 @onready var _close_button: Button = %CloseButton
 
 var brew_id: String = ""
+
+## Dev/harness affordance — set before add_child to skip ahead. Real
+## gameplay always starts at index 0 since the dashboard creates a
+## fresh BrewState.
+var initial_stage_index: int = 0
 
 var _brew: Dictionary = {}
 var _recipe: RecipeDef = null
@@ -65,6 +72,7 @@ func _ready() -> void:
 	_resolve_brew_or_demo()
 	_recipe_title.text = _recipe.display_name if _recipe else "—"
 	_stages = _stages_for_method(_recipe.method if _recipe else "EXTRACT")
+	_current_stage_index = clampi(initial_stage_index, 0, _stages.size() - 1)
 	_render_stage_list()
 	_mount_current_stage()
 

@@ -1,0 +1,92 @@
+[gd_scene load_steps=2 format=3 uid="uid://b8fillkettlehcwma"]
+
+[ext_resource type="Script" path="res://scripts/minigames/fill_kettle/fill_kettle.gd" id="1_fk"]
+
+[node name="FillKettle" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_fk")
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="Stack" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="StageTitle" type="Label" parent="Margin/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Fill kettle"
+theme_override_font_sizes/font_size = 22
+
+[node name="Hint" type="Label" parent="Margin/Stack"]
+layout_mode = 2
+text = "Target: 2.5 gallons (partial-boil recipe). Top off in the fermenter later."
+theme_override_font_sizes/font_size = 12
+modulate = Color(0.78, 0.74, 0.70, 1)
+autowrap_mode = 3
+
+[node name="SourceHeader" type="Label" parent="Margin/Stack"]
+layout_mode = 2
+text = "Source"
+theme_override_font_sizes/font_size = 14
+modulate = Color(0.96, 0.78, 0.32, 1)
+
+[node name="SourceGroup" type="VBoxContainer" parent="Margin/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="MethodHeader" type="Label" parent="Margin/Stack"]
+layout_mode = 2
+text = "Method"
+theme_override_font_sizes/font_size = 14
+modulate = Color(0.96, 0.78, 0.32, 1)
+
+[node name="MethodGroup" type="VBoxContainer" parent="Margin/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="OptionalHeader" type="Label" parent="Margin/Stack"]
+layout_mode = 2
+text = "Take your time?"
+theme_override_font_sizes/font_size = 14
+modulate = Color(0.96, 0.78, 0.32, 1)
+
+[node name="SlowToggle" type="CheckBox" parent="Margin/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Pour slowly"
+
+[node name="VerifyToggle" type="CheckBox" parent="Margin/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Double-check"
+
+[node name="Readout" type="Label" parent="Margin/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Method precision: 0.40 · target: 2.5 gal"
+theme_override_font_sizes/font_size = 12
+modulate = Color(0.65, 0.62, 0.58, 1)
+
+[node name="PourButton" type="Button" parent="Margin/Stack"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Pour"
