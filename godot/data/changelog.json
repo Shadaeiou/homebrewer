@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.2.32",
+    "date": "2026-05-09",
+    "bullets": [
+      "Architecture rebuild against the locked design spec (DESIGN.md Sections 7 + 8). Foundation lands; brewing flow comes back in subsequent commits.",
+      "New autoloads: TimeService (the two clocks — day + scene), GameState (the persistent player tree), SaveService (atomic JSON main + JSONL journal).",
+      "New scene graph: persistent Dashboard background, ActiveSceneContainer for mini-games, Phone + Modal CanvasLayers above gameplay.",
+      "Sim engine pure-data layer: Drift, Grader, RiskProfile, SkillXP, CareFactor, BrewState, CalendarSurface — ready for mini-games to consume.",
+      "The previous brew flow + fill-kettle mini-game were proof-of-concept; they're removed and will be reimplemented against the new contract."
+    ]
+  },
+  {
     "version": "0.2.26",
     "date": "2026-05-08",
     "bullets": [

@@ -1,0 +1,128 @@
+[gd_scene load_steps=2 format=3 uid="uid://c3qx6mvk2dasp"]
+
+[ext_resource type="Script" path="res://scripts/dashboard.gd" id="1_dashboard"]
+
+[node name="Dashboard" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_dashboard")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.13, 0.10, 0.08, 1)
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 48
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="Body" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Title" type="Label" parent="Margin/Body"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96, 0.78, 0.32, 1)
+theme_override_font_sizes/font_size = 36
+text = "Homebrewer"
+horizontal_alignment = 1
+
+[node name="DayLabel" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.91, 0.84, 1)
+theme_override_font_sizes/font_size = 22
+text = "Day 0"
+horizontal_alignment = 1
+
+[node name="StatsRow" type="HBoxContainer" parent="Margin/Body"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 24
+
+[node name="CashLabel" type="Label" parent="Margin/Body/StatsRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96, 0.78, 0.32, 1)
+theme_override_font_sizes/font_size = 18
+text = "$30"
+
+[node name="BottlesLabel" type="Label" parent="Margin/Body/StatsRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.78, 0.70, 1)
+theme_override_font_sizes/font_size = 14
+text = "Bottles: 24 available · 0 in use"
+
+[node name="RestButton" type="Button" parent="Margin/Body"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+text = "Get some rest →"
+
+[node name="VersionLabel" type="Label" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.62, 0.58, 1)
+theme_override_font_sizes/font_size = 13
+text = "v0.0.0 (build 0)"
+horizontal_alignment = 1
+
+[node name="UpdateBanner" type="PanelContainer" parent="Margin/Body"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="UpdateRow" type="HBoxContainer" parent="Margin/Body/UpdateBanner"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="UpdateLabel" type="Label" parent="Margin/Body/UpdateBanner/UpdateRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.96, 0.78, 0.32, 1)
+theme_override_font_sizes/font_size = 14
+text = "Update available"
+autowrap_mode = 3
+
+[node name="UpdateButton" type="Button" parent="Margin/Body/UpdateBanner/UpdateRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+text = "Update"
+
+[node name="Divider" type="HSeparator" parent="Margin/Body"]
+layout_mode = 2
+
+[node name="ChangelogHeader" type="Label" parent="Margin/Body"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96, 0.78, 0.32, 1)
+theme_override_font_sizes/font_size = 18
+text = "What's new"
+
+[node name="Scroll" type="ScrollContainer" parent="Margin/Body"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ChangelogContainer" type="VBoxContainer" parent="Margin/Body/Scroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12

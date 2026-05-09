@@ -21,8 +21,9 @@ Lighting="*res://systems/lighting.gd"
 Changelog="*res://systems/changelog.gd"
 Version="*res://systems/version.gd"
 Updater="*res://systems/updater.gd"
-Recipes="*res://data/recipes.gd"
-BrewSession="*res://scripts/sim/brew_session.gd"
+TimeService="*res://systems/time_service.gd"
+GameState="*res://systems/game_state.gd"
+SaveService="*res://systems/save_service.gd"
 
 [editor_plugins]
 

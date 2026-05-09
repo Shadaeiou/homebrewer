@@ -1,59 +1,48 @@
-extends Control
+extends Node
 
-@onready var version_label: Label = %VersionLabel
-@onready var changelog_container: VBoxContainer = %ChangelogContainer
-@onready var update_banner: PanelContainer = %UpdateBanner
-@onready var update_label: Label = %UpdateLabel
-@onready var update_button: Button = %UpdateButton
-@onready var start_brewing_button: Button = %StartBrewingButton
+## Main controller per DESIGN.md 7.2.
+##
+## Hosts the persistent scene graph:
+##   Main (this node)
+##   ├── BackgroundLayer (CanvasLayer, layer=0)
+##   │   └── Dashboard (instanced here on _ready)
+##   ├── ActiveSceneContainer (Node)
+##   ├── PhoneLayer (CanvasLayer, layer=50)
+##   ├── ModalLayer (CanvasLayer, layer=100)
+##   └── BootSequence (Node)
+##
+## Mini-game scenes mount under ActiveSceneContainer; Phone + Modal layers
+## pause gameplay when shown via PROCESS_MODE_DISABLED propagation.
+
+const DASHBOARD_SCENE := preload("res://scenes/dashboard.tscn")
+
+@onready var background_layer: CanvasLayer = $BackgroundLayer
+@onready var active_scene_container: Node = $ActiveSceneContainer
+@onready var phone_layer: CanvasLayer = $PhoneLayer
+@onready var modal_layer: CanvasLayer = $ModalLayer
+
+var _dashboard: Node = null
 
 func _ready() -> void:
-	version_label.text = Version.full()
-	_render_changelog()
-	Updater.update_available.connect(_on_update_available)
-	update_button.pressed.connect(Updater.install_update)
-	start_brewing_button.pressed.connect(_on_start_brewing)
+	# Mount the persistent dashboard. This is BackgroundLayer's only child;
+	# active scenes render on top of it via ActiveSceneContainer.
+	_dashboard = DASHBOARD_SCENE.instantiate()
+	background_layer.add_child(_dashboard)
 
-func _on_start_brewing() -> void:
-	get_tree().change_scene_to_file("res://scenes/brew_flow.tscn")
+	# Phone + Modal layers start empty. They're owned by Main; specific
+	# UI flows add/remove children as needed and toggle get_tree().paused.
 
-func _on_update_available(latest_name: String, latest_code: int, _release_url: String) -> void:
-	update_label.text = "Update available: v%s (build %d)" % [latest_name, latest_code]
-	update_banner.visible = true
+func mount_active_scene(scene: PackedScene) -> Node:
+	## Helper for upcoming brew flow: instances `scene` under
+	## ActiveSceneContainer and starts the scene clock.
+	clear_active_scene()
+	var instance: Node = scene.instantiate()
+	active_scene_container.add_child(instance)
+	TimeService.start_scene()
+	return instance
 
-func _render_changelog() -> void:
-	for child in changelog_container.get_children():
+func clear_active_scene() -> void:
+	for child in active_scene_container.get_children():
 		child.queue_free()
-
-	var latest: Dictionary = Changelog.latest()
-	if latest.is_empty():
-		var empty := Label.new()
-		empty.text = "No changelog entries yet."
-		changelog_container.add_child(empty)
-		return
-
-	changelog_container.add_child(_entry_view(latest, true))
-	for entry in Changelog.older():
-		changelog_container.add_child(_entry_view(entry, false))
-
-func _entry_view(entry: Dictionary, _is_latest: bool) -> Control:
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 4)
-
-	var header := Label.new()
-	header.text = "%s · %s" % [entry.get("version", "?"), entry.get("date", "")]
-	header.add_theme_font_size_override("font_size", 18)
-	header.modulate = Color(0.95, 0.78, 0.32)
-	box.add_child(header)
-
-	for bullet in entry.get("bullets", []):
-		var line := Label.new()
-		line.text = "• %s" % bullet
-		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		line.add_theme_font_size_override("font_size", 14)
-		box.add_child(line)
-
-	var spacer := Control.new()
-	spacer.custom_minimum_size = Vector2(0, 12)
-	box.add_child(spacer)
-	return box
+	if TimeService.is_scene_running():
+		TimeService.end_scene()
