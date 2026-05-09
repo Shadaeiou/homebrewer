@@ -14,7 +14,7 @@ signal closed
 
 const APPS := [
 	{"id": "messages", "label": "Messages",  "scene": preload("res://scenes/phone/messages_app.tscn"), "available": true},
-	{"id": "shop",     "label": "Shop",      "scene": null,  "available": false},
+	{"id": "shop",     "label": "Shop",      "scene": preload("res://scenes/phone/shop_app.tscn"),     "available": true},
 	{"id": "forum",    "label": "Forum",     "scene": null,  "available": false},
 	{"id": "news",     "label": "News",      "scene": null,  "available": false},
 	{"id": "calendar", "label": "Calendar",  "scene": null,  "available": false},

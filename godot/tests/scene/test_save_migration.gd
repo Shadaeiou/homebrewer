@@ -59,12 +59,26 @@ func test_reseed_repairs_empty_known_recipes() -> void:
 	SaveService._reseed_bootstrap_fields_if_empty()
 	assert_true(GameState.data["recipe_knowledge"]["known"].has("apartment_pale_ale"))
 
-func test_reseed_repairs_empty_ingredients() -> void:
+func test_reseed_does_not_force_ingredients_on_empty_inventory() -> void:
+	# After the Shop ships, the canonical fresh-career inventory is empty
+	# of ingredients — the player has to buy them. Stale saves with empty
+	# ingredients should stay empty after the reseed (they're already in
+	# the canonical shape), and stale saves with pre-shop seeded
+	# ingredients should keep them.
 	GameState.adopt(_stale_v1_data())
 	SaveService._reseed_bootstrap_fields_if_empty()
-	for required in ["lme_light", "hops_cascade", "yeast_us05", "priming_sugar"]:
-		assert_true(GameState.data["inventory"]["ingredients"].has(required),
-			"%s should have been reseeded" % required)
+	assert_eq(Dictionary(GameState.data["inventory"]["ingredients"]).size(), 0,
+		"empty ingredients should stay empty — shop is the canonical fill path")
+
+func test_reseed_preserves_existing_ingredients() -> void:
+	var data := _stale_v1_data()
+	data["inventory"]["ingredients"] = {
+		"lme_light": {"name": "Light Malt Extract (LME)", "qty": 6.0, "unit": "lb"},
+	}
+	GameState.adopt(data)
+	SaveService._reseed_bootstrap_fields_if_empty()
+	# Carry-forward: pre-existing seeded ingredients stay put.
+	assert_true(GameState.data["inventory"]["ingredients"].has("lme_light"))
 
 func test_reseed_tops_up_partial_known_dict() -> void:
 	# A returning player who completed some recipe other than APA might
@@ -88,14 +102,19 @@ func test_reseed_tolerates_null_known() -> void:
 	SaveService._reseed_bootstrap_fields_if_empty()
 	assert_true(GameState.data["recipe_knowledge"]["known"].has("apartment_pale_ale"))
 
-func test_post_reseed_start_brewing_has_no_issues() -> void:
-	# The end-to-end invariant: after load+reseed, the dashboard's
-	# Start brewing button should be enabled for the starter recipe.
+func test_post_reseed_start_brewing_blocks_on_ingredients() -> void:
+	# After Shop landed, fresh-career ingredients are empty; the Start
+	# brewing validator surfaces "Need <ingredient>" issues until the
+	# player shops. This pins that the reseed didn't accidentally
+	# auto-fill ingredients (which would defeat the canonical Appendix
+	# A trade-off moment).
 	GameState.adopt(_stale_v1_data())
 	SaveService._reseed_bootstrap_fields_if_empty()
 	var issues: Array = GameState.start_brewing_issues("apartment_pale_ale")
-	assert_eq(issues.size(), 0,
-		"after reseed there should be no blockers; got: %s" % str(issues))
+	assert_true(issues.size() >= 1,
+		"empty ingredients should block Start brewing; got: %s" % str(issues))
+	var joined: String = " ".join(issues.map(func(s): return String(s)))
+	assert_string_contains(joined, "Need")
 
 func test_state_loaded_fires_after_reseed() -> void:
 	# The original bug: state_loaded was firing inside adopt(), before the

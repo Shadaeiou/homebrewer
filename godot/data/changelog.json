@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.2.67",
+    "date": "2026-05-09",
+    "bullets": [
+      "New: Shop app on the phone (Homebrew Supply). Buy ingredients, consumables, and an extra case of bottles. The recipe shopping list totals $51 against your $30 startup capital — you have to skip something. That's the canonical first decision from Appendix A.",
+      "Fresh careers now start with empty ingredients (just bottles + dish soap + sponge from the previous life). Start brewing greys out with Need malt extract / Need hops / Need yeast hints until you've shopped. Existing in-progress saves keep whatever ingredients they already had.",
+      "After-purchase live readout shows what you'll have left ($30 - $27 = $3) or how short you are. Buy is disabled until your selection is affordable.",
+      "v1 stops short of consumption — one purchase carries arbitrarily many brews until the inventory-deplete pass lands. The 'running low on bottles' soft cue from the design is also a separate followup."
+    ]
+  },
+  {
     "version": "0.2.66",
     "date": "2026-05-09",
     "bullets": [

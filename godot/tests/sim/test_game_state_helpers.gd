@@ -31,11 +31,26 @@ func test_bottled_brew_frees_the_fermenter() -> void:
 	GameState.data["brews_in_flight"].append(brew)
 	assert_eq(GameState.free_fermenter_count(), 1)
 
-func test_start_brewing_issues_empty_for_fresh_career() -> void:
-	# Fresh career: APA recipe known, fermenter free, ingredients pre-seeded.
-	# v1 → no issues, button enabled.
+func test_start_brewing_issues_blocks_on_unshopped_ingredients() -> void:
+	# Per Appendix A: fresh career has $30 cash, 24 bottles, dish soap +
+	# sponge — but no ingredients. Player must shop first. Validator
+	# should surface the missing ingredients as blockers.
 	var issues: Array = GameState.start_brewing_issues("apartment_pale_ale")
-	assert_eq(issues.size(), 0, "fresh career must be ready to brew APA")
+	assert_true(issues.size() >= 1,
+		"fresh career must require shopping first; got: %s" % str(issues))
+	var joined: String = " ".join(issues.map(func(s): return String(s)))
+	assert_string_contains(joined, "Need")
+
+func test_start_brewing_issues_empty_after_shopping() -> void:
+	# Once required ingredients are in inventory, the Start brewing
+	# validator clears.
+	GameState.data["inventory"]["ingredients"] = {
+		"lme_light":     {"name": "LME",      "qty": 6.0, "unit": "lb"},
+		"hops_cascade":  {"name": "Cascade",  "qty": 2.0, "unit": "oz"},
+		"yeast_us05":    {"name": "US-05",    "qty": 1,   "unit": "packet"},
+	}
+	var issues: Array = GameState.start_brewing_issues("apartment_pale_ale")
+	assert_eq(issues.size(), 0, "shopped career must be ready to brew APA")
 
 func test_start_brewing_issues_unknown_recipe() -> void:
 	var issues: Array = GameState.start_brewing_issues("imperial_stout_does_not_exist")

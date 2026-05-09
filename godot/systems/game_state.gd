@@ -156,23 +156,21 @@ func _initial_equipment() -> Dictionary:
 	return owned
 
 func _initial_inventory() -> Dictionary:
-	## v1 stopgap: pre-seed enough ingredients + consumables to brew the
-	## starter Apartment Pale Ale once. The canonical Appendix A flow has
-	## the player buy these from the Homebrew Supply phone app with the
-	## $30 starter capital — that flow is deferred until the phone overlay
-	## (step 10) lands. Until then, every fresh career starts already
-	## "shopped" so the brewing flow is reachable. When the shop ships,
-	## seed an empty inventory here and let the player make the first
-	## real cash trade-off.
+	## Per Appendix A's canonical cold open: fresh career starts with the
+	## bottles + cleaning supplies already in the apartment (24 12oz from
+	## the player's previous life, dish soap + sponge from the kitchen),
+	## but ingredients are empty — the player has to shop with the $30
+	## startup capital. The recipe shopping list totals $39, so something
+	## has to get skipped. That's "the first real choice the game asks."
+	##
+	## tap_water is implicitly available (not modeled as inventory); the
+	## fill-kettle mini-game treats source=tap as free.
+	##
+	## Existing pre-shop saves keep whatever ingredients they had — the
+	## save_service reseed only adds missing keys, never removes them.
 	return {
-		"ingredients": {
-			"lme_light":     {"name": "Light Malt Extract (LME)", "qty": 6.0, "unit": "lb"},
-			"hops_cascade":  {"name": "Cascade",                  "qty": 2.0, "unit": "oz"},
-			"yeast_us05":    {"name": "US-05 dry ale",            "qty": 1,   "unit": "packet"},
-			"priming_sugar": {"name": "Priming sugar",            "qty": 5.0, "unit": "oz"},
-			"water_tap":     {"name": "Tap water",                "qty": 999, "unit": "gal"},
-		},
-		"bottles": {"available": 24, "in_use": 0},  # Per 4.2: starter kit
+		"ingredients": {},
+		"bottles": {"available": 24, "in_use": 0},
 		"consumables": {
 			"dish_soap": {"qty": 1, "unit": "bottle"},
 			"sponge":    {"qty": 1, "unit": "piece"},

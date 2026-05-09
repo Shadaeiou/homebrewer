@@ -41,6 +41,7 @@ const SCENES := [
 		"journal_synthetic_entries": true},
 	{"name": "phone_overlay_grid", "path": "res://scenes/phone/phone_overlay.tscn", "frames": 5},
 	{"name": "messages_app", "path": "res://scenes/phone/messages_app.tscn", "frames": 5},
+	{"name": "shop_app", "path": "res://scenes/phone/shop_app.tscn", "frames": 5},
 	{"name": "recipe_card", "path": "res://scenes/phone/recipe_card.tscn", "frames": 5,
 		"props": {"recipe_id": "apartment_pale_ale"}},
 	{"name": "check_fermenter_modal", "path": "res://scenes/modals/check_fermenter.tscn",
