@@ -26,3 +26,6 @@ keystore.properties
 .vscode/
 *.iml
 .DS_Store
+
+# Godot 4.4+ resource UID files (regenerated per machine)
+*.uid

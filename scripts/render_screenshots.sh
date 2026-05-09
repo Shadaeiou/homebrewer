@@ -19,11 +19,19 @@ cd "$GODOT_DIR"
 # Make sure imports are up to date before we render.
 godot --headless --import >/dev/null 2>&1 || true
 
-# Render with software OpenGL through Xvfb. --headless disables rendering, so
-# we use Xvfb instead and pass a real display.
-xvfb-run -a godot \
-  --rendering-driver opengl3 \
-  --script res://tools/screenshot_harness.gd
+# Render with software OpenGL. On Linux/CI we wrap in Xvfb so we don't need a
+# real display; on Windows/macOS we use the system display directly.
+case "${OSTYPE:-}" in
+  msys*|cygwin*|win32*)
+    godot --rendering-driver opengl3 --script res://tools/screenshot_harness.gd
+    ;;
+  darwin*)
+    godot --rendering-driver opengl3 --script res://tools/screenshot_harness.gd
+    ;;
+  *)
+    xvfb-run -a godot --rendering-driver opengl3 --script res://tools/screenshot_harness.gd
+    ;;
+esac
 
 echo
 echo "Rendered to: $OUT_DIR"
