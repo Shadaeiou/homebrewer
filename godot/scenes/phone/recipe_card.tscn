@@ -1,0 +1,86 @@
+[gd_scene load_steps=2 format=3 uid="uid://b8recipecardhcwma"]
+
+[ext_resource type="Script" path="res://scripts/phone/recipe_card.gd" id="1_rc"]
+
+[node name="RecipeCard" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_rc")
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="Stack" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="NameLabel" type="Label" parent="Margin/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Apartment Pale Ale"
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(0.96, 0.78, 0.32, 1)
+horizontal_alignment = 1
+
+[node name="TaglineLabel" type="Label" parent="Margin/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "\"Bulletproof first batch. Forgiving. Tasty.\""
+theme_override_font_sizes/font_size = 12
+modulate = Color(0.85, 0.78, 0.70, 1)
+horizontal_alignment = 1
+
+[node name="Sep1" type="HSeparator" parent="Margin/Stack"]
+layout_mode = 2
+
+[node name="IngredientsHeader" type="Label" parent="Margin/Stack"]
+layout_mode = 2
+text = "Ingredients"
+theme_override_font_sizes/font_size = 14
+modulate = Color(0.96, 0.78, 0.32, 1)
+
+[node name="IngredientsLabel" type="Label" parent="Margin/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 3
+
+[node name="Sep2" type="HSeparator" parent="Margin/Stack"]
+layout_mode = 2
+
+[node name="TargetsHeader" type="Label" parent="Margin/Stack"]
+layout_mode = 2
+text = "Targets"
+theme_override_font_sizes/font_size = 14
+modulate = Color(0.96, 0.78, 0.32, 1)
+
+[node name="TargetsLabel" type="Label" parent="Margin/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+theme_override_font_sizes/font_size = 12
+
+[node name="Sep3" type="HSeparator" parent="Margin/Stack"]
+layout_mode = 2
+
+[node name="NotesLabel" type="Label" parent="Margin/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+theme_override_font_sizes/font_size = 12
+modulate = Color(0.85, 0.85, 0.55, 1)
+autowrap_mode = 3

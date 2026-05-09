@@ -18,6 +18,7 @@ const BREWING_DAY_SCENE     := preload("res://scenes/brewing_day.tscn")
 const BOTTLING_SCENE         := preload("res://scenes/minigames/bottling.tscn")
 const TASTING_SCENE          := preload("res://scenes/minigames/tasting.tscn")
 const JOURNAL_SCENE          := preload("res://scenes/journal.tscn")
+const PHONE_OVERLAY_SCENE    := preload("res://scenes/phone/phone_overlay.tscn")
 const CHECK_FERMENTER_MODAL  := preload("res://scenes/modals/check_fermenter.tscn")
 
 const STARTER_RECIPE_ID := "apartment_pale_ale"
@@ -30,6 +31,7 @@ const STARTER_RECIPE_ID := "apartment_pale_ale"
 @onready var checklist_header: Label = %ChecklistHeader
 @onready var checklist_list: VBoxContainer = %ChecklistList
 @onready var journal_button: Button = %JournalButton
+@onready var phone_button: Button = %PhoneButton
 @onready var start_brewing_button: Button = %StartBrewingButton
 @onready var start_brewing_hint: Label = %StartBrewingHint
 @onready var version_label: Label = %VersionLabel
@@ -45,6 +47,7 @@ func _ready() -> void:
 	rest_button.pressed.connect(_on_rest_pressed)
 	start_brewing_button.pressed.connect(_on_start_brewing_pressed)
 	journal_button.pressed.connect(_on_journal_pressed)
+	phone_button.pressed.connect(_on_phone_pressed)
 	dev_reset_button.pressed.connect(_on_dev_reset_pressed)
 	reset_confirm_dialog.confirmed.connect(_on_dev_reset_confirmed)
 	Updater.update_available.connect(_on_update_available)
@@ -64,6 +67,11 @@ func _on_journal_pressed() -> void:
 	var main := get_tree().root.get_node_or_null("Main")
 	if main and main.has_method("mount_active_scene"):
 		main.mount_active_scene(JOURNAL_SCENE)
+
+func _on_phone_pressed() -> void:
+	var main := get_tree().root.get_node_or_null("Main")
+	if main and main.has_method("push_phone"):
+		main.push_phone(PHONE_OVERLAY_SCENE)
 
 func _on_dev_reset_pressed() -> void:
 	reset_confirm_dialog.popup_centered()

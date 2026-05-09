@@ -51,6 +51,23 @@ func clear_active_scene() -> void:
 	if TimeService.is_scene_running():
 		TimeService.end_scene()
 
+func push_phone(scene: PackedScene, configure: Callable = Callable()) -> Node:
+	## Push the phone overlay onto PhoneLayer per 7.2. Same pause semantics
+	## as a modal but lives at layer=50 (between active scene and modals).
+	## Phone subscenes (Messages / Shop / Calendar / etc.) live inside the
+	## overlay and swap inline rather than stacking on PhoneLayer.
+	var instance: Node = scene.instantiate()
+	if configure.is_valid():
+		configure.call(instance)
+	phone_layer.add_child(instance)
+	get_tree().paused = true
+	return instance
+
+func pop_phone() -> void:
+	for child in phone_layer.get_children():
+		child.queue_free()
+	get_tree().paused = false
+
 func push_modal(scene: PackedScene, configure: Callable = Callable()) -> Node:
 	## Push a modal onto ModalLayer per 7.2. Pauses the rest of the scene
 	## tree so brewing-day timers / scene_clock don't keep running while

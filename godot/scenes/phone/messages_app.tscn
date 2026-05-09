@@ -1,0 +1,55 @@
+[gd_scene load_steps=2 format=3 uid="uid://b8messagesapphcwma"]
+
+[ext_resource type="Script" path="res://scripts/phone/messages_app.gd" id="1_msg"]
+
+[node name="MessagesApp" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_msg")
+
+[node name="ThreadView" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+
+[node name="SenderHeader" type="Label" parent="ThreadView"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Marcus"
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.96, 0.78, 0.32, 1)
+
+[node name="Hint" type="Label" parent="ThreadView"]
+layout_mode = 2
+text = "Saturday morning · 9:14 AM"
+theme_override_font_sizes/font_size = 11
+modulate = Color(0.65, 0.62, 0.58, 1)
+
+[node name="Scroll" type="ScrollContainer" parent="ThreadView"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BubbleList" type="VBoxContainer" parent="ThreadView/Scroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="RecipeSlot" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+visible = false

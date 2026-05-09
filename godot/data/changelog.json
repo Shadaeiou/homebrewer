@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.2.65",
+    "date": "2026-05-09",
+    "bullets": [
+      "New: phone overlay. Tap Phone on the dashboard's bottom row to open it. App grid shows Messages (real), Shop / Forum / News / Calendar (placeholder, coming soon).",
+      "Messages opens straight to the Marcus thread — the cold open from Appendix A. Five messages: party invite, the $30 startup capital your folks will chip in, and a torn-page-from-BREW-MAGAZINE attachment. Tap Open recipe → recipe card spread for Apartment Pale Ale.",
+      "Phone uses the ModalLayer-style pause: while the overlay is up, brewing-day timers and rest don't tick.",
+      "Shop app is the next thing — once it ships, the pre-seeded ingredients go away and Marcus's $30 + the recipe's $39 shopping list become the real first-decision moment."
+    ]
+  },
+  {
     "version": "0.2.64",
     "date": "2026-05-09",
     "bullets": [

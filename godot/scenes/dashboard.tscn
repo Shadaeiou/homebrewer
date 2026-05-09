@@ -112,11 +112,25 @@ custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 text = "Get some rest →"
 
-[node name="JournalButton" type="Button" parent="Margin/Body"]
+[node name="BottomRow" type="HBoxContainer" parent="Margin/Body"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="PhoneButton" type="Button" parent="Margin/Body/BottomRow"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
 flat = true
-text = "View brewery journal"
+text = "Phone"
+modulate = Color(0.85, 0.78, 0.70, 1)
+theme_override_font_sizes/font_size = 13
+
+[node name="JournalButton" type="Button" parent="Margin/Body/BottomRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+flat = true
+text = "Brewery journal"
 modulate = Color(0.85, 0.78, 0.70, 1)
 theme_override_font_sizes/font_size = 13
 
