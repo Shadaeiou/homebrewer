@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.2.59",
+    "date": "2026-05-09",
+    "bullets": [
+      "New mini-game: Boil with hops. Set the burner heat (HIGH/MED/LOW), choose whether to watch for hot break and drop hops on schedule, react to a boil-over the way you'd actually react in the kitchen (lower heat / blow / skim / ignore), and remember the flameout. Each choice tweaks the IBU factor, volume loss, and risk deltas.",
+      "All seven brewing-day stages except the \"heat\" warmup now have real mini-games. The full apartment-pale-ale flow plays end-to-end: sanitize → fill kettle → (heat placeholder) → add LME → boil with hops → cool the wort → transfer + pitch. The brew flips to fermenting and you're back on the dashboard.",
+      "Boil's UI is form-style for now. The intended end-state is a real-time mini-game with hop-drop prompts, hot-break recognition, and a boil-over reaction window — that lands once the kitchen render-pipeline art is in. The math contract stays the same; only the input affordance changes."
+    ]
+  },
+  {
     "version": "0.2.58",
     "date": "2026-05-09",
     "bullets": [

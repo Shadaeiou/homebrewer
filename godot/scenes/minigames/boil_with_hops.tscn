@@ -1,0 +1,87 @@
+[gd_scene load_steps=2 format=3 uid="uid://b8boilhopshcwma"]
+
+[ext_resource type="Script" path="res://scripts/minigames/boil_with_hops/boil_with_hops.gd" id="1_boil"]
+
+[node name="BoilWithHops" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_boil")
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="Stack" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="StageTitle" type="Label" parent="Margin/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Boil with hops"
+theme_override_font_sizes/font_size = 22
+
+[node name="Hint" type="Label" parent="Margin/Stack"]
+layout_mode = 2
+text = "60-min boil. Hop drops at 60, 15, 0 minutes. Watch for boil-over and don't forget the flameout."
+theme_override_font_sizes/font_size = 12
+modulate = Color(0.78, 0.74, 0.70, 1)
+autowrap_mode = 3
+
+[node name="HeatHeader" type="Label" parent="Margin/Stack"]
+layout_mode = 2
+text = "Burner heat"
+theme_override_font_sizes/font_size = 14
+modulate = Color(0.96, 0.78, 0.32, 1)
+
+[node name="HeatGroup" type="VBoxContainer" parent="Margin/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="AttentionToggle" type="CheckBox" parent="Margin/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+button_pressed = true
+text = "Watch closely for hot break"
+
+[node name="HopsToggle" type="CheckBox" parent="Margin/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+button_pressed = true
+text = "Drop hops on schedule"
+
+[node name="BoilOverHeader" type="Label" parent="Margin/Stack"]
+layout_mode = 2
+text = "When the foam climbs"
+theme_override_font_sizes/font_size = 14
+modulate = Color(0.96, 0.78, 0.32, 1)
+
+[node name="BoilOverGroup" type="VBoxContainer" parent="Margin/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="FlameoutToggle" type="CheckBox" parent="Margin/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+button_pressed = true
+text = "Turn burner off promptly at flameout"
+
+[node name="ConfirmButton" type="Button" parent="Margin/Stack"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Confirm"
