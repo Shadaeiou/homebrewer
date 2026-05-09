@@ -229,19 +229,41 @@ func start_brewing_issues(recipe_id: String) -> Array:
 			return issues
 	if free_fermenter_count() <= 0:
 		issues.append("No fermenter available — bottle a brew first")
-	# v1 ingredient check: any ingredient row missing from inventory.ingredients
-	# blocks the brew. The pre-seeded inventory satisfies this for APA; once
-	# the shop is built the player can land here legitimately broke.
+	# Recipe-driven ingredient check. Walks the recipe's fermentables /
+	# hop_schedule / yeast and asserts the inventory has each
+	# ingredient_id. Same hop in multiple additions only counts once
+	# (qty checks land when inventory consumption ships).
 	var ingredients: Dictionary = data.get("inventory", {}).get("ingredients", {})
 	var recipe: RecipeDef = load("res://data/recipes/%s.tres" % recipe_id)
 	if recipe != null:
-		if not ingredients.has("lme_light") and recipe.method == "EXTRACT":
-			issues.append("Need malt extract")
-		if not ingredients.has("hops_cascade"):
-			issues.append("Need hops")
-		if not ingredients.has("yeast_us05"):
-			issues.append("Need yeast")
+		var required: Dictionary = required_ingredients(recipe)
+		for ingredient_id in required:
+			if not ingredients.has(ingredient_id):
+				issues.append("Need %s" % String(required[ingredient_id]))
 	return issues
+
+func required_ingredients(recipe: RecipeDef) -> Dictionary:
+	## Returns a {ingredient_id: display_name} map of every ingredient
+	## the recipe references. priming_sugar is canonical when
+	## priming_sugar_oz > 0 — the recipe schema doesn't carry it as
+	## an explicit fermentable.
+	var out: Dictionary = {}
+	for f in recipe.fermentables:
+		var id: String = String(f.get("ingredient_id", ""))
+		if id == "":
+			continue
+		out[id] = String(f.get("item", id))
+	for h in recipe.hop_schedule:
+		var id: String = String(h.get("ingredient_id", ""))
+		if id == "":
+			continue
+		out[id] = String(h.get("item", id))
+	var yeast_id: String = String(recipe.yeast.get("ingredient_id", ""))
+	if yeast_id != "":
+		out[yeast_id] = String(recipe.yeast.get("item", yeast_id))
+	if recipe.priming_sugar_oz > 0:
+		out["priming_sugar"] = "Priming sugar"
+	return out
 
 const BOTTLES_PER_BATCH := 24  ## Per 4.2: 5gal APA fills exactly 24 12oz bottles.
 

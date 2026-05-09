@@ -18,23 +18,28 @@ target_srm = 8.0
 target_abv = 4.5
 fermentables = Array[Dictionary]([{
 "item": "Light Malt Extract (LME)",
+"ingredient_id": "lme_light",
 "weight_lb": 6.0
 }])
 hop_schedule = Array[Dictionary]([{
 "item": "Cascade",
+"ingredient_id": "hops_cascade",
 "weight_oz": 1.0,
 "minutes_remaining": 60
 }, {
 "item": "Cascade",
+"ingredient_id": "hops_cascade",
 "weight_oz": 0.5,
 "minutes_remaining": 15
 }, {
 "item": "Cascade",
+"ingredient_id": "hops_cascade",
 "weight_oz": 0.5,
 "minutes_remaining": 0
 }])
 yeast = {
 "item": "US-05 dry ale",
+"ingredient_id": "yeast_us05",
 "attenuation": 0.75,
 "pitch_temp_c": 20.0
 }

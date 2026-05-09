@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.2.68",
+    "date": "2026-05-09",
+    "bullets": [
+      "Recipe-driven ingredient prereqs. Start brewing now walks the recipe's fermentables, hop_schedule, and yeast (and adds priming sugar when the recipe uses it) instead of hardcoding APA's specific items. The Need <X> hint pulls the display name from the recipe itself, so when more recipes ship the message reads natural — Need Cascade, Need US-05 dry ale, Need Light Malt Extract — without code changes."
+    ]
+  },
+  {
     "version": "0.2.67",
     "date": "2026-05-09",
     "bullets": [

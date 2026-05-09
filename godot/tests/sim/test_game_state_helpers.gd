@@ -43,14 +43,31 @@ func test_start_brewing_issues_blocks_on_unshopped_ingredients() -> void:
 
 func test_start_brewing_issues_empty_after_shopping() -> void:
 	# Once required ingredients are in inventory, the Start brewing
-	# validator clears.
+	# validator clears. APA's recipe-driven prereq walk requires
+	# fermentables (LME), hops (Cascade), yeast (US-05), and priming
+	# sugar (canonical when priming_sugar_oz > 0).
 	GameState.data["inventory"]["ingredients"] = {
-		"lme_light":     {"name": "LME",      "qty": 6.0, "unit": "lb"},
-		"hops_cascade":  {"name": "Cascade",  "qty": 2.0, "unit": "oz"},
-		"yeast_us05":    {"name": "US-05",    "qty": 1,   "unit": "packet"},
+		"lme_light":     {"name": "LME",          "qty": 6.0, "unit": "lb"},
+		"hops_cascade":  {"name": "Cascade",      "qty": 2.0, "unit": "oz"},
+		"yeast_us05":    {"name": "US-05",        "qty": 1,   "unit": "packet"},
+		"priming_sugar": {"name": "Priming sugar","qty": 5.0, "unit": "oz"},
 	}
 	var issues: Array = GameState.start_brewing_issues("apartment_pale_ale")
 	assert_eq(issues.size(), 0, "shopped career must be ready to brew APA")
+
+func test_required_ingredients_walks_recipe_dynamically() -> void:
+	# Recipe-driven; doesn't hardcode APA-specific ids.
+	var recipe: RecipeDef = load("res://data/recipes/apartment_pale_ale.tres")
+	var required: Dictionary = GameState.required_ingredients(recipe)
+	# APA needs LME + Cascade (deduped) + US-05 + priming sugar = 4 ids.
+	assert_eq(required.size(), 4)
+	assert_true(required.has("lme_light"))
+	assert_true(required.has("hops_cascade"))
+	assert_true(required.has("yeast_us05"))
+	assert_true(required.has("priming_sugar"))
+	# Display names come from the recipe's `item` strings (used in the
+	# "Need <X>" messages).
+	assert_string_contains(String(required["lme_light"]), "Light Malt Extract")
 
 func test_start_brewing_issues_unknown_recipe() -> void:
 	var issues: Array = GameState.start_brewing_issues("imperial_stout_does_not_exist")
