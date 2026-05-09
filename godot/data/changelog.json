@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.2.56",
+    "date": "2026-05-09",
+    "bullets": [
+      "New mini-game: Sanitize fermenter & tools. Pick which steps to take — rinse, soap-wash, Star San, drip-dry. The breadth of actions sets your care factor; the strongest action sets the bucket's persistent state (USED → SERVICEABLE → CLEAN → SANITIZED), which carries forward as the next brew's infection-risk baseline.",
+      "Star San is shown but greyed out with a (need to buy) tag because the canonical Appendix A starter inventory skips it. Once the phone shop ships you'll be able to buy it during the cold open. Until then the best you can hit is CLEAN."
+    ]
+  },
+  {
     "version": "0.2.55",
     "date": "2026-05-09",
     "bullets": [

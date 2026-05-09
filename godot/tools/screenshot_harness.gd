@@ -20,6 +20,7 @@ const SCENES := [
 		"frames": 5, "props": {"initial_stage_index": 3}},
 	{"name": "fill_kettle", "path": "res://scenes/minigames/fill_kettle.tscn", "frames": 5},
 	{"name": "pour_lme", "path": "res://scenes/minigames/pour_lme.tscn", "frames": 5},
+	{"name": "sanitize", "path": "res://scenes/minigames/sanitize.tscn", "frames": 5},
 ]
 
 const OUT_DIR := "res://../screenshots"
