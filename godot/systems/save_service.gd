@@ -242,4 +242,12 @@ func _reseed_ingredients() -> void:
 		inv["bottles"] = seeded["bottles"]
 	if not inv.has("consumables"):
 		inv["consumables"] = seeded["consumables"]
+	# Equipment and journal were added after the initial schema, so
+	# pre-migration saves don't have them. Backfill so the inventory
+	# picker can show the kettle, fermenter, etc., and the journal
+	# notebook is present in the apartment for existing careers.
+	if not inv.has("equipment"):
+		inv["equipment"] = seeded["equipment"]
+	if not inv.has("journal"):
+		inv["journal"] = seeded["journal"]
 	GameState.data["inventory"] = inv

@@ -37,16 +37,11 @@ const PAN_THRESHOLD: float = 8.0  # Pixels of motion before we treat the press a
 
 @onready var _viewport: Control = %ApartmentViewport
 @onready var _day_label: Label = %DayLabel
-@onready var _money_row: Label = %MoneyRow
-@onready var _morning_summary: Label = %MorningSummary
-@onready var _action_prompt: Label = %ActionPrompt
 @onready var _phone_button: Button = %PhoneButton
-@onready var _rest_button: Button = %RestButton
 @onready var _version_label: Label = %VersionLabel
 @onready var _update_banner: PanelContainer = %UpdateBanner
 @onready var _update_label: Label = %UpdateLabel
 @onready var _update_button: Button = %UpdateButton
-@onready var _dev_reset_button: Button = %DevResetButton
 @onready var _reset_confirm_dialog: ConfirmationDialog = %ResetConfirmDialog
 
 var _apartment: Apartment2D = null
@@ -64,8 +59,6 @@ var _did_pan: bool = false
 func _ready() -> void:
 	_version_label.text = Version.full()
 	_phone_button.pressed.connect(_on_phone_pressed)
-	_rest_button.pressed.connect(_on_rest_pressed)
-	_dev_reset_button.pressed.connect(func(): _reset_confirm_dialog.popup_centered())
 	_reset_confirm_dialog.confirmed.connect(func(): SaveService.wipe_and_reset())
 	_update_button.pressed.connect(Updater.install_update)
 	Updater.update_available.connect(_on_update_available)
@@ -116,6 +109,11 @@ func _compute_station_rects() -> void:
 	)
 	# Bed footprint (mattress + frame + headboard tower).
 	_station_rects[Apartment2D.STATION_BED] = _apartment.bed_rect_world().grow(8.0)
+	# Front door (way out of the apartment).
+	var fd: Vector2 = _apartment.station_anchor(Apartment2D.STATION_FRONT_DOOR)
+	_station_rects[Apartment2D.STATION_FRONT_DOOR] = Rect2(
+		fd.x - 70, fd.y - 320, 140, 340,
+	)
 	# Journal sits on a wall shelf above the bottling table — its own
 	# hotspot, takes priority over the bottling-table hotspot.
 	var jr: Rect2 = _apartment.journal_rect_world()
@@ -197,6 +195,8 @@ func _on_station_tapped(station: int) -> void:
 			_on_bottling_table_tapped()
 		Apartment2D.STATION_BED:
 			_on_bed_tapped()
+		Apartment2D.STATION_FRONT_DOOR:
+			_on_front_door_tapped()
 
 # ---- Per-station behavior ----
 
@@ -208,17 +208,21 @@ func _on_sink_tapped() -> void:
 	if not resumable.is_empty():
 		_open_brewing_day(String(resumable.get("brew_id", "")))
 		return
-	var issues: Array = GameState.start_brewing_issues(STARTER_RECIPE_ID)
-	if not issues.is_empty():
-		# Don't even open the picker — the player can't act yet.
-		_render_action_prompt()
-		return
+	# Always open the picker — the picker itself shows what's available
+	# (or notes that nothing fits if the inventory is empty for this
+	# station). Ingredient checks happen when the player picks the kettle.
 	_open_picker_for(Apartment2D.STATION_SINK, "What goes in the sink?",
 		_on_sink_item_picked)
 
 func _on_sink_item_picked(equipment_id: String) -> void:
 	if equipment_id == "kettle_5gal":
-		_start_new_brew()
+		# Block the brew start if ingredients are missing — but the
+		# picker has already closed by the time we get here, so the
+		# message goes through Messages-style toast (TODO) instead of
+		# a HUD prompt. For now, silently return; player has to shop.
+		var issues: Array = GameState.start_brewing_issues(STARTER_RECIPE_ID)
+		if issues.is_empty():
+			_start_new_brew()
 
 func _start_new_brew() -> void:
 	var recipe: RecipeDef = load("res://data/recipes/%s.tres" % STARTER_RECIPE_ID)
@@ -246,8 +250,7 @@ func _on_closet_tapped() -> void:
 	if brew.is_empty():
 		brew = _find_brew_in_stage(BrewState.STAGE_BOTTLED_CONDITIONING)
 	if brew.is_empty():
-		_action_prompt.text = "Closet's empty."
-		return
+		return  # Nothing in the closet — silent ignore.
 	var brew_id: String = String(brew.get("brew_id", ""))
 	var main := get_tree().root.get_node_or_null("Main")
 	if main and main.has_method("push_modal"):
@@ -258,7 +261,12 @@ func _on_stove_tapped() -> void:
 	if not resumable.is_empty():
 		_open_brewing_day(String(resumable.get("brew_id", "")))
 		return
-	_action_prompt.text = "Stove's cold. Start a brew at the kettle first."
+	# v1: stove only matters during a brew — silent ignore otherwise.
+
+func _on_front_door_tapped() -> void:
+	# v1: nothing to do outside yet. Once we wire deliveries / the bar /
+	# beer festivals, this opens the "going out?" picker. For now, silent.
+	pass
 
 func _on_journal_tapped() -> void:
 	var main := get_tree().root.get_node_or_null("Main")
@@ -273,19 +281,8 @@ func _on_bed_tapped() -> void:
 
 func _on_bottling_table_tapped() -> void:
 	# v1: bottling happens through the closet's "Check fermenter" modal
-	# once a brew is ready. Hint at it.
-	var ready_brew: Dictionary = {}
-	for b in GameState.data.get("brews_in_flight", []):
-		if String(b.get("stage", "")) == BrewState.STAGE_FERMENTING:
-			var snap: Dictionary = b.get("recipe_snapshot", {})
-			var elapsed: int = int(b.get("days_elapsed_in_stage", 0))
-			if elapsed >= int(snap.get("fermentation_days", 5)):
-				ready_brew = b
-				break
-	if not ready_brew.is_empty():
-		_action_prompt.text = "Bottle the %s — tap the closet to start." % _brew_name(ready_brew)
-	else:
-		_action_prompt.text = "Bottling table — clean and waiting."
+	# once a brew is ready. Silent ignore here.
+	pass
 
 func _open_brewing_day(brew_id: String) -> void:
 	var main := get_tree().root.get_node_or_null("Main")
@@ -297,97 +294,8 @@ func _open_brewing_day(brew_id: String) -> void:
 func _render_state() -> void:
 	if GameState.data.is_empty():
 		_day_label.text = "Day 0"
-		_money_row.text = "$ —"
-		_action_prompt.text = ""
 		return
 	_day_label.text = "Day %d" % TimeService.day_clock
-	var cash: int = int(GameState.data.get("cash", {}).get("balance", 0))
-	var inv: Dictionary = GameState.data.get("inventory", {})
-	var bottles: Dictionary = inv.get("bottles", {})
-	var bottles_avail: int = int(bottles.get("available", 0))
-	var bottles_in_use: int = int(bottles.get("in_use", 0))
-	if bottles_in_use > 0:
-		_money_row.text = "$%d · %d bottles (%d capping)" % [cash, bottles_avail, bottles_in_use]
-	else:
-		_money_row.text = "$%d · %d bottles" % [cash, bottles_avail]
-	_render_morning_summary()
-	_render_action_prompt()
-
-func _render_morning_summary() -> void:
-	var brews: Array = GameState.data.get("brews_in_flight", [])
-	var day: int = TimeService.day_clock
-	var lines: Array = []
-	if day == 0 and brews.is_empty():
-		lines = [
-			"First day in the apartment.",
-			"Stockpot's on the counter. Bucket's in the closet.",
-		]
-	elif brews.is_empty():
-		lines = [
-			"Quiet morning. Closet's empty.",
-			"Empty fermenter. Empty kettle.",
-			"Calm day. The supplies are clean.",
-		]
-	else:
-		var any_ready := false
-		var any_fermenting := false
-		var any_conditioning := false
-		for b in brews:
-			var stage: String = String(b.get("stage", ""))
-			var elapsed: int = int(b.get("days_elapsed_in_stage", 0))
-			var snap: Dictionary = b.get("recipe_snapshot", {})
-			if stage == BrewState.STAGE_FERMENTING:
-				any_fermenting = true
-				if elapsed >= int(snap.get("fermentation_days", 5)):
-					any_ready = true
-			elif stage == BrewState.STAGE_BOTTLED_CONDITIONING:
-				any_conditioning = true
-				if elapsed >= int(snap.get("condition_days", 14)):
-					any_ready = true
-		if any_ready:
-			lines = ["Something's ready for you."]
-		elif any_fermenting:
-			lines = ["Faint yeast smell from the closet.", "Closet's quiet."]
-		elif any_conditioning:
-			lines = ["Bottles in the rack are settling."]
-	if lines.is_empty():
-		_morning_summary.text = ""
-	else:
-		_morning_summary.text = String(lines[day % lines.size()])
-
-func _render_action_prompt() -> void:
-	var resumable: Dictionary = _find_brew_in_stage(BrewState.STAGE_BREWING_DAY)
-	var fermenting: Dictionary = _find_brew_in_stage(BrewState.STAGE_FERMENTING)
-	var conditioning: Dictionary = _find_brew_in_stage(BrewState.STAGE_BOTTLED_CONDITIONING)
-	if not resumable.is_empty():
-		_action_prompt.text = "Tap the kettle to resume — %s" % _brew_name(resumable)
-		return
-	if not fermenting.is_empty():
-		var snap: Dictionary = fermenting.get("recipe_snapshot", {})
-		var elapsed: int = int(fermenting.get("days_elapsed_in_stage", 0))
-		var ferm: int = int(snap.get("fermentation_days", 5))
-		_action_prompt.text = "Closet — %s, day %d/%d" % [_brew_name(fermenting), elapsed, ferm]
-		return
-	if not conditioning.is_empty():
-		var snap2: Dictionary = conditioning.get("recipe_snapshot", {})
-		var elapsed2: int = int(conditioning.get("days_elapsed_in_stage", 0))
-		var cond: int = int(snap2.get("condition_days", 14))
-		_action_prompt.text = "Closet — %s, conditioning %d/%d" % [_brew_name(conditioning), elapsed2, cond]
-		return
-	var issues: Array = GameState.start_brewing_issues(STARTER_RECIPE_ID)
-	if issues.is_empty():
-		_action_prompt.text = "Tap the kettle to start a brew"
-	elif _missing_ingredient_count(issues) > 0:
-		_action_prompt.text = "Need ingredients. Tap the phone to shop."
-	else:
-		_action_prompt.text = String(issues[0])
-
-func _missing_ingredient_count(issues: Array) -> int:
-	var n: int = 0
-	for s in issues:
-		if String(s).begins_with("Need "):
-			n += 1
-	return n
 
 func _find_brew_in_stage(stage: String) -> Dictionary:
 	for b in GameState.data.get("brews_in_flight", []):
@@ -400,9 +308,6 @@ func _brew_name(brew: Dictionary) -> String:
 	return String(snap.get("display_name", brew.get("recipe_id", "Brew")))
 
 # ---- HUD button handlers ----
-
-func _on_rest_pressed() -> void:
-	TimeService.advance_day()
 
 func _on_phone_pressed() -> void:
 	var main := get_tree().root.get_node_or_null("Main")

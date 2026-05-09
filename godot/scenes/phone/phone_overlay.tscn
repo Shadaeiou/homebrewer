@@ -60,6 +60,30 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "Close"
 
+[node name="HomeStats" type="PanelContainer" parent="Margin/Stack"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="StatsBox" type="VBoxContainer" parent="Margin/Stack/HomeStats"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="BankLabel" type="Label" parent="Margin/Stack/HomeStats/StatsBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "$0"
+theme_override_font_sizes/font_size = 28
+modulate = Color(0.96, 0.78, 0.32, 1)
+horizontal_alignment = 1
+
+[node name="BottlesLabel" type="Label" parent="Margin/Stack/HomeStats/StatsBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0 bottles available"
+theme_override_font_sizes/font_size = 12
+modulate = Color(0.85, 0.78, 0.70, 1)
+horizontal_alignment = 1
+
 [node name="AppGrid" type="GridContainer" parent="Margin/Stack"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -70,7 +94,7 @@ columns = 2
 [node name="PlaceholderLabel" type="Label" parent="Margin/Stack"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Tap an app to open it. Most are placeholders for now — Messages is the cold open."
+text = "Order supplies in Shop. Settings has the changelog and the reset button."
 theme_override_font_sizes/font_size = 12
 modulate = Color(0.65, 0.62, 0.58, 1)
 autowrap_mode = 3

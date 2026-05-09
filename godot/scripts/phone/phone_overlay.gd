@@ -13,11 +13,12 @@ extends Control
 signal closed
 
 const APPS := [
-	{"id": "messages", "label": "Messages",  "scene": preload("res://scenes/phone/messages_app.tscn"), "available": true},
-	{"id": "shop",     "label": "Shop",      "scene": preload("res://scenes/phone/shop_app.tscn"),     "available": true},
-	{"id": "forum",    "label": "Forum",     "scene": null,  "available": false},
-	{"id": "news",     "label": "News",      "scene": null,  "available": false},
-	{"id": "calendar", "label": "Calendar",  "scene": null,  "available": false},
+	{"id": "messages", "label": "Messages",  "scene": preload("res://scenes/phone/messages_app.tscn"),  "available": true},
+	{"id": "shop",     "label": "Shop",      "scene": preload("res://scenes/phone/shop_app.tscn"),      "available": true},
+	{"id": "settings", "label": "Settings",  "scene": preload("res://scenes/phone/settings_app.tscn"),  "available": true},
+	{"id": "forum",    "label": "Forum",     "scene": null,                                              "available": false},
+	{"id": "news",     "label": "News",      "scene": null,                                              "available": false},
+	{"id": "calendar", "label": "Calendar",  "scene": null,                                              "available": false},
 ]
 
 @onready var _back_button: Button = %BackButton
@@ -26,6 +27,9 @@ const APPS := [
 @onready var _grid_container: GridContainer = %AppGrid
 @onready var _content_slot: PanelContainer = %ContentSlot
 @onready var _placeholder_label: Label = %PlaceholderLabel
+@onready var _home_stats: PanelContainer = %HomeStats
+@onready var _bank_label: Label = %BankLabel
+@onready var _bottles_label: Label = %BottlesLabel
 
 var _current_app: Control = null
 
@@ -35,7 +39,19 @@ func _ready() -> void:
 	_back_button.pressed.connect(_on_back_pressed)
 	_close_button.pressed.connect(_on_close_pressed)
 	_render_grid()
+	_render_home_stats()
 	_show_grid()
+
+func _render_home_stats() -> void:
+	var cash: int = int(GameState.data.get("cash", {}).get("balance", 0))
+	_bank_label.text = "$%d" % cash
+	var bottles: Dictionary = GameState.data.get("inventory", {}).get("bottles", {})
+	var avail: int = int(bottles.get("available", 0))
+	var in_use: int = int(bottles.get("in_use", 0))
+	if in_use > 0:
+		_bottles_label.text = "%d bottles available · %d capping" % [avail, in_use]
+	else:
+		_bottles_label.text = "%d bottles available" % avail
 
 func _render_grid() -> void:
 	for child in _grid_container.get_children():
@@ -59,6 +75,8 @@ func _show_grid() -> void:
 	_back_button.visible = false
 	_title_label.text = "Phone"
 	_placeholder_label.visible = true
+	_home_stats.visible = true
+	_render_home_stats()
 
 func _show_app(app_id: String) -> void:
 	for app in APPS:
@@ -77,6 +95,7 @@ func _show_app(app_id: String) -> void:
 			_back_button.visible = true
 			_title_label.text = String(app["label"])
 			_placeholder_label.visible = false
+			_home_stats.visible = false
 			return
 
 func _clear_app() -> void:

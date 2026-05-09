@@ -1,5 +1,18 @@
 [
   {
+    "version": "0.2.80",
+    "date": "2026-05-09",
+    "bullets": [
+      "Fixed: existing saves had no equipment in inventory because the v1 → equipment migration didn't seed it. Tapping the sink showed an empty picker. Save reseed now backfills the equipment dict (kettle, fermenter, bottling bucket, capper, auto-siphon) and the journal flag for any pre-equipment careers.",
+      "Added a real apartment front door on the far left wall — heavier wood casing, painted-deep slab, single tall inset panel with a 4-pane window in the upper portion, deadbolt above the knob, and a doormat on the floor in front. Visually distinct from the closet so it's obvious which is which. Tapping it does nothing yet — deliveries / bar / festival hooks land later.",
+      "Apartment panorama widened to 1560 px and stations shifted: front door (cx 120) → closet (264) → bottling table (480) → sink (720) → stove (960) → window (1200) → bed (1440). Pan further to see everything.",
+      "HUD stripped to just \"Day N\" and the Phone icon. Gone: the morning-summary line, the money-and-bottles chip, the bottom action prompt (\"Tap the kettle to start a brew\"), the Rest button, and the Dev Reset button.",
+      "Phone home now shows your bank balance in big gold type with bottle count below — that's the screen the player checks to know what to spend, and it's where they shop. Apps grid shows Messages, Shop, and a new Settings tile.",
+      "Settings app houses the changelog scroll and the Reset Save button (with the confirmation dialog). Version label moved into the Settings header.",
+      "Rest is now bed-only — tap the bed on the right side of the apartment to advance the day."
+    ]
+  },
+  {
     "version": "0.2.79",
     "date": "2026-05-09",
     "bullets": [

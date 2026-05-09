@@ -33,7 +33,7 @@ class_name Apartment2D
 const PX_PER_INCH: float = 4.0
 const PX_PER_FOOT: float = 48.0
 
-const PANORAMA_W: float = 1440.0
+const PANORAMA_W: float = 1560.0
 const PANORAMA_H: float = 620.0
 const FLOOR_Y: float = 540.0
 ## Counter top sits 36" above the floor (standard US kitchen counter).
@@ -50,8 +50,14 @@ const STATION_SINK: int = 2
 const STATION_STOVE: int = 3
 const STATION_DECOR: int = 4
 const STATION_BED: int = 5
+const STATION_FRONT_DOOR: int = 6
 
-const STATION_X: PackedFloat32Array = [120.0, 360.0, 600.0, 840.0, 1080.0, 1320.0]
+## Layout: front door at far left, then closet, bottling table, kitchen
+## counter (sink+stove), window/decor wall, bed at the right end. The
+## front door is visually distinct from the closet so it's obvious which
+## is the way out. Closet is shifted right of the front door so their
+## casings don't touch.
+const STATION_X: PackedFloat32Array = [264.0, 480.0, 720.0, 960.0, 1200.0, 1440.0, 120.0]
 
 ## Station counter-top y — where equipment naturally sits.
 func station_anchor(station: int) -> Vector2:
@@ -138,8 +144,8 @@ func _draw() -> void:
 	draw_rect(Rect2(0, 0, PANORAMA_W, CEILING_Y), Color(0, 0, 0, 0.18))
 
 	# Splashback (tile) behind the working kitchen area: counter run only.
-	var counter_left: float = 480.0   # right edge of bottling table
-	var counter_right: float = 780.0  # left edge of stove
+	var counter_left: float = 600.0   # right edge of bottling table
+	var counter_right: float = 900.0  # left edge of stove
 	var splash_h: float = 18.0 * PX_PER_INCH  # 72 px (18" backsplash)
 	draw_rect(
 		Rect2(counter_left, COUNTER_Y - splash_h, counter_right - counter_left, splash_h),
@@ -160,22 +166,25 @@ func _draw() -> void:
 	_draw_wall_cabinets(counter_left, counter_right)
 
 	# Range hood above the stove.
-	_draw_range_hood(840.0)
+	_draw_range_hood(STATION_X[STATION_STOVE])
 
 	# Wall clock — on the bare wall to the right of the stove/hood,
 	# above the wall calendar. Out of the way of the bottling-table
 	# shelf (which holds the journal).
-	_draw_wall_clock(Vector2(960.0, COUNTER_Y - 36.0 * PX_PER_INCH))
+	_draw_wall_clock(Vector2(1080.0, COUNTER_Y - 36.0 * PX_PER_INCH))
 
 	# Wall calendar — on the same wall as the bottling-table shelf, but
 	# UP near the ceiling so it doesn't overlap the shelf or journal.
-	_draw_wall_calendar(Vector2(330.0, COUNTER_Y - 56.0 * PX_PER_INCH))
+	_draw_wall_calendar(Vector2(450.0, COUNTER_Y - 56.0 * PX_PER_INCH))
 
-	# Window on the far right (decor wall, sill above counter).
-	_draw_window(1080.0)
+	# Window on the decor wall (sill above counter).
+	_draw_window(STATION_X[STATION_DECOR])
 
-	# Closet door (far left wall).
-	_draw_closet_door(120.0)
+	# Front door (far left, way out of the apartment).
+	_draw_front_door(STATION_X[STATION_FRONT_DOOR])
+
+	# Closet door (storage, used by the brew flow).
+	_draw_closet_door(STATION_X[STATION_CLOSET])
 
 	# Floor band (below the counter level).
 	_draw_floor()
@@ -192,13 +201,13 @@ func _draw() -> void:
 	_draw_journal_notebook()
 
 	# Stove (right of counter).
-	_draw_stove(840.0)
+	_draw_stove(STATION_X[STATION_STOVE])
 
 	# Sink basin recessed into the counter.
-	_draw_sink(600.0)
+	_draw_sink(STATION_X[STATION_SINK])
 
 	# Bed on the right end of the apartment — tap to rest.
-	_draw_bed(1320.0)
+	_draw_bed(STATION_X[STATION_BED])
 
 	# Baseboard runs along the whole wall at floor level.
 	_draw_baseboard()
@@ -607,10 +616,13 @@ func _draw_baseboard() -> void:
 	var bb_h: float = 4.0 * PX_PER_INCH  # 16 px
 	var bb_y: float = FLOOR_Y - bb_h
 	# Visible wall segments (everywhere NOT covered by furniture/closet):
+	# Front door + doormat at 48-192 (cx 120, casing+door=144, mat=144),
+	# closet at 200-328, bottling table at 360-600, counter+stove at
+	# 600-1020, bed at 1320-1560. Visible wall gaps:
 	var segments := [
-		Rect2(0, bb_y, 60, bb_h),       # left of closet
-		Rect2(180, bb_y, 60, bb_h),     # closet → bottling table gap
-		Rect2(900, bb_y, 300, bb_h),    # right of stove → bed start
+		Rect2(192, bb_y, 8, bb_h),      # tiny strip front-door → closet
+		Rect2(328, bb_y, 32, bb_h),     # closet → bottling table
+		Rect2(1020, bb_y, 300, bb_h),   # right of stove → bed
 	]
 	for seg in segments:
 		draw_rect(seg, Palette.WOOD_DARK)
@@ -700,6 +712,89 @@ func _draw_stove(cx: float) -> void:
 	draw_rect(handle, Palette.METAL_LIGHT)
 	# Outline of the whole stove.
 	draw_rect(unit, Palette.METAL_OUTLINE, false, 1.0)
+
+func _draw_front_door(cx: float) -> void:
+	# Apartment exterior door. Visually distinct from the closet:
+	# slightly wider casing, single tall inset panel with a small
+	# upper window pane, deadbolt above the knob, and a doormat in
+	# front. Player taps it to leave the apartment (deliveries, bar,
+	# beer festivals, research).
+	var w: float = 32.0 * PX_PER_INCH  # 128 px (slightly wider than interior 30")
+	var h: float = 80.0 * PX_PER_INCH  # 320 px
+	var bot_y: float = FLOOR_Y
+	var top_y: float = bot_y - h
+	# Heavier casing for the exterior door.
+	var casing_w: float = 8.0
+	var casing := Rect2(cx - w * 0.5 - casing_w, top_y - casing_w,
+		w + casing_w * 2, h + casing_w)
+	draw_rect(casing, Color(0.10, 0.07, 0.05, 1))  # dark stained casing
+	draw_rect(Rect2(casing.position, Vector2(casing.size.x, 3)), Palette.WOOD_LIGHT)
+	# Door slab — painted-deep-color (not the warm interior wood).
+	var door := Rect2(cx - w * 0.5, top_y, w, h)
+	var door_paint: Color = Color(0.22, 0.16, 0.13, 1)
+	draw_rect(door, door_paint)
+	# Single tall inset panel from middle of door upward, with a small
+	# 4-pane window at the top.
+	var panel_inset_x: float = 4.0 * PX_PER_INCH  # 16
+	var panel_top: float = top_y + 6.0 * PX_PER_INCH
+	var panel_bot: float = bot_y - 24.0 * PX_PER_INCH
+	var panel := Rect2(
+		cx - w * 0.5 + panel_inset_x, panel_top,
+		w - panel_inset_x * 2, panel_bot - panel_top,
+	)
+	draw_rect(panel, Color(0.16, 0.11, 0.09, 1))
+	# Inset highlight.
+	draw_line(panel.position, panel.position + Vector2(panel.size.x, 0),
+		Color(0, 0, 0, 0.6), 1.0)
+	draw_line(panel.position + Vector2(0, panel.size.y),
+		panel.position + panel.size, Palette.WOOD_LIGHT, 1.0)
+	# Window in upper portion of panel — 4 small panes.
+	var window_h: float = panel.size.y * 0.32
+	var window := Rect2(panel.position + Vector2(8, 8),
+		Vector2(panel.size.x - 16, window_h))
+	draw_rect(window, Color(0.40, 0.46, 0.48, 1))  # soft daylight
+	# Cross mullions (4-pane).
+	draw_line(
+		Vector2(window.position.x + window.size.x * 0.5, window.position.y),
+		Vector2(window.position.x + window.size.x * 0.5, window.position.y + window.size.y),
+		door_paint, 2.0,
+	)
+	draw_line(
+		Vector2(window.position.x, window.position.y + window.size.y * 0.5),
+		Vector2(window.position.x + window.size.x, window.position.y + window.size.y * 0.5),
+		door_paint, 2.0,
+	)
+	draw_rect(window, Color(0, 0, 0, 0.6), false, 1.0)
+	# Doorknob 36" up from floor, on the right.
+	var knob_y: float = FLOOR_Y - 36.0 * PX_PER_INCH
+	var knob_x: float = door.position.x + door.size.x - 5.0 * PX_PER_INCH
+	draw_circle(Vector2(knob_x + 1, knob_y + 1), 4, Color(0, 0, 0, 0.55))
+	draw_circle(Vector2(knob_x, knob_y), 4, Palette.METAL_LIGHT)
+	draw_circle(Vector2(knob_x - 1, knob_y - 1), 1.5, Palette.METAL_SHINE)
+	# Deadbolt 6" above the knob.
+	var deadbolt_y: float = knob_y - 6.0 * PX_PER_INCH
+	draw_rect(
+		Rect2(knob_x - 4, deadbolt_y - 3, 8, 6),
+		Palette.METAL_DARK,
+	)
+	draw_rect(
+		Rect2(knob_x - 3, deadbolt_y - 1, 2, 2),
+		Palette.BRASS_LIGHT,
+	)
+	# Doormat in front of the door on the floor.
+	var mat_w: float = 36.0 * PX_PER_INCH  # 144
+	var mat_h: float = 4.0 * PX_PER_INCH  # 16
+	var mat := Rect2(cx - mat_w * 0.5, FLOOR_Y, mat_w, mat_h)
+	draw_rect(mat, Color(0.42, 0.30, 0.20, 1))  # warm bristle brown
+	# Mat texture — short horizontal hash marks.
+	for hx in range(int(mat.position.x + 6), int(mat.position.x + mat.size.x - 6), 6):
+		draw_line(
+			Vector2(hx, mat.position.y + 4),
+			Vector2(hx, mat.position.y + mat.size.y - 4),
+			Color(0.32, 0.22, 0.14, 1), 1.0,
+		)
+	# Mat outline.
+	draw_rect(mat, Color(0, 0, 0, 0.5), false, 1.0)
 
 func _draw_closet_door(cx: float) -> void:
 	# Standard interior door: 30" wide × 80" tall.
