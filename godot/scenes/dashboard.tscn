@@ -141,3 +141,20 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
+
+[node name="DevResetButton" type="Button" parent="Margin/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Reset save (dev)"
+modulate = Color(0.78, 0.55, 0.42, 1)
+theme_override_font_sizes/font_size = 12
+
+[node name="ResetConfirmDialog" type="ConfirmationDialog" parent="."]
+unique_name_in_owner = true
+title = "Reset save"
+ok_button_text = "Wipe and start over"
+cancel_button_text = "Cancel"
+dialog_text = "This will delete your save and journal and start a fresh career.
+Use this if a brew is stuck in a state the current build can't progress out of (no bottling, no anomaly recovery, etc.).
+Removed before launch."

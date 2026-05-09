@@ -77,14 +77,21 @@ func test_day_clock_persists_through_round_trip() -> void:
 	# Get-some-rest taps must not vanish on relaunch. The day clock now
 	# rides on data["player_meta"]["day_clock"]; advance_day mirrors the
 	# runtime clock into it so save_now picks it up.
-	for _i in range(7):
-		TimeService.advance_day()
+	#
+	# We poke player_meta directly here rather than calling
+	# TimeService.advance_day() — advance_day fires SaveService.save_now,
+	# which writes to user://save.json and leaks test state into the
+	# dev save (the screenshot harness loads it next dev-check run).
+	GameState.data["player_meta"]["day_clock"] = 7
 	var loaded := _parse(_serialize())
 	assert_eq(int(loaded["player_meta"]["day_clock"]), 7)
 	# Round trip into a fresh state — adopt() should restore TimeService.
 	GameState.adopt(loaded)
 	assert_eq(TimeService.day_clock, 7,
 		"adopt() must restore TimeService.day_clock from player_meta")
+	# Reset so subsequent tests start clean.
+	TimeService.day_clock = 0
+	GameState.data["player_meta"]["day_clock"] = 0
 
 func test_adopt_defaults_missing_day_clock_to_zero() -> void:
 	# A pre-day_clock save (no field at all) shouldn't crash; default 0.

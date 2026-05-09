@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.2.54",
+    "date": "2026-05-09",
+    "bullets": [
+      "Added a dev Reset save button at the bottom of the dashboard. Use it if your save lands in a stuck state — e.g. a brew stranded in fermenting because the bottling flow doesn't ship yet — and you want to drop back to Day 0 with the starter setup. Removed before launch."
+    ]
+  },
+  {
     "version": "0.2.53",
     "date": "2026-05-09",
     "bullets": [

@@ -139,6 +139,20 @@ func flush_now() -> void:
 	## can express intent.
 	save_now()
 
+func wipe_and_reset() -> void:
+	## Dev affordance: delete the save + journal and re-bootstrap from a
+	## fresh career. UI surfaces this behind a "Reset save (dev)" button
+	## while the v1 mini-games are still landing — players hit stuck states
+	## (e.g., a brew stranded in FERMENTING with no bottling flow yet) and
+	## need to reach a clean baseline. Removed before launch.
+	if FileAccess.file_exists(SAVE_PATH):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
+	if FileAccess.file_exists(SAVE_TMP_PATH):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_TMP_PATH))
+	if FileAccess.file_exists(JOURNAL_PATH):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(JOURNAL_PATH))
+	GameState.reset_to_new_career()
+
 func _on_day_advanced(_new_day: int) -> void:
 	save_now()
 

@@ -29,11 +29,15 @@ const STARTER_RECIPE_ID := "apartment_pale_ale"
 @onready var update_label: Label = %UpdateLabel
 @onready var update_button: Button = %UpdateButton
 @onready var changelog_container: VBoxContainer = %ChangelogContainer
+@onready var dev_reset_button: Button = %DevResetButton
+@onready var reset_confirm_dialog: ConfirmationDialog = %ResetConfirmDialog
 
 func _ready() -> void:
 	version_label.text = Version.full()
 	rest_button.pressed.connect(_on_rest_pressed)
 	start_brewing_button.pressed.connect(_on_start_brewing_pressed)
+	dev_reset_button.pressed.connect(_on_dev_reset_pressed)
+	reset_confirm_dialog.confirmed.connect(_on_dev_reset_confirmed)
 	Updater.update_available.connect(_on_update_available)
 	update_button.pressed.connect(Updater.install_update)
 	GameState.state_loaded.connect(_render_state)
@@ -46,6 +50,12 @@ func _ready() -> void:
 func _on_rest_pressed() -> void:
 	# The canonical day-clock advance per 4.1. SaveService auto-saves on this.
 	TimeService.advance_day()
+
+func _on_dev_reset_pressed() -> void:
+	reset_confirm_dialog.popup_centered()
+
+func _on_dev_reset_confirmed() -> void:
+	SaveService.wipe_and_reset()
 
 func _on_day_advanced(_new_day: int) -> void:
 	_render_state()
