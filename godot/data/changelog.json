@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.2.62",
+    "date": "2026-05-09",
+    "bullets": [
+      "New: brewery journal viewer. Tap View brewery journal on the dashboard to see every brew you've completed, newest first. Each card shows the recipe, the day you finished it, and the colored self / style grades plus the actual OG / FG / IBU / ABV / carbonation you hit.",
+      "Empty-state screen explains what to do if you haven't tasted anything yet."
+    ]
+  },
+  {
     "version": "0.2.61",
     "date": "2026-05-09",
     "bullets": [

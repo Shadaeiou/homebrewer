@@ -33,12 +33,23 @@ const SCENES := [
 	{"name": "bottling", "path": "res://scenes/minigames/bottling.tscn", "frames": 5},
 	{"name": "tasting", "path": "res://scenes/minigames/tasting.tscn", "frames": 5,
 		"tasting_synthetic_brew": true},
+	{"name": "journal_empty", "path": "res://scenes/journal.tscn", "frames": 5,
+		"journal_wipe": true},
+	{"name": "journal_populated", "path": "res://scenes/journal.tscn", "frames": 5,
+		"journal_synthetic_entries": true},
 ]
 
 const OUT_DIR := "res://../screenshots"
 const VIEWPORT_SIZE := Vector2i(540, 960)
 
 func _initialize() -> void:
+	# Wipe any disk state from previous test runs / captures BEFORE
+	# autoloads bootstrap. Otherwise SaveService.load_now adopts a stale
+	# save.json (often left by GUT tests writing during their assertions)
+	# and the first scene captured renders against that leaked state
+	# instead of a fresh career.
+	_wipe_disk_state()
+
 	# `--script` mode bypasses ProjectSettings autoload loading. Re-add the
 	# autoloads we depend on so scripts that reference them globally don't
 	# crash. Order matters when one autoload depends on another.
@@ -46,7 +57,15 @@ func _initialize() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
 	for spec in SCENES:
 		await _capture(spec)
+	# Clean up again at the end so a real game launch after dev-check
+	# doesn't see synthetic state.
+	_wipe_disk_state()
 	quit()
+
+func _wipe_disk_state() -> void:
+	for path in ["user://save.json", "user://save.json.tmp", "user://journal.jsonl"]:
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 func _inject_synthetic_brew(spec: Dictionary) -> void:
 	# Make sure GameState is reset to a fresh career so the recipe knowledge
@@ -70,6 +89,59 @@ func _inject_synthetic_brew(spec: Dictionary) -> void:
 		"rng_state": 1,
 	}
 	GameStateNode.data["brews_in_flight"].append(brew)
+
+func _wipe_journal() -> void:
+	if FileAccess.file_exists("user://journal.jsonl"):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path("user://journal.jsonl"))
+
+func _inject_synthetic_journal_entries() -> void:
+	# Write a few brew_completed entries directly to user://journal.jsonl
+	# via SaveService.append_journal_entry so the journal scene reads them
+	# the way it would in real gameplay.
+	_wipe_journal()
+	var SaveServiceNode = root.get_node_or_null("SaveService")
+	if SaveServiceNode == null:
+		return
+	var entries := [
+		{
+			"type": "brew_completed",
+			"day_completed": 24,
+			"brew_id": "demo_1",
+			"recipe_id": "apartment_pale_ale",
+			"recipe_display_name": "Apartment Pale Ale",
+			"actuals": {"og": 1.045, "fg": 1.012, "ibu": 30.0, "abv": 4.3, "carbonation": 1.0},
+			"self_grade": "A",
+			"external_grade": "A-",
+			"outcomes": {},
+			"risk_profile": {},
+		},
+		{
+			"type": "brew_completed",
+			"day_completed": 49,
+			"brew_id": "demo_2",
+			"recipe_id": "apartment_pale_ale",
+			"recipe_display_name": "Apartment Pale Ale",
+			"actuals": {"og": 1.041, "fg": 1.012, "ibu": 26.0, "abv": 3.8, "carbonation": 0.85},
+			"self_grade": "B",
+			"external_grade": "C",
+			"outcomes": {},
+			"risk_profile": {},
+		},
+		{
+			"type": "brew_completed",
+			"day_completed": 75,
+			"brew_id": "demo_3",
+			"recipe_id": "apartment_pale_ale",
+			"recipe_display_name": "Apartment Pale Ale",
+			"actuals": {"og": 1.038, "fg": 1.014, "ibu": 22.0, "abv": 3.2, "carbonation": 0.0},
+			"self_grade": "D",
+			"external_grade": "F",
+			"outcomes": {},
+			"risk_profile": {},
+		},
+	]
+	for e in entries:
+		SaveServiceNode.append_journal_entry(e)
 
 func _inject_completed_brew_for_tasting() -> String:
 	# A fully-played-out APA brew with ideal outcomes so tasting renders
@@ -153,6 +225,14 @@ func _capture(spec: Dictionary) -> void:
 		push_error("Could not load scene: %s" % path)
 		return
 
+	# Reset GameState to a fresh career before each capture so state from
+	# the previous scene doesn't bleed in. The synthetic-brew injectors
+	# call reset themselves; doing it here unconditionally is the simpler
+	# invariant.
+	var GameStateNode = root.get_node_or_null("GameState")
+	if GameStateNode != null:
+		GameStateNode.reset_to_new_career()
+
 	# Pre-mount: optionally inject a synthetic brew into GameState so the
 	# dashboard "Brews in flight" section has something to render.
 	var synthetic: Dictionary = spec.get("synthetic_brew", {})
@@ -161,6 +241,10 @@ func _capture(spec: Dictionary) -> void:
 	var injected_brew_id := ""
 	if bool(spec.get("tasting_synthetic_brew", false)):
 		injected_brew_id = _inject_completed_brew_for_tasting()
+	if bool(spec.get("journal_wipe", false)):
+		_wipe_journal()
+	if bool(spec.get("journal_synthetic_entries", false)):
+		_inject_synthetic_journal_entries()
 
 	var instance: Node = packed.instantiate()
 	# Apply pre-_ready props so the scene wakes up with the harness's setup.

@@ -17,6 +17,7 @@ extends Control
 const BREWING_DAY_SCENE := preload("res://scenes/brewing_day.tscn")
 const BOTTLING_SCENE     := preload("res://scenes/minigames/bottling.tscn")
 const TASTING_SCENE      := preload("res://scenes/minigames/tasting.tscn")
+const JOURNAL_SCENE      := preload("res://scenes/journal.tscn")
 
 const STARTER_RECIPE_ID := "apartment_pale_ale"
 
@@ -26,6 +27,7 @@ const STARTER_RECIPE_ID := "apartment_pale_ale"
 @onready var rest_button: Button = %RestButton
 @onready var brews_header: Label = %BrewsHeader
 @onready var brews_list: VBoxContainer = %BrewsList
+@onready var journal_button: Button = %JournalButton
 @onready var start_brewing_button: Button = %StartBrewingButton
 @onready var start_brewing_hint: Label = %StartBrewingHint
 @onready var version_label: Label = %VersionLabel
@@ -40,6 +42,7 @@ func _ready() -> void:
 	version_label.text = Version.full()
 	rest_button.pressed.connect(_on_rest_pressed)
 	start_brewing_button.pressed.connect(_on_start_brewing_pressed)
+	journal_button.pressed.connect(_on_journal_pressed)
 	dev_reset_button.pressed.connect(_on_dev_reset_pressed)
 	reset_confirm_dialog.confirmed.connect(_on_dev_reset_confirmed)
 	Updater.update_available.connect(_on_update_available)
@@ -54,6 +57,11 @@ func _ready() -> void:
 func _on_rest_pressed() -> void:
 	# The canonical day-clock advance per 4.1. SaveService auto-saves on this.
 	TimeService.advance_day()
+
+func _on_journal_pressed() -> void:
+	var main := get_tree().root.get_node_or_null("Main")
+	if main and main.has_method("mount_active_scene"):
+		main.mount_active_scene(JOURNAL_SCENE)
 
 func _on_dev_reset_pressed() -> void:
 	reset_confirm_dialog.popup_centered()
