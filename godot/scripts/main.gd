@@ -17,7 +17,7 @@ extends Node
 const DASHBOARD_SCENE := preload("res://scenes/dashboard.tscn")
 
 @onready var background_layer: CanvasLayer = $BackgroundLayer
-@onready var active_scene_container: Node = $ActiveSceneContainer
+@onready var active_scene_container: CanvasLayer = $ActiveSceneContainer
 @onready var phone_layer: CanvasLayer = $PhoneLayer
 @onready var modal_layer: CanvasLayer = $ModalLayer
 

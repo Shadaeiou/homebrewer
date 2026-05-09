@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.2.52",
+    "date": "2026-05-09",
+    "bullets": [
+      "Fixed: Start brewing showed Recipe not unlocked at first launch and only unlocked after a Get-some-rest tap. The bootstrap reseed was running, but the dashboard had already rendered against the pre-reseed state because the state-loaded signal fired too early.",
+      "Fixed: tapping Start brewing on the dashboard appeared to do nothing. The brewing-day scene mounts onto a CanvasLayer now, so it actually draws on top of the dashboard."
+    ]
+  },
+  {
     "version": "0.2.51",
     "date": "2026-05-09",
     "bullets": [

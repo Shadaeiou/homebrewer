@@ -8,7 +8,8 @@ script = ExtResource("1_main")
 [node name="BackgroundLayer" type="CanvasLayer" parent="."]
 layer = 0
 
-[node name="ActiveSceneContainer" type="Node" parent="."]
+[node name="ActiveSceneContainer" type="CanvasLayer" parent="."]
+layer = 10
 
 [node name="PhoneLayer" type="CanvasLayer" parent="."]
 layer = 50

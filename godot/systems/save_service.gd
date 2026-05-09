@@ -57,11 +57,12 @@ func load_now() -> void:
 	var save_dict: Dictionary = parsed
 	save_dict = _migrate_if_needed(save_dict)
 	GameState.adopt(save_dict)
-	# Defensive: a migration may have left fields the bootstrap fills out
-	# (equipment.owned, recipe_knowledge.known, inventory.ingredients) still
-	# empty if the v1 save predated those bootstrap helpers landing. Top
-	# them up from the bootstrap rather than wiping the player's progress.
+	# Top up bootstrap-owned fields the load may have left empty (a v1
+	# save predates the bootstrap helpers; partial-shape saves predate
+	# this defensive logic). Has to run BEFORE state_loaded fires —
+	# UI rendered against the raw, un-migrated tree shows stale state.
 	_reseed_bootstrap_fields_if_empty()
+	GameState.notify_state_loaded()
 	load_completed.emit(true)
 
 func save_now() -> void:
@@ -170,23 +171,61 @@ func _migrate_if_needed(save_dict: Dictionary) -> Dictionary:
 	return save_dict
 
 func _reseed_bootstrap_fields_if_empty() -> void:
-	## Called after adopt(). For each field the v1 save may have left empty,
-	## fill from the v2 bootstrap. Never overwrites non-empty fields, so a
-	## player mid-career keeps their owned equipment / known recipes /
-	## ingredient inventory.
+	## Called after adopt(). For each bootstrap-owned field a v1 save may
+	## have left empty (or containing the wrong shape), fill from the
+	## current bootstrap. Never overwrites earned content — we top up,
+	## not replace.
+	##
+	## "Empty" here is more permissive than `Dictionary.is_empty()`:
+	## a save with `{"known": null}` or `{"known": {"junk_key": ...}}`
+	## but missing the canonical apartment_pale_ale entry still gets
+	## the starter recipe added. Same for the starter equipment IDs
+	## and starter ingredients. This keeps a returning save unbricked
+	## even if a previous schema wrote partial data.
+	_reseed_owned_equipment()
+	_reseed_known_recipes()
+	_reseed_ingredients()
+
+func _reseed_owned_equipment() -> void:
 	var equip: Dictionary = GameState.data.get("equipment", {})
-	if Dictionary(equip.get("owned", {})).is_empty():
-		equip["owned"] = GameState._initial_equipment()
-		GameState.data["equipment"] = equip
+	var owned_raw: Variant = equip.get("owned", {})
+	var owned: Dictionary = (owned_raw if owned_raw is Dictionary else {})
+	# Build the set of starter archetype_ids we expect — if any are
+	# missing as instances, top them up. We key instances by
+	# `<archetype_id>_1` per GameState._initial_equipment.
+	var bootstrap: Dictionary = GameState._initial_equipment()
+	for instance_id in bootstrap:
+		if not owned.has(instance_id):
+			owned[instance_id] = bootstrap[instance_id]
+	equip["owned"] = owned
+	GameState.data["equipment"] = equip
+
+func _reseed_known_recipes() -> void:
 	var knowledge: Dictionary = GameState.data.get("recipe_knowledge", {})
-	if Dictionary(knowledge.get("known", {})).is_empty():
-		knowledge["known"] = GameState._initial_recipe_knowledge()
-		GameState.data["recipe_knowledge"] = knowledge
+	var known_raw: Variant = knowledge.get("known", {})
+	var known: Dictionary = (known_raw if known_raw is Dictionary else {})
+	var bootstrap: Dictionary = GameState._initial_recipe_knowledge()
+	for recipe_id in bootstrap:
+		if not known.has(recipe_id):
+			known[recipe_id] = bootstrap[recipe_id]
+	knowledge["known"] = known
+	if not knowledge.has("invented"):
+		knowledge["invented"] = []
+	if not knowledge.has("pinned_for_prestige"):
+		knowledge["pinned_for_prestige"] = ""
+	GameState.data["recipe_knowledge"] = knowledge
+
+func _reseed_ingredients() -> void:
 	var inv: Dictionary = GameState.data.get("inventory", {})
-	if Dictionary(inv.get("ingredients", {})).is_empty():
-		var seeded := GameState._initial_inventory()
-		inv["ingredients"] = seeded["ingredients"]
-		# Don't stomp bottles or consumables — those existed in v1.
-		if not inv.has("consumables") or Dictionary(inv["consumables"]).is_empty():
-			inv["consumables"] = seeded["consumables"]
-		GameState.data["inventory"] = inv
+	var ing_raw: Variant = inv.get("ingredients", {})
+	var ingredients: Dictionary = (ing_raw if ing_raw is Dictionary else {})
+	var seeded: Dictionary = GameState._initial_inventory()
+	for ingredient_id in seeded["ingredients"]:
+		if not ingredients.has(ingredient_id):
+			ingredients[ingredient_id] = seeded["ingredients"][ingredient_id]
+	inv["ingredients"] = ingredients
+	if not inv.has("bottles"):
+		inv["bottles"] = seeded["bottles"]
+	if not inv.has("consumables"):
+		inv["consumables"] = seeded["consumables"]
+	GameState.data["inventory"] = inv

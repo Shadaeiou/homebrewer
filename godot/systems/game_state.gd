@@ -95,16 +95,24 @@ func reset_to_new_career(destination_id: String = "home_town") -> void:
 	}
 	# Sync the day clock — fresh career starts at day 0.
 	TimeService.day_clock = 0
-	state_loaded.emit()
+	notify_state_loaded()
 
 func adopt(loaded_data: Dictionary) -> void:
 	## Called by SaveService.load() with the deserialized tree. Replaces our
-	## current state. Caller is responsible for migration before adopt.
+	## current state. Caller is responsible for migration before adopt AND
+	## for calling notify_state_loaded() once any post-adopt repair work
+	## (bootstrap reseed, etc.) is done — UI consumers must render against
+	## fully-migrated state, not the raw load.
 	data = loaded_data
 	# Sync the day clock from the save's record. The save format doesn't store
 	# day_clock directly today — it's implicit in brew/calendar state — so we
 	# default to 0. When a v2 save format adds it, change here.
 	TimeService.day_clock = 0
+
+func notify_state_loaded() -> void:
+	## Emit `state_loaded` so UI re-renders against the current data. Split
+	## from adopt() because load_now needs to run reseed migrations between
+	## adopt and notify; firing inside adopt() would notify too early.
 	state_loaded.emit()
 
 func _initial_skills() -> Dictionary:
