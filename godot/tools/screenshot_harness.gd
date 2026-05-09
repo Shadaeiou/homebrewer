@@ -22,6 +22,7 @@ const SCENES := [
 	{"name": "pour_lme", "path": "res://scenes/minigames/pour_lme.tscn", "frames": 5},
 	{"name": "sanitize", "path": "res://scenes/minigames/sanitize.tscn", "frames": 5},
 	{"name": "cool_wort", "path": "res://scenes/minigames/cool_wort.tscn", "frames": 5},
+	{"name": "transfer_pitch", "path": "res://scenes/minigames/transfer_pitch.tscn", "frames": 5},
 ]
 
 const OUT_DIR := "res://../screenshots"

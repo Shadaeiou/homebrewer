@@ -43,10 +43,11 @@ const ALL_GRAIN_PREFIX := [
 ## Filled in as mini-games land. Stages without a registered scene fall
 ## back to PLACEHOLDER_SCENE.
 const MINIGAME_SCENES := {
-	"sanitize":    preload("res://scenes/minigames/sanitize.tscn"),
-	"fill_kettle": preload("res://scenes/minigames/fill_kettle.tscn"),
-	"add_lme":     preload("res://scenes/minigames/pour_lme.tscn"),
-	"cool_wort":   preload("res://scenes/minigames/cool_wort.tscn"),
+	"sanitize":       preload("res://scenes/minigames/sanitize.tscn"),
+	"fill_kettle":    preload("res://scenes/minigames/fill_kettle.tscn"),
+	"add_lme":        preload("res://scenes/minigames/pour_lme.tscn"),
+	"cool_wort":      preload("res://scenes/minigames/cool_wort.tscn"),
+	"transfer_pitch": preload("res://scenes/minigames/transfer_pitch.tscn"),
 }
 
 @onready var _recipe_title: Label = %RecipeTitle

@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.2.58",
+    "date": "2026-05-09",
+    "bullets": [
+      "New mini-game: Transfer + pitch yeast (the final brewing-day stage). Pick your pour quality (gentle vs splashy → oxidation risk) and your pitch method (sprinkle on top or rehydrate first → more process XP). Optional toggles for an even sprinkle, stir-before-pitch, and sanitized funnel each tighten care and remove specific risk lines."
+    ]
+  },
+  {
     "version": "0.2.57",
     "date": "2026-05-09",
     "bullets": [
