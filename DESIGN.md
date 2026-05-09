@@ -2,7 +2,7 @@
 
 The canonical game design document. Internal only — not shipped to the player.
 
-This is being assembled in passes. Sections 0–3 + Appendices A and B were the first pass. Section 4 (Time, Concurrency, Conditioning, Commitments) and Section 8 (Save Schema Outline) are being filled in piece by piece as design conversations resolve. Sections 5–7 (Economy, UX/UI, Technical Architecture) and Section 9 (Mini-Game Build Plan) are queued, plus the full pass on Section 8. When a section locks, it stays locked unless the design explicitly revisits it. When implementation starts, this document is the spec; if the spec is wrong, fix the spec, then fix the code.
+This is being assembled in passes. Sections 0–4 + Sections 7–8 + Appendices A and B are landed. Sections 5 (Economy), 6 (UX/UI), and 9 (Mini-Game Build Plan) are queued. When a section locks, it stays locked unless the design explicitly revisits it. When implementation starts, this document is the spec; if the spec is wrong, fix the spec, then fix the code.
 
 `CLAUDE.md` continues to define repo rules (commit to main, every player-visible commit bumps `changelog.json`, etc.). This document defines what the game **is**.
 
@@ -15,6 +15,8 @@ This is being assembled in passes. Sections 0–3 + Appendices A and B were the 
 - **Section 2** — what one career looks like across decades of in-game time, and what prestige carries forward when you start over.
 - **Section 3** — the brewing simulation. The outcome model, the equipment-as-properties model, the care system, skill axes, the risk profile, the discovery principle, the three v1 styles, the twelve v1 mini-games and their consequences.
 - **Section 4** — time and concurrency. Two clocks (scene + day), how parallel brews coexist, why conditioning is passive and how the keg unlock breaks the apartment-tier wait, and how time-bound commitments (orders, social events, competitions) work via the Calendar. Drives most save-state and scheduling decisions downstream.
+- **Section 7** — technical architecture. Autoload inventory, scene graph, time service, content pool, calendar service, sim engine, persistence contract, what's reused from the existing proof-of-concept, test layout. The implementation contract for Sections 0–4.
+- **Section 8** — save schema. Twelve entity groups, prestige boundary, save cadence, file layout (JSON main + JSONL journal), field-level schema, prestige flow, migration story, static-content split.
 - **Appendix A** — the first brewing day, narrated step by step with concrete failure modes for each step. The canonical worked example. If anything in Section 3 contradicts Appendix A, Appendix A wins; fix Section 3.
 - **Appendix B** — the five days of the first brew's fermentation period, with the daily checklist + discovery UX shown moment by moment. Validates the daily rhythm.
 
@@ -829,9 +831,237 @@ Each open commitment persists as a record: type, counterparty, deadline, payment
 
 ---
 
-## Section 8 — Save Schema Outline
+## Section 7 — Technical Architecture
 
-This is the **outline level** — what entities the save needs to persist, the prestige boundary, save cadence, and constraints on the persistence-tech choice. The full schema (field types, table layouts or JSON shape, migration story) is the next pass; this stub locks in the shape so the tech decision (Godot resources vs. JSON vs. SQLite) follows from the schema, not the other way around.
+This section specifies how the design in Sections 0–4 is realized in Godot 4.3 code: the autoload inventory, the scene graph, the persistent services (time, save), the content pool, the calendar service, the sim engine, and what's reused from the existing pre-spec proof-of-concept.
+
+The architecture follows the design's invariants:
+
+- Two-clock model (4.1) — never run scene clock and day clock simultaneously
+- Per-interaction skill snapshots (3.4) — outcomes are computed at the moment, never retroactively
+- Single save per device (2.1) — one persistent state tree
+- Equipment as perception/control surface (Tenet 3) — equipment property bags drive what mini-games can do
+- Deterministic replay (8.4) — RNG state is part of the save
+
+### 7.1 Autoload inventory
+
+Eight autoloads. Five existing keepers + two new system services + one fat state autoload + one content provider.
+
+**Existing keepers (unchanged):**
+- `Palette` (`systems/palette.gd`) — color constants
+- `Lighting` (`systems/lighting.gd`) — post-process / lighting helpers
+- `Changelog` (`systems/changelog.gd`) — loads and serves `data/changelog.json`
+- `Version` (`systems/version.gd`) — `versionCode` + `versionName` from build-time injection
+- `Updater` (`systems/updater.gd`) — checks GitHub Releases on launch, prompts in-app install
+
+**New system services:**
+- `TimeService` (`systems/time_service.gd`) — the two clocks per 4.1. Owns `day_clock` (int) and `scene_clock` (float). Gates the scene clock on having an active scene; gates the day clock on the dashboard's "Get some rest" tap. Emits `day_advanced`, `tick`, `event_pending` signals.
+- `SaveService` (`systems/save_service.gd`) — load, save, atomic write. Auto-saves on `day_advanced` and on scene-pause boundaries (4.1's two-clock model gives natural commit points). Owns the persistence-tech contract specified in 8.5.
+- `ContentPool` (`systems/content_pool.gd`) — random-content provider for morning summaries, forum threads, news headlines, NPC chatter. Picks deterministically from `GameState.rng_state.world_anomaly_seed`. Tracks "used" flags to bias against repeats.
+
+**Fat state autoload:**
+- `GameState` (`systems/game_state.gd`) — single tree holding all persistent player data. Maps 1:1 to Section 8.1's twelve entity groups. This is the tree `SaveService` serializes. Cross-references inside the tree (e.g., `brews_in_flight[i].equipment_used[j]` is an equipment ID resolvable in `GameState.equipment.owned[id]`) are by ID — no dangling pointers.
+
+**Why one fat state autoload vs. many small ones:**
+- Serialization is one tree walk
+- Prestige boundary is one filter pass (each branch tagged `persists_across_prestige` or `per_career`)
+- Cross-references stay within-tree, no autoload-spaghetti where Skills has to know about Equipment which has to know about Brews
+- New entity groups land as new branches, not new autoloads requiring `project.godot` edits
+
+The trade-off: `GameState` is a god object. Acceptable because the alternative pushes the same coupling into autoload-to-autoload references and N times harder save serialization.
+
+### 7.2 Scene graph
+
+A single persistent `Main.tscn` is the runtime root:
+
+```
+Main (Node)
+├── BackgroundLayer (CanvasLayer, layer=0)
+│   └── Dashboard.tscn        # apartment view; persistent across all states
+├── ActiveSceneContainer (Node)
+│   └── (current brewing-day / bottling-day / tasting / mini-game scene; or empty)
+├── PhoneLayer (CanvasLayer, layer=50)
+│   └── Phone.tscn            # hidden when not in use; pauses gameplay when shown per 1.4
+├── ModalLayer (CanvasLayer, layer=100)
+│   └── (perception panel, anomaly mitigation, decision dialog, NPC text thread, or empty)
+└── BootSequence (Node)        # version check, save load, splash; frees itself after handoff
+```
+
+The Dashboard in BackgroundLayer is **always present**. When `ActiveSceneContainer` has a child, that child renders on top of the dashboard (the dashboard is still alive but not interactive). Phone and Modal layers are CanvasLayers above gameplay; when shown, the layer below is paused via `process_mode = PROCESS_MODE_DISABLED` propagation, enforcing 1.4's "phone is never modal in a way that blocks brewing actions, but gameplay pauses while it's open."
+
+Mini-game scenes live under `ActiveSceneContainer` and conform to the universal scaffolding from 3.9: they take BrewState + equipment + skills as input, produce an `Outcome` dict on completion, and emit `minigame_completed(outcome: Dictionary)` for the parent (brewing-day scene) to receive.
+
+### 7.3 TimeService
+
+Two clocks per 4.1 with structural exclusion — they cannot both run at once.
+
+```gdscript
+# systems/time_service.gd (sketch)
+extends Node
+
+signal day_advanced(new_day: int)
+signal tick(delta: float)
+signal event_pending(event_id: String, time_until_seconds: float)
+
+var day_clock: int = 0
+var scene_clock: float = 0.0
+var _scene_clock_running: bool = false
+var _pending_events: Array[Dictionary] = []   # [{id, t}, ...]
+
+func advance_day() -> void:
+    # Called only by Dashboard's "Get some rest" button.
+    assert(not _scene_clock_running, "Cannot advance day while in active scene")
+    day_clock += 1
+    day_advanced.emit(day_clock)
+
+func start_scene(events: Array[Dictionary] = []) -> void:
+    # Called by ActiveSceneContainer when a new scene mounts.
+    scene_clock = 0.0
+    _pending_events = events.duplicate(true)
+    _scene_clock_running = true
+
+func end_scene() -> void:
+    _scene_clock_running = false
+    _pending_events.clear()
+
+func _process(delta: float) -> void:
+    if not _scene_clock_running:
+        return
+    if get_tree().paused:
+        return            # Phone or modal is up — don't tick.
+    scene_clock += delta
+    tick.emit(delta)
+    _check_pending_events()
+```
+
+Pause semantics:
+- Closing the app: `_process` doesn't run while engine is paused. Scene clock freezes cleanly.
+- Phone or modal up: `get_tree().paused = true` early-outs `_process`.
+- Day clock is monotonic; only `advance_day()` increments it; only the Dashboard calls it.
+
+### 7.4 ContentPool
+
+A library-style autoload owning catalogs of templated content for non-brewing surfaces. Catalogs ship as Resources (`.tres`) keyed by category (`res://data/content/morning_summaries.tres`, `forum_threads.tres`, `news_articles.tres`, `npc_chatter/*.tres`).
+
+Daily content selection is **deterministic from a seed**:
+
+```gdscript
+func pick_daily_content(day: int) -> Dictionary:
+    var seed := GameState.rng_state.world_anomaly_seed ^ day
+    var rng := RandomNumberGenerator.new()
+    rng.seed = seed
+    return {
+        "morning_summary": _pick_one(MORNING_SUMMARIES, rng),
+        "forum_threads_new": _pick_n(FORUM_THREADS, rng, 0, 3),
+        "news_headline": _pick_weighted(NEWS_ARTICLES, rng),
+        # ...
+    }
+```
+
+Determinism matters because (1) Appendix B Day 2's cold-spot anomaly must be reproducible if the player loads an old save, and (2) journal post-mortems reference "the cold morning" — that must still be the same anomaly the player saw.
+
+A "used" flag (`GameState.phone_world.forum.threads_seen`) prevents repeats; the picker filters seen IDs unless the catalog runs dry.
+
+### 7.5 Calendar service
+
+The calendar is data, not a service: it lives in `GameState.calendar` as a list of commitment records (per 8.1 entity #10). A small helper `scripts/sim/calendar_surface.gd` computes per-day surfacing without owning state:
+
+```gdscript
+class_name CalendarSurface
+extends RefCounted
+
+static func surfacing_for_day(day: int, calendar: Dictionary) -> Dictionary:
+    # Returns:
+    #   morning_summary_lines: Array[String]   (T-3 mentions)
+    #   checklist_items: Array[Dictionary]      (T-1 prompts with ❗)
+    #   dashboard_top_prompt: Dictionary or {}  (T-0)
+    ...
+
+static func process_missed_commitments(day: int, calendar: Dictionary) -> Array[Dictionary]:
+    # Returns consequence records for any commitments that passed without action.
+    # Caller applies them to GameState.cash, GameState.npcs[id].relationship, etc.
+    ...
+```
+
+Day-tick orchestration in `Main` calls `CalendarSurface.process_missed_commitments` after `TimeService.day_advanced` and before rendering the new dashboard.
+
+### 7.6 Sim engine
+
+Replaces the existing `BrewSession` + `Grading`. Pure-data layer with no Node dependencies — testable in isolation via GUT tests in `godot/tests/sim/`.
+
+Core types (under `scripts/sim/`):
+
+| File | Role |
+|---|---|
+| `brew_state.gd` | Current or archived brew record (the BrewState shape from 7 entity #7) |
+| `risk_profile.gd` | Six-axis hidden risk accumulator per 3.5 |
+| `outcome.gd` | The dict every mini-game returns per 3.9 |
+| `drift.gd` | The drift formula from 3.1 |
+| `grader.gd` | Grade ceiling per 3.4 + drift → final grade; also self-vs-external grading per 3.6 |
+| `skill_xp.gd` | XP curve, level-up, snapshot helpers |
+| `care_factor.gd` | Breadth-derived care from sub-actions per 3.3 |
+
+Drift, per 3.1:
+
+```gdscript
+class_name Drift
+extends RefCounted
+
+static func compute_actual(target: float, base_drift: float,
+                           skill_factor: float, equipment_precision: float,
+                           care_factor: float, rng: RandomNumberGenerator) -> float:
+    var stddev := base_drift / (skill_factor * equipment_precision * care_factor)
+    return target + stddev * rng.randfn()
+```
+
+Grader applies drift-derived grade AND the per-axis grade ceiling from 3.4, taking the worse of the two. Procedure mini-games (per 3.9 fourth shape) emit `procedure_violation` events when order is wrong, distinct from continuous drift modifiers.
+
+### 7.7 Persistence (contract; details in 8.5)
+
+Per Section 8: **JSON for save state, JSONL for the journal, Godot Resources for static content**. Code never touches save files directly — it goes through `SaveService`.
+
+- `SaveService.save()` — writes the main save (atomic write-and-rename) and appends new journal records.
+- `SaveService.load()` — reads main + journal at boot.
+- `SaveService.flush_now()` — for explicit save points (prestige, settings change).
+
+### 7.8 What's reused from the existing code
+
+The pre-spec proof-of-concept is being mostly rewritten. Four areas are keepers:
+
+| Keep | Why |
+|---|---|
+| `systems/palette.gd` | Color constants are good; the spec doesn't change colors |
+| `systems/lighting.gd` + `scenes/components/post_process.tscn` | Image post-processing pipeline; well-tuned |
+| `scripts/icons/*.gd` + `scripts/lib/draw_helpers.gd` | Procedural sprite generation; independent of game logic |
+| `systems/changelog.gd`, `systems/version.gd`, `systems/updater.gd`, FCM stack | Build/release/update plumbing is solved; don't re-litigate |
+
+Everything else gets rewritten:
+
+| Rewrite | Reason |
+|---|---|
+| `scripts/main.gd` + `scenes/main.tscn` | New scene graph (7.2) |
+| `scripts/brew_flow.gd` + `scenes/brew_flow.tscn` | Replaced by Dashboard + ActiveSceneContainer model |
+| `scripts/sim/brew_session.gd` (autoload `BrewSession`) | Replaced by `GameState.brews_in_flight` + sim engine (7.6) |
+| `scripts/sim/grading.gd` | Replaced by `Grader` with per-axis ceiling from 3.4 |
+| `data/recipes.gd` (autoload `Recipes`) | Replaced by Resource-based recipe library (`res://data/recipes/*.tres`) |
+| `scenes/minigames/fill_kettle.tscn` + scripts | Reimplemented against new mini-game scaffolding contract |
+
+### 7.9 Test layout
+
+GUT tests under `godot/tests/`:
+
+- `tests/sim/` — pure-domain: drift math, grade ceiling, care factor, risk profile accumulation, procedure violation events. No scene dependencies; fast.
+- `tests/scene/` — scene-shaped: dashboard mounts, time service start/end semantics, save/load round-trip, calendar surfacing.
+- `tests/integration/` — end-to-end: full brewing day for the canonical Appendix A walkthrough; full Appendix B fermentation week.
+- `tests/persistence/` — golden-file fixtures for every save migration.
+
+All tests run as part of `scripts/dev-check.sh` per CLAUDE.md rule 3.
+
+---
+
+## Section 8 — Save Schema
+
+This section is now full-pass: 8.1–8.4 specify what persists (kept from the prior outline); 8.5–8.10 specify the file layout, field-level schema, prestige flow, migration story, and static-content split.
 
 ### 8.1 Twelve entity groups
 
@@ -881,20 +1111,417 @@ The home-destination NPCs are a special case (per 2.3): they may surface as long
 - **Auto-save on scene-pause boundaries** when the player closes the app or backgrounds it during an active scene (the scene-clock pauses cleanly per 4.1).
 - **No mid-scene saves required** — the scene clock is paused while the player is on a non-active screen anyway.
 - **No manual save slot management** per 2.1 (one save per device).
-- **Hard reset** (settings, double-confirmed per 2.1) wipes the per_career state and possibly the persists_across_prestige state too — TBD whether hard-reset preserves the prestige-count history or fully wipes; called out for Section 8's full pass to decide.
+- **Hard reset** (settings, double-confirmed per 2.1) wipes the per_career state and possibly the persists_across_prestige state too — TBD whether hard-reset preserves the prestige-count history or fully wipes; called out in 8.8.
 
-### 8.4 Schema characteristics that constrain the tech pick
-
-The persistence technology decision (Godot Resources, JSON, SQLite, or a hybrid) is **not** made in this stub. It will be made in Section 8's full pass once these characteristics are weighed:
+### 8.4 Schema characteristics
 
 - **Large + structured.** Twelve entity groups, several with relations (brews ↔ equipment-used snapshots; commitments ↔ NPCs; journal entries ↔ recipes).
-- **Journal grows monotonically.** Every completed brew adds an entry, never deleted. Over hundreds of brews, this could grow into the multi-megabyte range — relevant for whatever store we pick.
+- **Journal grows monotonically.** Every completed brew adds an entry, never deleted. Over hundreds of brews, this could grow into the multi-megabyte range — this is the central reason the journal is split into its own file in 8.5.
 - **Read-on-load, write-incrementally.** Most data is loaded once at game-start and updated by event. Not heavily transactional.
 - **Mix of small flat fields and structured records.** Settings, cash, skill levels are simple; brew archives and equipment property bags are nested.
 - **Deterministic replay friendly.** RNG state is part of the save, so "load this save and play forward" produces the same anomalies. This rules out tech choices that can't preserve seed state cleanly.
 - **Migration story matters.** Save format version is tracked from day one so future schema changes can migrate forward (a player who started on v0.2.10 should still be able to play on v0.5.x).
 
-The tech decision in Section 8's full pass weighs these characteristics against Godot 4.3's idiomatic options (Resource serialization, FileAccess + JSON, SQLite via GDExtension) and picks one. This stub commits to the schema shape; the next pass commits to the encoding.
+### 8.5 Persistence layout: JSON main + JSONL journal
+
+Save state is split across two files in the app's data directory (`user://`):
+
+```
+user://save.json       # main save: 11 of the 12 entity groups
+user://journal.jsonl   # append-only journal of completed brews; one record per line
+```
+
+**Why split:**
+- The main save loads on every boot and on every dashboard return after a scene; it must be fast.
+- The journal grows monotonically and could reach multi-MB after years of play.
+- Loading hundreds of full BrewState archives just to render the dashboard is wasteful.
+- JSONL is naturally append-only: new brews are written by appending a line, not by rewriting the whole file. Crash-safe — if a write is truncated mid-line, the next load drops the partial line and the rest is intact.
+
+**main save (`user://save.json`):**
+
+```json
+{
+  "save_format_version": 1,
+  "player_meta": { ... },
+  "cash": { ... },
+  "skills": { ... },
+  "equipment": { ... },
+  "inventory": { ... },
+  "recipe_knowledge": { ... },
+  "brews_in_flight": [ ... ],
+  "npcs": { ... },
+  "calendar": { ... },
+  "phone_world": { ... },
+  "rng_state": { ... }
+}
+```
+
+**journal (`user://journal.jsonl`):** one serialized completed BrewState per line.
+
+```
+{"brew_id":"uuid-1","completed_day":23, ...}
+{"brew_id":"uuid-2","completed_day":47, ...}
+{"brew_id":"uuid-3","completed_day":71, ...}
+```
+
+Loaded once on boot via line-by-line streaming read (no need to materialize the full multi-MB string). For brewery-view queries, the journal is held in memory after load — at hundreds of records this is comfortable. If we ever hit thousands and memory becomes a real concern, we paginate (lazy-load).
+
+**Atomic writes:**
+- Main save: write to `save.json.tmp`, fsync, rename to `save.json` (atomic on POSIX, atomic-enough on Android per Godot's `FileAccess` semantics).
+- Journal append: simple append-mode `FileAccess`. Power-loss mid-append truncates the last partial line; on next load the parser drops anything after the last well-formed `\n`-terminated line.
+
+### 8.6 Field-level schema
+
+Per entity group. Types are GDScript primitives or named struct shapes (defined as Dictionary shapes for v1; could be migrated to Godot Resources for type safety later if it pulls its weight).
+
+#### player_meta
+
+```
+{
+  "save_format_version": int,         # bumped on schema migrations
+  "prestige_count": int,
+  "current_destination_id": String,   # "home_town" for v1
+  "settings": {
+    "audio_master": float,            # 0.0 - 1.0
+    "audio_sfx": float,
+    "audio_music": float,
+    "haptic_enabled": bool,
+    "reduce_motion": bool
+  }
+}
+```
+
+#### cash
+
+```
+{
+  "balance": int,                     # whole-dollar amounts
+  "outstanding_loans": [
+    {
+      "loan_id": String,
+      "lender_npc_id": String,        # "marcus", "mom", ...
+      "amount_remaining": int,
+      "terms": String,                # e.g. "owes_6_bottles_next_batch + first_dibs_next_party"
+      "issued_day": int
+    }
+  ],
+  "customer_advances": [
+    {
+      "advance_id": String,
+      "counterparty_npc_id": String,
+      "amount": int,
+      "delivery_deadline_day": int,
+      "deliverable_style_id": String,
+      "deliverable_min_grade": String  # "B" or null if any
+    }
+  ],
+  "recurring_bills": [
+    { "bill_id": String, "amount_per_period": int, "period_days": int, "next_due_day": int }
+  ]
+}
+```
+
+#### skills
+
+```
+{
+  "sanitation":   { "level": int, "xp": int, "xp_to_next": int, "unlocked": bool },
+  "temp_control": { "level": int, "xp": int, "xp_to_next": int, "unlocked": bool },
+  "timing":       { "level": int, "xp": int, "xp_to_next": int, "unlocked": bool },
+  "process":      { "level": int, "xp": int, "xp_to_next": int, "unlocked": bool },
+  "palate":       { "level": int, "xp": int, "xp_to_next": int, "unlocked": bool },
+  "water_chem":   { "level": int, "xp": int, "xp_to_next": int, "unlocked": bool }
+}
+```
+
+`unlocked` is `true` for all axes except `water_chem`, which flips when the player owns a pH meter or water-test kit (per 3.4).
+
+#### equipment
+
+```
+{
+  "owned": {
+    "<equipment_uuid>": {
+      "type_id": String,              # references res://data/equipment/<type_id>.tres
+      "category": String,             # "stove" | "kettle" | "fermenter" | "thermometer" | "capper" | ...
+      "properties": { ... },          # current property bag (may differ from type defaults if modified)
+      "state": {
+        "cleanliness": String,        # "STAYS_DIRTY" | "SERVICEABLE" | "CLEAN" | "SANITIZED"
+        "decay_counter": int,         # uses since last clean
+        "last_used_day": int
+      },
+      "acquired_day": int
+    }
+  }
+}
+```
+
+#### inventory
+
+```
+{
+  "ingredients": {
+    "<ingredient_id>": {
+      "quantity": float,
+      "unit": String,                 # "lb" | "oz" | "gal" | "packet"
+      "freshness": float,             # 0.0 - 1.0; degrades over in-game days for some
+      "purchased_day": int
+    }
+  },
+  "bottles": {
+    "available": int,                 # empty bottles ready to fill
+    "in_use": int                     # in conditioning racks
+  },
+  "consumables": {
+    "<consumable_id>": int            # e.g. "star_san_oz": 4, "ice_lb": 0
+  }
+}
+```
+
+#### recipe_knowledge
+
+```
+{
+  "known": {
+    "<recipe_id>": {
+      "unlocked_day": int,
+      "brewed_count": int,
+      "best_grade": String,
+      "last_brewed_day": int
+    }
+  },
+  "invented": [
+    {
+      "recipe_id": String,            # uuid for player-invented
+      "name": String,
+      "target_style_id": String,      # required per 3.6
+      "fermentables": [ ... ],
+      "hop_schedule": [ ... ],
+      "yeast_id": String,
+      "target_og": float,
+      "target_fg": float,
+      "target_ibu": float,
+      "target_srm": float,
+      "target_abv": float,
+      "fermentation_temp_c": float,
+      "fermentation_days": int,
+      "condition_days": int,
+      "priming_sugar_oz": float,
+      "created_day": int
+    }
+  ],
+  "pinned_for_prestige": String       # recipe_id (canonical or invented)
+}
+```
+
+#### brews_in_flight
+
+```
+[
+  {
+    "brew_id": String,                # uuid
+    "recipe_id": String,
+    "recipe_snapshot": { ... },       # full copy at brew start (later recipe edits don't affect this brew)
+    "stage": String,                  # "brewing_day" | "fermenting" | "bottled_conditioning"
+    "stage_started_day": int,
+    "days_elapsed_in_stage": int,
+    "outcomes": {
+      "<stage_id>": {
+        "actual": { ... },            # measured values (volume, IBU, etc.)
+        "care_factor": float,
+        "risk_deltas": { ... },
+        "xp_gained": { ... },
+        "journal_notes": [String],
+        "skill_snapshot": { ... },    # per 3.4: levels at moment of execution
+        "completed_at_scene_clock": float
+      }
+    },
+    "risk_profile": {                 # cumulative across completed stages
+      "infection": float,
+      "oxidation": float,
+      "off_flavor_temp": float,
+      "boil_over": float,
+      "recipe_drift": float,
+      "measurement_uncertainty": float
+    },
+    "equipment_used": [String],       # equipment uuids referenced in outcomes
+    "anomalies": [
+      { "anomaly_id": String, "day": int, "discovered": bool, "mitigated": bool, "effect_applied": { ... } }
+    ],
+    "rng_state": int                  # per-brew seed for in-flight drift rolls
+  }
+]
+```
+
+#### npcs
+
+```
+{
+  "<npc_id>": {
+    "relationship_meter": float,      # 0.0 - 1.0 (or signed; tuned during playtest)
+    "outstanding_promises": [
+      { "promise_id": String, "type": String, "issued_day": int, "details": { ... } }
+    ],
+    "preferences": {
+      "preferred_styles": [String],
+      "tolerance_factor": float
+    },
+    "last_interaction_day": int,
+    "summary_state": {
+      "last_message_branch": String,
+      "key_flags": { ... }            # "told_about_brewing": true, etc.
+    }
+  }
+}
+```
+
+#### calendar
+
+```
+{
+  "open_commitments": [
+    {
+      "commitment_id": String,
+      "type": String,                 # per 4.7: "social" | "friend_order" | "customer_advance" | "bar_account" | "competition_entry"
+      "counterparty_npc_id": String,  # null for competition entries
+      "deadline_day": int,
+      "payment_state": String,        # "paid_up" | "advance_taken" | "nothing_paid_yet"
+      "deliverable": { ... },         # {"style_id": ..., "min_grade": ...} or {"event_attendance": true}
+      "renegotiation_history": [
+        { "day": int, "old_deadline": int, "new_deadline": int, "concession": String }
+      ],
+      "accepted_day": int
+    }
+  ],
+  "closed_commitments": [
+    { "commitment_id": String, "outcome": String, "closed_day": int, "consequence_record": { ... } }
+  ]
+}
+```
+
+#### phone_world
+
+```
+{
+  "forum": {
+    "threads_seen": [String],
+    "threads_posted": [String],
+    "threads_mentioned_in": [String]
+  },
+  "news": {
+    "articles_seen": [String],
+    "current_trends": [
+      { "style_id": String, "multiplier": float, "started_day": int, "duration_days": int }
+    ]
+  },
+  "social": {
+    "follower_count": int,
+    "posts": [
+      { "post_id": String, "day": int, "brew_id": String, "engagement": int }
+    ]
+  },
+  "shop": {
+    "last_browsed_items": [String],
+    "items_unlocked": [String]        # via news/forum unlock chains
+  },
+  "regional_water_profile_id": String # references res://data/water_profiles/<id>.tres
+}
+```
+
+#### rng_state
+
+```
+{
+  "world_anomaly_seed": int,          # base seed; daily content/anomaly RNG is seed XOR day per 7.4
+  "next_brew_seed": int               # incremented for each new brew
+}
+```
+
+### 8.7 The journal record format (`journal.jsonl`)
+
+Each line is a self-contained completed-brew record:
+
+```json
+{
+  "brew_id": "uuid",
+  "destination_id": "home_town",
+  "recipe_id": "apartment_pale_ale",
+  "recipe_snapshot": { ... },
+  "started_day": 1,
+  "completed_day": 23,
+  "stages": [
+    { "stage_id": "prepare", "outcome": { ... }, "skill_snapshot": { ... }, "completed_day": 1 },
+    { "stage_id": "boil", "outcome": { ... }, ... },
+    ...
+  ],
+  "anomalies": [
+    { "anomaly_id": "cold_spot_day_2", "discovered": true, "mitigated": true, "effect_applied": { ... } }
+  ],
+  "risk_profile_final": { ... },
+  "self_grade": "B",
+  "external_grade": "B+",
+  "tasting_notes": ["light cardboard finish", "head doesn't hold"],
+  "npc_feedback": [
+    { "npc_id": "marcus", "rating": 5, "comment": "yo this is fire" },
+    { "npc_id": "tim", "rating": 3.5, "comment": "decent APA. could use more late hops." }
+  ],
+  "competition_feedback": null,
+  "post_mortem_text": "Day 2 cold spot dropped attenuation by 3%. Fermentation finished low. ABV 4.1% vs 4.5% target.",
+  "equipment_used_snapshot": [
+    { "equipment_id": "...", "type_id": "stockpot_basic", "properties": { ... } }
+  ]
+}
+```
+
+The journal entry is **self-contained** — recipe + equipment snapshots are copied in at archive time so the entry remains queryable even after the player modifies or sells those items. Trades storage for query independence; right call for a brewing journal whose purpose is to teach the player from history.
+
+### 8.8 The prestige flow
+
+1. **Filter `GameState`**: walk the tree, retain `persists_across_prestige` fields, drop `per_career` per 8.2.
+2. **Apply skill penalty**: each skill axis's level *= 0.8 (rounded down, floor 0) per 2.4.
+3. **Apply cash bonus**: replace cash balance with the sold-the-brewery amount (TBD tuning, Section 5).
+4. **Carry one equipment item**: the player's chosen one survives; everything else is dropped.
+5. **Carry one pinned recipe**: from `recipe_knowledge.pinned_for_prestige`.
+6. **Migrate destination**: `current_destination_id` updates; world state resets for the new destination.
+7. **Persist memorial**: the prior career's summary is appended to a memorial record (separate file `user://memorial.jsonl`, one line per past brewery — TBD whether full state or just summary).
+8. **Atomic save**: write the new state to `save.json`. The old `journal.jsonl` is preserved unchanged; new career's brews append to the same file with a `destination_id` field on each new entry to disambiguate.
+
+**Hard reset** (settings, double-confirmed per 2.1) wipes `save.json`, `journal.jsonl`, and `memorial.jsonl`. Prestige-count history is also wiped — full clean slate. This is intentional: a hard reset means the player wants to genuinely start over, including erasing the prestige-tier achievement history.
+
+### 8.9 Migration story
+
+`save_format_version` lives in `player_meta`. Migration is one-way forward:
+
+```gdscript
+# In SaveService.load():
+var save := JSON.parse_string(file.get_as_text())
+var current_version: int = save.get("player_meta", {}).get("save_format_version", 0)
+while current_version < CURRENT_SAVE_VERSION:
+    save = MigrationRegistry.migrate(save, current_version, current_version + 1)
+    current_version += 1
+save.player_meta.save_format_version = CURRENT_SAVE_VERSION
+```
+
+Each migration is a small function in `scripts/persistence/migrations/v<N>_to_v<N+1>.gd` that takes the old save dict and returns a new one. Migrations are tested with golden-file fixtures in `tests/persistence/`.
+
+The journal does NOT carry a per-record format version for v1 — instead, journal records are tagged with the `save_format_version` they were written under, and migration code can detect and upgrade old records on read if needed. We pay this cost only when we change the journal record schema (which should be rare; the journal record is mostly snapshots, which insulate it from main-schema churn).
+
+### 8.10 Static content (Godot Resources)
+
+Static content lives in `res://data/` as `.tres` Resource files and ships with the game (read-only at runtime):
+
+- `res://data/recipes/*.tres` — canonical recipes (Apartment Pale Ale, WC IPA, Dry Stout, ...)
+- `res://data/equipment/*.tres` — equipment archetypes (stockpot_basic, kettle_marked_10gal, ...)
+- `res://data/styles/*.tres` — BJCP-style profiles for external grading per 3.6
+- `res://data/npcs/*.tres` — NPC personality + preference defs
+- `res://data/water_profiles/*.tres` — regional water chemistry presets
+- `res://data/content/*.tres` — content pool catalogs per 7.4
+
+Resources are picked for static content because: (1) they get type-checking from the editor, (2) they're inspectable as assets, (3) they ship inside the build (no runtime download), (4) they don't need migration — they ship with the version that depends on them.
+
+**Player-modified or player-invented recipes live in the SAVE STATE** (`recipe_knowledge.invented`), not as Resources, because they're dynamic.
+
+The save tech (JSON for save state, Resources for static content) is now locked in. Implementation can begin against this contract.
 
 ---
 
@@ -1436,14 +2063,15 @@ What's landed so far:
 
 - Sections 0–3 (Vision, World, Player Journey, Brewing Mechanics)
 - Section 4.1–4.7 (Two clocks; concurrency + brewing-day-start rule + bottle inventory + checklist fan-out; conditioning model; triple-good keg unlock; first-brew onboarding window; per-brew real-time totals; commitments and Calendar)
-- Section 8 (Save Schema Outline — entity groups, prestige boundary, save cadence, tech-pick constraints)
+- Section 7 (Technical Architecture — autoloads, scene graph, TimeService, ContentPool, calendar service, sim engine, persistence contract, reuse map, test layout)
+- Section 8 (Save Schema — entity groups, prestige boundary, save cadence, JSON main + JSONL journal, field-level schema, prestige flow, migration, static-content split)
 - Appendices A and B
 
-Still queued, in roughly the order they need to land:
+Still queued:
 
 - **Rest of Section 4 — Equipment scheduling rules, cleanliness state machine, anomaly generation.** Full equipment-as-scheduling-constraint specification (when slots clear, what shares with what, how cleaning state gates re-use). The cleanliness state machine for every piece of equipment. Anomaly generation rules (how the world decides "today, the radiator is off") and how those anomalies attach to in-flight brews.
-- **Section 5 — Economy & Progression.** Ingredient pricing, equipment cost curves, customer payouts, competition prizes, bankruptcy thresholds, trends-system mechanics. Builds on the "economy load-bearing from day one" decision in 2.6.
-- **Section 6 — UX/UI.** Dashboard layout, brewery view, phone overlay, time control, handbook, recipe view, mini-game scene templates.
-- **Section 7 — Technical Architecture.** Autoload inventory, scene graph, time service, content-pool generator, calendar service, save service.
-- **Rest of Section 8 — Save Schema (full pass).** Persistence-tech pick, field-level schema, migration story, prestige reset implementation. Builds on the outline in 8.1–8.4.
-- **Section 9 — Mini-Game Build Plan.** All 12 v1 mini-games specified at Section-3.9 level of detail (sub-actions, drift formulas, downstream effects). Build order. v2+ mini-games queued.
+- **Section 5 — Economy & Progression.** Ingredient pricing, equipment cost curves, customer payouts, competition prizes, bankruptcy thresholds, trends-system mechanics. Builds on the "economy load-bearing from day one" decision in 2.6. Best resolved during playtest with real numbers in front of you rather than as pure spec.
+- **Section 6 — UX/UI.** Dashboard layout, brewery view, phone overlay, time control, handbook, recipe view, mini-game scene templates. Best resolved with prototypes rather than as pure spec.
+- **Section 9 — Mini-Game Build Plan.** All 12 v1 mini-games specified at Section-3.9 level of detail (sub-actions, drift formulas, downstream effects). Build order. v2+ mini-games queued. Best resolved incrementally as each mini-game is implemented.
+
+The remaining queued sections are best resolved against running code rather than as pure spec — so the natural next step is implementation against the contracts in Sections 7 and 8.
