@@ -67,6 +67,16 @@ func tween_camera_to(parent: Tween, target: int, viewport_width: float, duration
 	var dest: Vector2 = camera_offset_for(target, viewport_width)
 	parent.tween_property(self, "position", dest, duration).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
 
+## Equipment is drawn at half the raw procedural sprite size so a
+## stockpot reads as a stockpot next to a counter — the raw drawings
+## are sized for clarity, not realism. Consumers placing equipment
+## should use these constants for scale + the offset helpers below.
+const KETTLE_SCALE: float = 0.5
+const FAUCET_SCALE: float = 0.5
+## Effective on-screen kettle height (for placing it on the counter).
+const KETTLE_DRAWN_HEIGHT: float = 228.0 * KETTLE_SCALE  # ≈ 114
+const KETTLE_DRAWN_HALF_W: float = 110.0 * KETTLE_SCALE  # ≈ 55
+
 var faucet: Faucet2D = null
 
 func _ready() -> void:
@@ -76,23 +86,34 @@ func _ready() -> void:
 	# infrastructure, not movable equipment, so it lives here.
 	faucet = Faucet2D.new()
 	faucet.name = "SinkFaucet"
-	# Faucet placement math:
-	#   sink_anchor.y is COUNTER_Y (top of counter, where kettle bottom sits).
-	#   A kettle's TOP sits ~228px above the counter (Kettle2D HEIGHT+padding).
-	#   We want the faucet's spout ~22px above where the kettle's rim will be.
-	#   Faucet spout_tip_local.y = size.y - 4 ≈ 106 for the 110-tall faucet.
-	# So faucet.position.y = sink_anchor.y - 228 (kettle top) - 22 (gap)
-	#                         + 8 (kettle's internal rim padding offset)
-	#                         - 106 (where spout sits in faucet-local).
-	# That puts the spout right above the kettle's rim regardless of whether
-	# a kettle is currently placed.
+	faucet.scale = Vector2(FAUCET_SCALE, FAUCET_SCALE)
+	# Faucet placement: spout tip should sit ~10px above where the
+	# kettle's rim lands when the kettle is on the counter.
+	#   Kettle bottom sits at sink_anchor.y. Kettle drawn height = 114,
+	#   so kettle rim ~= sink_anchor.y - 110.
+	#   Faucet spout tip in raw-local coords = (40, 106). After
+	#   FAUCET_SCALE=0.5 scaling around position (0,0), effective tip
+	#   offset = (20, 53).
+	#   So faucet.position = (sink.x - 20, kettle_rim_y - 10 - 53)
+	#                       = (sink.x - 20, sink.y - 173)
 	var sink_anchor: Vector2 = station_anchor(STATION_SINK)
 	faucet.position = Vector2(
-		sink_anchor.x - 40,
-		sink_anchor.y - 348,
+		sink_anchor.x - 20,
+		sink_anchor.y - 173,
 	)
 	add_child(faucet)
 	queue_redraw()
+
+func place_kettle_at_station(kettle: Control, station: int) -> void:
+	## Helper: scale + position a kettle so its bottom sits on the named
+	## station's anchor. Centralizes the scale math so dashboard and
+	## fill_kettle don't repeat it.
+	kettle.scale = Vector2(KETTLE_SCALE, KETTLE_SCALE)
+	var anchor: Vector2 = station_anchor(station)
+	kettle.position = Vector2(
+		anchor.x - KETTLE_DRAWN_HALF_W,
+		anchor.y - KETTLE_DRAWN_HEIGHT,
+	)
 
 func _draw() -> void:
 	# Wall (top portion).

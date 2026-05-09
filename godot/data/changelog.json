@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.2.74",
+    "date": "2026-05-09",
+    "bullets": [
+      "Kettle and faucet are sized properly now. They were drawn at 2x scale and the kettle was taller than the counter; both render at half size, so a 5-gal stockpot reads as a 5-gal stockpot on a real kitchen counter.",
+      "Swipe left/right on the home view to pan the camera across the apartment. The room is wider than the screen, so dragging shows the closet on the far left and the stove + window on the far right. Default camera centers on the sink/kettle.",
+      "Closet, stove, and bottling table are tappable now in addition to the kettle. Tapping the stove when nothing's brewing nudges you to start at the kettle; tapping the bottling table previews bottling when something's ready. The tap layer hit-tests against station rects, so pressing-then-dragging pans without firing the tap (8px threshold).",
+      "Known: the wall above the counter is mostly empty now that the kettle is the right size. Decor (cabinets, hood, clock) coming as more stations get graphified."
+    ]
+  },
+  {
     "version": "0.2.73",
     "date": "2026-05-09",
     "bullets": [

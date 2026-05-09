@@ -51,13 +51,11 @@ func _mount_apartment() -> void:
 	# Drop a kettle on the counter at the sink station.
 	_kettle = Kettle2D.new()
 	_kettle.name = "Kettle"
-	const KETTLE_W: float = 244.0
-	var sink: Vector2 = _apartment.station_anchor(Apartment2D.STATION_SINK)
-	_kettle.position = Vector2(sink.x - KETTLE_W * 0.5, sink.y - 228)
 	_kettle.target_fraction = TARGET_GAL / MAX_GAL
 	_kettle.target_band_width = 36.0
 	_kettle.target_color = Color(Palette.ACCENT.r, Palette.ACCENT.g, Palette.ACCENT.b, 0.42)
 	_apartment.add_child(_kettle)
+	_apartment.place_kettle_at_station(_kettle, Apartment2D.STATION_SINK)
 	if _apartment.faucet != null:
 		_apartment.faucet.toggled.connect(_on_faucet_toggled)
 	# Re-center if the viewport gets resized (rotation, window resize, etc.).

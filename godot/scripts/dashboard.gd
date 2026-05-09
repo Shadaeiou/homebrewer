@@ -1,23 +1,23 @@
 extends Control
 
-## Dashboard — the apartment IS the home screen. No landing page, no
-## menu. The kitchen fills the viewport; players act on the world by
-## tapping objects (kettle → start/resume brew, closet → check fermenter).
+## Dashboard — the apartment IS the home screen. The kitchen panorama
+## fills the viewport; the player swipes left/right to pan across the
+## room and taps interactive stations to act on the world.
 ##
-## A small HUD overlays:
-##   - Top-left: day chip + cash/bottles + ambient morning line
-##   - Top-right: Phone / Journal / Rest icons
-##   - Bottom-center: floating ActionPrompt (what tapping the highlighted
-##                     object would do, or what's blocking it)
-##   - Top-center (conditional): update banner
-##   - Bottom corners: tiny version label + dev reset
+## Tappable stations (per Apartment2D layout):
+##   sink (kettle)         — start brewing / resume brewing
+##   stove                  — TBD: place kettle, light burner (graphify next)
+##   bottling table         — TBD: bottling flow when conditioning ready
+##   closet                  — check fermenter / conditioning rack
+##   window/decor           — flavor: weather / mood line
 ##
-## State → in-world tappable affordances:
-##   No brew yet                      → kettle: "Start brewing"
-##   brew in BREWING_DAY              → kettle: "Resume brewing — <name>"
-##   brew in FERMENTING               → closet: "Check fermenter — d N/M"
-##   brew in BOTTLED_CONDITIONING     → closet: "Check conditioning — d N/M"
-##   blocked (no recipe / fermenter)  → kettle prompt explains why
+## Input model:
+##   Press → record start
+##   Drag (>8px horizontal) → pan camera, suppress tap on release
+##   Release without drag → hit-test against station rects, fire action
+## This sits on the viewport so child Buttons (the faucet handle, etc.)
+## still receive their taps when the dashboard's camera mode is off
+## (e.g. inside the brewing-day scene). Dashboard owns the gesture.
 
 const APARTMENT_SCENE := preload("res://scenes/lib/apartment_2d.tscn")
 const BREWING_DAY_SCENE     := preload("res://scenes/brewing_day.tscn")
@@ -28,6 +28,7 @@ const PHONE_OVERLAY_SCENE    := preload("res://scenes/phone/phone_overlay.tscn")
 const CHECK_FERMENTER_MODAL  := preload("res://scenes/modals/check_fermenter.tscn")
 
 const STARTER_RECIPE_ID := "apartment_pale_ale"
+const PAN_THRESHOLD: float = 8.0  # Pixels of motion before we treat the press as a pan, not a tap.
 
 @onready var _viewport: Control = %ApartmentViewport
 @onready var _day_label: Label = %DayLabel
@@ -46,8 +47,15 @@ const STARTER_RECIPE_ID := "apartment_pale_ale"
 
 var _apartment: Apartment2D = null
 var _kettle: Kettle2D = null
-var _kettle_hotspot: Button = null
-var _closet_hotspot: Button = null
+
+# Hit-test rects in apartment-LOCAL coords. Computed once after mount.
+var _station_rects: Dictionary = {}  # int -> Rect2
+
+# Pan state
+var _pressed: bool = false
+var _press_start: Vector2 = Vector2.ZERO
+var _press_apt_x: float = 0.0
+var _did_pan: bool = false
 
 func _ready() -> void:
 	_version_label.text = Version.full()
@@ -60,6 +68,12 @@ func _ready() -> void:
 	Updater.update_available.connect(_on_update_available)
 	GameState.state_loaded.connect(_render_state)
 	GameState.day_advanced.connect(func(_d): _render_state())
+	# The viewport captures all gestures (pan + tap routing). Faucet etc.
+	# are inside the apartment but the dashboard's home view doesn't
+	# consume their interactivity — every world tap routes through us.
+	_viewport.mouse_filter = Control.MOUSE_FILTER_STOP
+	_viewport.gui_input.connect(_on_viewport_gui_input)
+	_viewport.resized.connect(_recenter)
 	_mount_apartment()
 	_render_state()
 
@@ -68,44 +82,169 @@ func _mount_apartment() -> void:
 	_viewport.add_child(_apartment)
 	await get_tree().process_frame
 	_recenter()
-	# Persistent kettle on the counter — the home view always shows the
-	# kitchen with the pot already there. Brewing-day mounts its own
-	# apartment on top of this one and re-uses the same world drawing,
-	# so this kettle is hidden under that scene during a brew.
-	const KETTLE_W: float = 244.0
-	var sink: Vector2 = _apartment.station_anchor(Apartment2D.STATION_SINK)
+	# Persistent kettle on the counter at sink station.
 	_kettle = Kettle2D.new()
 	_kettle.name = "Kettle"
-	_kettle.position = Vector2(sink.x - KETTLE_W * 0.5, sink.y - 228)
 	_apartment.add_child(_kettle)
-	# Tappable areas overlaid on the kettle and the closet door.
-	_kettle_hotspot = _make_hotspot(
-		Vector2(sink.x, sink.y - 114), Vector2(180, 240), "kettle_hotspot")
-	_kettle_hotspot.pressed.connect(_on_kettle_tapped)
-	var closet: Vector2 = _apartment.station_anchor(Apartment2D.STATION_CLOSET)
-	_closet_hotspot = _make_hotspot(
-		Vector2(closet.x, closet.y - 130), Vector2(170, 360), "closet_hotspot")
-	_closet_hotspot.pressed.connect(_on_closet_tapped)
-	_viewport.resized.connect(_recenter)
+	_apartment.place_kettle_at_station(_kettle, Apartment2D.STATION_SINK)
+	_compute_station_rects()
 
-func _make_hotspot(center: Vector2, size: Vector2, name: String) -> Button:
-	var b := Button.new()
-	b.name = name
-	b.flat = true
-	b.modulate = Color(1, 1, 1, 0)  # invisible — pure click area
-	b.size = size
-	b.position = Vector2(center.x - size.x * 0.5, center.y - size.y * 0.5)
-	b.focus_mode = Control.FOCUS_NONE
-	_apartment.add_child(b)
-	return b
+func _compute_station_rects() -> void:
+	# Roughly the visible silhouette of each interactive object/area in
+	# apartment-local coordinates. Tuned to be generous (mobile fingers).
+	var sink: Vector2 = _apartment.station_anchor(Apartment2D.STATION_SINK)
+	var stove: Vector2 = _apartment.station_anchor(Apartment2D.STATION_STOVE)
+	var closet: Vector2 = _apartment.station_anchor(Apartment2D.STATION_CLOSET)
+	var bottling: Vector2 = _apartment.station_anchor(Apartment2D.STATION_BOTTLING_TABLE)
+	# Kettle (faucet area). Tall rect so faucet handle is hittable too.
+	_station_rects[Apartment2D.STATION_SINK] = Rect2(
+		sink.x - 70, sink.y - 200, 140, 220,
+	)
+	# Stove: from counter top up ~140, full burner span.
+	_station_rects[Apartment2D.STATION_STOVE] = Rect2(
+		stove.x - 110, stove.y - 110, 220, 200,
+	)
+	# Closet door: tall.
+	_station_rects[Apartment2D.STATION_CLOSET] = Rect2(
+		closet.x - 80, closet.y - 280, 160, 360,
+	)
+	# Bottling table: shallow furniture.
+	_station_rects[Apartment2D.STATION_BOTTLING_TABLE] = Rect2(
+		bottling.x - 90, bottling.y - 80, 180, 160,
+	)
+
+# ---- Camera placement & pan ----
+
+func _x_bounds() -> Vector2:
+	# Returns (x_min, x_max) for apartment.position.x.
+	var vp_w: float = _viewport.size.x
+	if vp_w >= Apartment2D.PANORAMA_W:
+		# Center it; no panning room.
+		var x: float = (vp_w - Apartment2D.PANORAMA_W) * 0.5
+		return Vector2(x, x)
+	return Vector2(vp_w - Apartment2D.PANORAMA_W, 0.0)
 
 func _recenter() -> void:
 	if _apartment == null:
 		return
 	var vp: Vector2 = _viewport.size
-	var offset: Vector2 = _apartment.camera_offset_for(Apartment2D.STATION_SINK, vp.x)
-	offset.y = (vp.y - Apartment2D.PANORAMA_H) * 0.5
-	_apartment.position = offset
+	# Default to sink station centered (kettle is the v1 focal point).
+	var preferred: Vector2 = _apartment.camera_offset_for(Apartment2D.STATION_SINK, vp.x)
+	var bounds: Vector2 = _x_bounds()
+	preferred.x = clampf(preferred.x, bounds.x, bounds.y)
+	preferred.y = (vp.y - Apartment2D.PANORAMA_H) * 0.5
+	_apartment.position = preferred
+
+func _on_viewport_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mb: InputEventMouseButton = event
+		if mb.button_index != MOUSE_BUTTON_LEFT:
+			return
+		if mb.pressed:
+			_pressed = true
+			_press_start = mb.position
+			_press_apt_x = _apartment.position.x
+			_did_pan = false
+		else:
+			if _pressed and not _did_pan:
+				_handle_tap(mb.position)
+			_pressed = false
+			_did_pan = false
+	elif event is InputEventMouseMotion:
+		if not _pressed:
+			return
+		var mm: InputEventMouseMotion = event
+		var dx: float = mm.position.x - _press_start.x
+		if not _did_pan and absf(dx) > PAN_THRESHOLD:
+			_did_pan = true
+		if _did_pan:
+			var bounds: Vector2 = _x_bounds()
+			var new_x: float = clampf(_press_apt_x + dx, bounds.x, bounds.y)
+			_apartment.position.x = new_x
+
+func _handle_tap(viewport_pos: Vector2) -> void:
+	# Convert viewport coord to apartment-local coord, hit-test stations.
+	var local: Vector2 = viewport_pos - _apartment.position
+	for station in _station_rects.keys():
+		var rect: Rect2 = _station_rects[station]
+		if rect.has_point(local):
+			_on_station_tapped(int(station))
+			return
+
+func _on_station_tapped(station: int) -> void:
+	match station:
+		Apartment2D.STATION_SINK:
+			_on_kettle_tapped()
+		Apartment2D.STATION_CLOSET:
+			_on_closet_tapped()
+		Apartment2D.STATION_STOVE:
+			_on_stove_tapped()
+		Apartment2D.STATION_BOTTLING_TABLE:
+			_on_bottling_table_tapped()
+
+# ---- Per-station behavior ----
+
+func _on_kettle_tapped() -> void:
+	var resumable: Dictionary = _find_brew_in_stage(BrewState.STAGE_BREWING_DAY)
+	if not resumable.is_empty():
+		_open_brewing_day(String(resumable.get("brew_id", "")))
+		return
+	var issues: Array = GameState.start_brewing_issues(STARTER_RECIPE_ID)
+	if not issues.is_empty():
+		_render_action_prompt()
+		return
+	var recipe: RecipeDef = load("res://data/recipes/%s.tres" % STARTER_RECIPE_ID)
+	var brew_id: String = GameState.make_brew_id()
+	var seed: int = int(GameState.data.get("rng_state", {}).get("next_brew_seed", 0))
+	var brew := BrewState.make_new(
+		brew_id, STARTER_RECIPE_ID, recipe.to_snapshot(),
+		TimeService.day_clock, seed,
+	)
+	GameState.data["brews_in_flight"].append(brew)
+	GameState.data["rng_state"]["next_brew_seed"] = randi()
+	_open_brewing_day(brew_id)
+
+func _on_closet_tapped() -> void:
+	var brew: Dictionary = _find_brew_in_stage(BrewState.STAGE_FERMENTING)
+	if brew.is_empty():
+		brew = _find_brew_in_stage(BrewState.STAGE_BOTTLED_CONDITIONING)
+	if brew.is_empty():
+		_action_prompt.text = "Closet's empty."
+		return
+	var brew_id: String = String(brew.get("brew_id", ""))
+	var main := get_tree().root.get_node_or_null("Main")
+	if main and main.has_method("push_modal"):
+		main.push_modal(CHECK_FERMENTER_MODAL, func(inst): inst.brew_id = brew_id)
+
+func _on_stove_tapped() -> void:
+	# v1: the stove is part of the brewing-day scene (Pour LME, boil with
+	# hops). Outside a brew, tapping it doesn't do anything yet — say so.
+	var resumable: Dictionary = _find_brew_in_stage(BrewState.STAGE_BREWING_DAY)
+	if not resumable.is_empty():
+		_open_brewing_day(String(resumable.get("brew_id", "")))
+		return
+	_action_prompt.text = "Stove's cold. Start a brew at the kettle first."
+
+func _on_bottling_table_tapped() -> void:
+	# v1: bottling happens through the closet's "Check fermenter" modal
+	# once a brew is ready. Hint at it.
+	var ready_brew: Dictionary = {}
+	for b in GameState.data.get("brews_in_flight", []):
+		if String(b.get("stage", "")) == BrewState.STAGE_FERMENTING:
+			var snap: Dictionary = b.get("recipe_snapshot", {})
+			var elapsed: int = int(b.get("days_elapsed_in_stage", 0))
+			if elapsed >= int(snap.get("fermentation_days", 5)):
+				ready_brew = b
+				break
+	if not ready_brew.is_empty():
+		_action_prompt.text = "Bottle the %s — tap the closet to start." % _brew_name(ready_brew)
+	else:
+		_action_prompt.text = "Bottling table — clean and waiting."
+
+func _open_brewing_day(brew_id: String) -> void:
+	var main := get_tree().root.get_node_or_null("Main")
+	if main and main.has_method("mount_active_scene"):
+		main.mount_active_scene(BREWING_DAY_SCENE, func(inst): inst.brew_id = brew_id)
 
 # ---- HUD render ----
 
@@ -171,39 +310,30 @@ func _render_morning_summary() -> void:
 		_morning_summary.text = String(lines[day % lines.size()])
 
 func _render_action_prompt() -> void:
-	# What does tapping the highlighted object do right now? The prompt
-	# names the action; the player taps the object to do it. If
-	# "start brewing" is blocked, the prompt explains why.
-	var resumable_brew: Dictionary = _find_brew_in_stage(BrewState.STAGE_BREWING_DAY)
-	var fermenting_brew: Dictionary = _find_brew_in_stage(BrewState.STAGE_FERMENTING)
-	var conditioning_brew: Dictionary = _find_brew_in_stage(BrewState.STAGE_BOTTLED_CONDITIONING)
-
-	if not resumable_brew.is_empty():
-		var name := _brew_name(resumable_brew)
-		_action_prompt.text = "Tap the kettle to resume brewing — %s" % name
+	var resumable: Dictionary = _find_brew_in_stage(BrewState.STAGE_BREWING_DAY)
+	var fermenting: Dictionary = _find_brew_in_stage(BrewState.STAGE_FERMENTING)
+	var conditioning: Dictionary = _find_brew_in_stage(BrewState.STAGE_BOTTLED_CONDITIONING)
+	if not resumable.is_empty():
+		_action_prompt.text = "Tap the kettle to resume — %s" % _brew_name(resumable)
 		return
-	if not fermenting_brew.is_empty():
-		var snap: Dictionary = fermenting_brew.get("recipe_snapshot", {})
-		var elapsed: int = int(fermenting_brew.get("days_elapsed_in_stage", 0))
+	if not fermenting.is_empty():
+		var snap: Dictionary = fermenting.get("recipe_snapshot", {})
+		var elapsed: int = int(fermenting.get("days_elapsed_in_stage", 0))
 		var ferm: int = int(snap.get("fermentation_days", 5))
-		_action_prompt.text = "Closet — %s, day %d/%d" % [_brew_name(fermenting_brew), elapsed, ferm]
+		_action_prompt.text = "Closet — %s, day %d/%d" % [_brew_name(fermenting), elapsed, ferm]
 		return
-	if not conditioning_brew.is_empty():
-		var snap2: Dictionary = conditioning_brew.get("recipe_snapshot", {})
-		var elapsed2: int = int(conditioning_brew.get("days_elapsed_in_stage", 0))
+	if not conditioning.is_empty():
+		var snap2: Dictionary = conditioning.get("recipe_snapshot", {})
+		var elapsed2: int = int(conditioning.get("days_elapsed_in_stage", 0))
 		var cond: int = int(snap2.get("condition_days", 14))
-		_action_prompt.text = "Closet — %s, conditioning %d/%d" % [_brew_name(conditioning_brew), elapsed2, cond]
+		_action_prompt.text = "Closet — %s, conditioning %d/%d" % [_brew_name(conditioning), elapsed2, cond]
 		return
-	# No active brew. Either offer a fresh brew or nudge toward fixing
-	# the block. The nudge stays one short line — the player taps the
-	# phone if they want to know what's missing.
 	var issues: Array = GameState.start_brewing_issues(STARTER_RECIPE_ID)
 	if issues.is_empty():
 		_action_prompt.text = "Tap the kettle to start a brew"
 	elif _missing_ingredient_count(issues) > 0:
 		_action_prompt.text = "Need ingredients. Tap the phone to shop."
 	else:
-		# Non-ingredient block (e.g. fermenter occupied) — show the first.
 		_action_prompt.text = String(issues[0])
 
 func _missing_ingredient_count(issues: Array) -> int:
@@ -223,45 +353,7 @@ func _brew_name(brew: Dictionary) -> String:
 	var snap: Dictionary = brew.get("recipe_snapshot", {})
 	return String(snap.get("display_name", brew.get("recipe_id", "Brew")))
 
-# ---- Tap handlers ----
-
-func _on_kettle_tapped() -> void:
-	# Resume an in-flight brew if any; otherwise start a fresh one if not blocked.
-	var resumable: Dictionary = _find_brew_in_stage(BrewState.STAGE_BREWING_DAY)
-	if not resumable.is_empty():
-		_open_brewing_day(String(resumable.get("brew_id", "")))
-		return
-	var issues: Array = GameState.start_brewing_issues(STARTER_RECIPE_ID)
-	if not issues.is_empty():
-		# Re-render the prompt so the player sees what's blocking.
-		_render_action_prompt()
-		return
-	var recipe: RecipeDef = load("res://data/recipes/%s.tres" % STARTER_RECIPE_ID)
-	var brew_id: String = GameState.make_brew_id()
-	var seed: int = int(GameState.data.get("rng_state", {}).get("next_brew_seed", 0))
-	var brew := BrewState.make_new(
-		brew_id, STARTER_RECIPE_ID, recipe.to_snapshot(),
-		TimeService.day_clock, seed,
-	)
-	GameState.data["brews_in_flight"].append(brew)
-	GameState.data["rng_state"]["next_brew_seed"] = randi()
-	_open_brewing_day(brew_id)
-
-func _on_closet_tapped() -> void:
-	var brew: Dictionary = _find_brew_in_stage(BrewState.STAGE_FERMENTING)
-	if brew.is_empty():
-		brew = _find_brew_in_stage(BrewState.STAGE_BOTTLED_CONDITIONING)
-	if brew.is_empty():
-		return  # Nothing in the closet — silent ignore.
-	var brew_id: String = String(brew.get("brew_id", ""))
-	var main := get_tree().root.get_node_or_null("Main")
-	if main and main.has_method("push_modal"):
-		main.push_modal(CHECK_FERMENTER_MODAL, func(inst): inst.brew_id = brew_id)
-
-func _open_brewing_day(brew_id: String) -> void:
-	var main := get_tree().root.get_node_or_null("Main")
-	if main and main.has_method("mount_active_scene"):
-		main.mount_active_scene(BREWING_DAY_SCENE, func(inst): inst.brew_id = brew_id)
+# ---- HUD button handlers ----
 
 func _on_rest_pressed() -> void:
 	TimeService.advance_day()
