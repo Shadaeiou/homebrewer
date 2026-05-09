@@ -52,9 +52,24 @@ const MINIGAME_SCENES := {
 }
 
 @onready var _recipe_title: Label = %RecipeTitle
-@onready var _stage_list: VBoxContainer = %StageList
-@onready var _stage_body: PanelContainer = %StageBody
+@onready var _stage_line: Label = %StageLine
+@onready var _stage_hint: Label = %StageHint
+@onready var _stage_body: Control = %StageBody
 @onready var _close_button: Button = %CloseButton
+
+## Tiny per-stage hints. Shown once-ish in the bottom-left chip; the
+## environment is supposed to be the real teacher. Stages without an
+## entry get no hint string.
+const STAGE_HINTS: Dictionary = {
+	"sanitize":       "Wipe down the fermenter.",
+	"fill_kettle":    "Tap the faucet. Stop near the gold band.",
+	"heat":           "Turn on the burner.",
+	"add_lme":        "Pour the malt extract into the kettle.",
+	"boil_with_hops": "Toss hops on schedule.",
+	"cool_wort":      "Cool the kettle in an ice bath.",
+	"transfer_pitch": "Transfer to fermenter, pitch yeast.",
+	"mash_temp_hold": "Hold mash temperature.",
+}
 
 var brew_id: String = ""
 
@@ -125,32 +140,15 @@ func _stages_for_method(method: String) -> Array:
 	return EXTRACT_STAGES.duplicate()
 
 func _render_stage_list() -> void:
-	for child in _stage_list.get_children():
-		child.queue_free()
-	for i in range(_stages.size()):
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 8)
-		var marker := Label.new()
-		marker.text = _stage_marker(i)
-		marker.custom_minimum_size = Vector2(20, 0)
-		row.add_child(marker)
-		var title := Label.new()
-		title.text = String(_stages[i]["title"])
-		title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		if i == _current_stage_index:
-			title.add_theme_color_override("font_color", Color(0.95, 0.78, 0.32))
-		elif i < _current_stage_index:
-			title.modulate = Color(0.6, 0.6, 0.6)
-		row.add_child(title)
-		_stage_list.add_child(row)
-
-func _stage_marker(i: int) -> String:
-	if i < _current_stage_index:
-		return "✓"
-	if i == _current_stage_index:
-		return "▶"
-	return "·"
+	if _current_stage_index >= _stages.size():
+		_stage_line.text = "Done"
+		_stage_hint.text = ""
+		return
+	var stage: Dictionary = _stages[_current_stage_index]
+	_stage_line.text = "Step %d of %d · %s" % [
+		_current_stage_index + 1, _stages.size(), String(stage["title"]),
+	]
+	_stage_hint.text = String(STAGE_HINTS.get(String(stage["id"]), ""))
 
 func _mount_current_stage() -> void:
 	if _mounted_minigame != null:

@@ -1,16 +1,13 @@
 extends Control
 
-## Fill Kettle (real, v4) — Mini-game #1 per DESIGN.md 3.9 + Appendix A Step 2.
+## Fill Kettle (real, v5) — Mini-game #1 per DESIGN.md 3.9 + Appendix A Step 2.
 ##
-## Camera focuses on the apartment's sink station. Kettle is placed on the
-## counter under the brass faucet. Tap the faucet handle to start water;
-## tap again to stop. Where you stopped becomes intended_volume; drift
-## rolls actual on top per Process skill, faucet eyeball precision, and
-## care factor.
-##
-## Per the apartment-as-world design: this scene EMBEDS Apartment2D rather
-## than drawing its own kitchen. Other mini-games (Pour LME, Cool Wort,
-## etc.) reuse the same apartment scrolled to their respective stations.
+## Apartment-first layout: the apartment fills the entire viewport. The
+## only UI chrome is a small readout chip; players advance by interacting
+## with the world. Tap the brass faucet handle to start water; tap again
+## to stop. Stopping with water in the kettle commits the fill — no
+## "Done" button. Care factor derives from how the player worked the
+## tap (multiple flow_starts = stopping to check the level).
 
 signal minigame_completed(outcome: Dictionary)
 
@@ -21,15 +18,12 @@ const MAX_GAL: float = 5.0
 const BASE_DRIFT_GAL: float = 0.5
 const FAUCET_PRECISION: float = 0.40
 const FILL_RATE_GAL_PER_SEC: float = 0.85
-const OPTIONAL_ACTIONS_TOTAL: int = 2
+const MIN_COMMIT_GAL: float = 0.5  # Below this, faucet-off is treated as a misfire, not a commit.
+const COMMIT_DELAY_SEC: float = 0.6  # Beat after the player turns the tap off.
 const XP_AWARD: Dictionary = {"process": 8}
 
-@onready var _stage_title: Label = %StageTitle
 @onready var _readout: Label = %Readout
 @onready var _viewport: Control = %ApartmentViewport
-@onready var _slow_toggle: CheckBox = %SlowToggle
-@onready var _verify_toggle: CheckBox = %VerifyToggle
-@onready var _confirm_button: Button = %ConfirmButton
 
 var _apartment: Apartment2D = null
 var _kettle: Kettle2D = null
@@ -37,22 +31,15 @@ var _stage_meta: Dictionary = {}
 var _filled_gal: float = 0.0
 var _flow_starts: int = 0
 var _resolved: bool = false
+var _commit_timer: float = -1.0
 
 func _ready() -> void:
 	set_process(true)
-	_confirm_button.pressed.connect(_on_confirm_pressed)
-	_apply_stage_meta()
 	_mount_apartment()
 	_update_readout()
 
 func set_stage_meta(stage: Dictionary) -> void:
 	_stage_meta = stage
-	if is_inside_tree():
-		_apply_stage_meta()
-
-func _apply_stage_meta() -> void:
-	if _stage_title:
-		_stage_title.text = String(_stage_meta.get("title", "Fill kettle"))
 
 func _mount_apartment() -> void:
 	_apartment = APARTMENT_SCENE.instantiate()
@@ -60,29 +47,37 @@ func _mount_apartment() -> void:
 	# Wait one frame so the apartment's _ready spawns the faucet, then
 	# wire interactions and place the kettle.
 	await get_tree().process_frame
-	# Snap camera to sink station immediately (no animation on first mount).
-	_apartment.position = _apartment.camera_offset_for(
-		Apartment2D.STATION_SINK, _viewport.size.x,
-	)
+	_recenter_apartment()
 	# Drop a kettle on the counter at the sink station.
 	_kettle = Kettle2D.new()
 	_kettle.name = "Kettle"
-	# Kettle's draw box has rim_y_local = 8 and bottom at HEIGHT+8.
-	# Place its bottom on the counter at sink_x.
 	const KETTLE_W: float = 244.0
-	const KETTLE_H: float = 232.0
 	var sink: Vector2 = _apartment.station_anchor(Apartment2D.STATION_SINK)
 	_kettle.position = Vector2(sink.x - KETTLE_W * 0.5, sink.y - 228)
 	_kettle.target_fraction = TARGET_GAL / MAX_GAL
 	_kettle.target_band_width = 36.0
 	_kettle.target_color = Color(Palette.ACCENT.r, Palette.ACCENT.g, Palette.ACCENT.b, 0.42)
 	_apartment.add_child(_kettle)
-	# Connect faucet input.
 	if _apartment.faucet != null:
 		_apartment.faucet.toggled.connect(_on_faucet_toggled)
+	# Re-center if the viewport gets resized (rotation, window resize, etc.).
+	_viewport.resized.connect(_recenter_apartment)
+
+func _recenter_apartment() -> void:
+	if _apartment == null:
+		return
+	var vp_size: Vector2 = _viewport.size
+	var offset: Vector2 = _apartment.camera_offset_for(Apartment2D.STATION_SINK, vp_size.x)
+	# Vertical center: anchor the apartment so its mid-line sits at
+	# viewport center. Apartment height is fixed; floor/window crop
+	# naturally if the viewport is shorter.
+	offset.y = (vp_size.y - Apartment2D.PANORAMA_H) * 0.5
+	_apartment.position = offset
 
 func _process(delta: float) -> void:
-	if _resolved or _apartment == null or _apartment.faucet == null:
+	if _resolved:
+		return
+	if _apartment == null or _apartment.faucet == null:
 		return
 	if _apartment.faucet.is_on:
 		_filled_gal = min(_filled_gal + FILL_RATE_GAL_PER_SEC * delta, MAX_GAL)
@@ -91,10 +86,22 @@ func _process(delta: float) -> void:
 		_update_readout()
 		if _filled_gal >= MAX_GAL:
 			_apartment.faucet.set_on(false)
+	elif _commit_timer >= 0.0:
+		_commit_timer -= delta
+		if _commit_timer <= 0.0:
+			_commit_timer = -1.0
+			_commit_fill()
 
 func _on_faucet_toggled(is_on: bool) -> void:
 	if is_on:
 		_flow_starts += 1
+		_commit_timer = -1.0  # Cancel any pending commit — they're filling again.
+	else:
+		# Faucet off with water in the kettle → commit after a short beat.
+		# The beat lets the player wiggle the tap without immediately ending
+		# the stage; if they re-open within COMMIT_DELAY_SEC it's cancelled.
+		if _filled_gal >= MIN_COMMIT_GAL:
+			_commit_timer = COMMIT_DELAY_SEC
 	_update_readout()
 
 func _update_readout() -> void:
@@ -111,25 +118,25 @@ func _update_readout() -> void:
 	else:
 		_readout.add_theme_color_override("font_color", Palette.GRADE_D)
 
-func _optional_actions_taken() -> int:
-	var n: int = 0
-	if _slow_toggle.button_pressed:
-		n += 1
-	if _verify_toggle.button_pressed:
-		n += 1
-	return n
+func _care_factor() -> float:
+	# Care derives from how the player worked the tap. One flow_start is
+	# the minimum (open, fill, close); 2+ means they stopped to check the
+	# level — that's the careful behavior we used to read off a checkbox.
+	if _flow_starts >= 3:
+		return 1.0
+	if _flow_starts >= 2:
+		return 0.85
+	return 0.7
 
-func _on_confirm_pressed() -> void:
+func _commit_fill() -> void:
 	if _resolved:
 		return
-	if _apartment != null and _apartment.faucet != null and _apartment.faucet.is_on:
-		_apartment.faucet.set_on(false)
 	_resolved = true
 
 	var skills: Dictionary = GameState.data.get("skills", {})
 	var process_level: int = int(skills.get("process", {}).get("level", 0))
 	var skill_factor: float = Drift.skill_factor_from_level(process_level)
-	var care_factor: float = CareFactor.from_breadth(_optional_actions_taken(), OPTIONAL_ACTIONS_TOTAL)
+	var care_factor: float = _care_factor()
 
 	var rng := RandomNumberGenerator.new()
 	rng.seed = _brew_rng_seed()
@@ -146,12 +153,10 @@ func _on_confirm_pressed() -> void:
 	actual_gal = clampf(actual_gal, 0.0, MAX_GAL)
 
 	var notes: Array = ["Filled to ~%.2f gal (target %.1f) from the faucet." % [actual_gal, TARGET_GAL]]
-	if _slow_toggle.button_pressed:
-		notes.append("Took your time on the pour.")
-	if _verify_toggle.button_pressed:
-		notes.append("Stopped to double-check before topping off.")
 	if _flow_starts >= 3:
 		notes.append("Stopped and started the tap a few times — careful work.")
+	elif _flow_starts >= 2:
+		notes.append("Paused once to check the level.")
 
 	var outcome: Dictionary = {
 		"actual": {

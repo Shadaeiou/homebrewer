@@ -51,7 +51,7 @@ func test_fill_kettle_emits_well_formed_outcome() -> void:
 	# Watcher to capture the outcome.
 	var captured := [null]
 	fk.minigame_completed.connect(func(o): captured[0] = o)
-	fk._on_confirm_pressed()
+	fk._commit_fill()
 	await wait_frames(1)
 	assert_not_null(captured[0], "fill_kettle should have emitted")
 	var outcome: Dictionary = captured[0]

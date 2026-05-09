@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.2.72",
+    "date": "2026-05-09",
+    "bullets": [
+      "Brewing day takes over the whole screen. The kitchen — sink, counter, stove, bottling table — is the view; no more half-screen sidebar list eating UI space.",
+      "Stage progress moved to a small chip in the bottom-left corner (\"Step 2 of 7 · Fill kettle\" + a one-line hint). Close button is a flat label in the top-right.",
+      "Fill kettle no longer has a \"Done filling\" button or care-factor checkboxes. Turn the faucet off with water in the kettle and the step commits — wiggling the tap on/off counts as careful work and feeds care factor naturally. All brewing progression now happens by interacting with the environment."
+    ]
+  },
+  {
     "version": "0.2.70",
     "date": "2026-05-09",
     "bullets": [
