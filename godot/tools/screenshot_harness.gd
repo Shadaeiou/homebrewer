@@ -37,6 +37,12 @@ const SCENES := [
 		"journal_wipe": true},
 	{"name": "journal_populated", "path": "res://scenes/journal.tscn", "frames": 5,
 		"journal_synthetic_entries": true},
+	{"name": "check_fermenter_modal", "path": "res://scenes/modals/check_fermenter.tscn",
+		"frames": 5, "synthetic_brew": {"stage": "fermenting", "days_elapsed_in_stage": 3},
+		"props": {"brew_id": "synthetic_1"}},
+	{"name": "check_fermenter_modal_ready", "path": "res://scenes/modals/check_fermenter.tscn",
+		"frames": 5, "synthetic_brew": {"stage": "fermenting", "days_elapsed_in_stage": 5},
+		"props": {"brew_id": "synthetic_1"}},
 ]
 
 const OUT_DIR := "res://../screenshots"

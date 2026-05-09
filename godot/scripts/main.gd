@@ -50,3 +50,20 @@ func clear_active_scene() -> void:
 		child.queue_free()
 	if TimeService.is_scene_running():
 		TimeService.end_scene()
+
+func push_modal(scene: PackedScene, configure: Callable = Callable()) -> Node:
+	## Push a modal onto ModalLayer per 7.2. Pauses the rest of the scene
+	## tree so brewing-day timers / scene_clock don't keep running while
+	## the modal is up. The modal's root must use PROCESS_MODE_ALWAYS so
+	## its own input handlers still fire.
+	var instance: Node = scene.instantiate()
+	if configure.is_valid():
+		configure.call(instance)
+	modal_layer.add_child(instance)
+	get_tree().paused = true
+	return instance
+
+func pop_modal() -> void:
+	for child in modal_layer.get_children():
+		child.queue_free()
+	get_tree().paused = false

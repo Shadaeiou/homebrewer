@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.2.63",
+    "date": "2026-05-09",
+    "bullets": [
+      "Dashboard restructure: the Brews-in-flight panel is gone, replaced by a Today daily checklist + a morning summary line tied to the day's mood (first day, quiet morning, closet hum, something ready, etc).",
+      "Each fermenting / conditioning brew shows up as one checklist row — Check fermenter — Apartment Pale Ale, day 3/5. A ▶ in gold marks the row as actionable when the brew has reached its bottle / taste beat.",
+      "Tap a row → Check fermenter modal pops up over a dimmed backdrop. The modal shows the stage + day-N-of-M and a vague airlock observation that shifts as the brew moves through fermentation. The Bottle this brew / Pour & taste action moved off the dashboard row and into this modal.",
+      "Modal layer wired to Main: push_modal pauses the rest of the tree, pop_modal unpauses; the modal itself runs with PROCESS_MODE_ALWAYS so its buttons still work."
+    ]
+  },
+  {
     "version": "0.2.62",
     "date": "2026-05-09",
     "bullets": [
