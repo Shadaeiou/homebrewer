@@ -162,13 +162,14 @@ func _draw() -> void:
 	# Range hood above the stove.
 	_draw_range_hood(840.0)
 
-	# Wall clock — on the bare wall above the bottling table (NOT on a
-	# cabinet face). Centered horizontally over the bottling table.
-	_draw_wall_clock(Vector2(360.0, COUNTER_Y - 32.0 * PX_PER_INCH))
+	# Wall clock — on the bare wall to the right of the stove/hood,
+	# above the wall calendar. Out of the way of the bottling-table
+	# shelf (which holds the journal).
+	_draw_wall_clock(Vector2(960.0, COUNTER_Y - 36.0 * PX_PER_INCH))
 
-	# Wall calendar — on the wall to the right of the upper cabinets,
-	# between the cabinets and the window. Hung above counter level.
-	_draw_wall_calendar(Vector2(940.0, COUNTER_Y - 30.0 * PX_PER_INCH))
+	# Wall calendar — on the same wall as the bottling-table shelf, but
+	# UP near the ceiling so it doesn't overlap the shelf or journal.
+	_draw_wall_calendar(Vector2(330.0, COUNTER_Y - 56.0 * PX_PER_INCH))
 
 	# Window on the far right (decor wall, sill above counter).
 	_draw_window(1080.0)
@@ -235,16 +236,13 @@ func _draw_counter_strip(x_left: float, x_right: float) -> void:
 	draw_circle(Vector2(sink_cx - knob_inset, knob_y), 2.5, Palette.BRASS_LIGHT)
 	draw_circle(Vector2(sink_cx + knob_inset, knob_y), 2.5, Palette.BRASS_LIGHT)
 
-	# Adjacent cabinets — one door per region, knob in the center, no
-	# duplicate seams or knobs. If the region is wide enough we split it
-	# into 24"-doors; otherwise one wide door spans it.
+	# Adjacent regions to the left and right of the sink-base. Draw the
+	# doors inside each region with the helper; the sink-base region's
+	# own boundary seams (sink_doors_left / sink_doors_right) were
+	# already drawn above so there's no gap between regions.
 	var door_w: float = 24.0 * PX_PER_INCH  # 96
-	for region in [
-		Rect2(x_left, 0, sink_doors_left - x_left, 0),       # left of sink-base
-		Rect2(sink_doors_right, 0, x_right - sink_doors_right, 0),  # right of sink-base
-	]:
-		_draw_cabinet_doors_in_region(region.position.x, region.position.x + region.size.x,
-			cab_top, knob_y, door_w)
+	_draw_cabinet_doors_in_region(x_left, sink_doors_left, cab_top, knob_y, door_w)
+	_draw_cabinet_doors_in_region(sink_doors_right, x_right, cab_top, knob_y, door_w)
 
 	# Counter-cabinet shadow line.
 	draw_line(
@@ -266,13 +264,16 @@ func _draw_cabinet_doors_in_vertical_region(x_left: float, x_right: float,
 	var width: float = x_right - x_left
 	if width <= 8.0:
 		return
-	# Decide how many doors fit: at least 1, at most ceil(width/target).
-	var n: int = max(1, int(round(width / target_door_w)))
+	# Decide how many doors fit: enough that no door is wider than the
+	# target. Use ceil so a 132-wide region with a 96-wide target gets
+	# 2 doors, not 1 (which would give a single ridiculously wide door).
+	var n: int = max(1, int(ceil(width / target_door_w)))
 	var door_w: float = width / n
 	for i in range(n):
 		var door_left: float = x_left + i * door_w
 		var door_right: float = door_left + door_w
-		# Internal seams only — skip the leftmost (region boundary).
+		# Internal seams only — skip the leftmost (region boundary; the
+		# caller draws region-boundary seams between adjacent regions).
 		if i > 0:
 			draw_line(
 				Vector2(door_left, seam_top_y),
@@ -300,13 +301,22 @@ func _draw_wall_cabinets(x_left: float, x_right: float) -> void:
 	draw_rect(Rect2(cab.position, Vector2(cab.size.x, 2)), Palette.WOOD_LIGHT)
 
 	# Three regions: left of sink, over-sink (one wide door matching
-	# the sink-base double-door width), right of sink. Each region uses
-	# the shared region-doors helper.
+	# the sink-base double-door width), right of sink. The region-
+	# boundary seams (over_sink_left / over_sink_right) need to be
+	# drawn separately — the helper only draws seams between INTERNAL
+	# doors of a single region.
 	var sink_cx: float = STATION_X[STATION_SINK]
 	var over_sink_w: float = 24.0 * PX_PER_INCH  # 96 px (matches sink-base double)
 	var over_sink_left: float = sink_cx - over_sink_w * 0.5
 	var over_sink_right: float = sink_cx + over_sink_w * 0.5
 	var upper_knob_y: float = cab_bottom - 6.0 * PX_PER_INCH
+	# Region-boundary seams.
+	for sep_x in [over_sink_left, over_sink_right]:
+		draw_line(
+			Vector2(sep_x, cab_top + 4),
+			Vector2(sep_x, cab_bottom - 4),
+			Color(0, 0, 0, 0.65), 2.0,
+		)
 	_draw_cabinet_doors_in_vertical_region(
 		x_left, over_sink_left, cab_top + 4, cab_bottom - 4, upper_knob_y,
 		18.0 * PX_PER_INCH,

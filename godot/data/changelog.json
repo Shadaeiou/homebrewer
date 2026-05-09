@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.2.79",
+    "date": "2026-05-09",
+    "bullets": [
+      "Cabinet bugs fixed. The right-of-sink lower cabinet was rendering as ONE huge 132-px-wide door because the door-count math used round() instead of ceil() — now it correctly subdivides into two doors. Same fix applies to the right-side upper cabinets.",
+      "Region-boundary seams between the sink-base unit and the adjacent cabinets are now drawn explicitly. They were missing on the upper cabinets, which made the over-sink door visually blend with its neighbors and look narrower than the sink-base double-door below it. They now line up.",
+      "Wall clock moved off the bottling-table wall (where it was overlapping the new bookshelf) onto the bare wall between the stove/hood and the window. Pan right from the sink to see it.",
+      "Wall calendar moved up to the top of the wall above the bottling-table shelf, so the shelf, journal, and calendar can coexist on the same wall without overlapping."
+    ]
+  },
+  {
     "version": "0.2.78",
     "date": "2026-05-09",
     "bullets": [
