@@ -33,7 +33,7 @@ class_name Apartment2D
 const PX_PER_INCH: float = 4.0
 const PX_PER_FOOT: float = 48.0
 
-const PANORAMA_W: float = 1200.0
+const PANORAMA_W: float = 1440.0
 const PANORAMA_H: float = 620.0
 const FLOOR_Y: float = 540.0
 ## Counter top sits 36" above the floor (standard US kitchen counter).
@@ -49,8 +49,9 @@ const STATION_BOTTLING_TABLE: int = 1
 const STATION_SINK: int = 2
 const STATION_STOVE: int = 3
 const STATION_DECOR: int = 4
+const STATION_BED: int = 5
 
-const STATION_X: PackedFloat32Array = [120.0, 360.0, 600.0, 840.0, 1080.0]
+const STATION_X: PackedFloat32Array = [120.0, 360.0, 600.0, 840.0, 1080.0, 1320.0]
 
 ## Station counter-top y — where equipment naturally sits.
 func station_anchor(station: int) -> Vector2:
@@ -195,6 +196,9 @@ func _draw() -> void:
 	# Sink basin recessed into the counter.
 	_draw_sink(600.0)
 
+	# Bed on the right end of the apartment — tap to rest.
+	_draw_bed(1320.0)
+
 	# Baseboard runs along the whole wall at floor level.
 	_draw_baseboard()
 
@@ -208,8 +212,10 @@ func _draw_counter_strip(x_left: float, x_right: float) -> void:
 	var cab_top: float = COUNTER_Y + top_thickness
 	var cab := Rect2(x_left, cab_top, x_right - x_left, FLOOR_Y - cab_top)
 	draw_rect(cab, Palette.WOOD_DARK)
-	# Knob row sits 6" below the counter.
-	var knob_y: float = cab_top + 6.0 * PX_PER_INCH
+	# Knob row sits ~halfway down the cabinet door (cabinet face is ~36"
+	# tall; placing knobs at counter-top level reads stylized but feels
+	# wrong — center of the door reads more natural).
+	var knob_y: float = cab_top + 18.0 * PX_PER_INCH
 
 	# Sink-base cabinet — two narrow doors (12" each) directly under the
 	# basin, knobs on the inner edges (doors swing outward).
@@ -229,42 +235,16 @@ func _draw_counter_strip(x_left: float, x_right: float) -> void:
 	draw_circle(Vector2(sink_cx - knob_inset, knob_y), 2.5, Palette.BRASS_LIGHT)
 	draw_circle(Vector2(sink_cx + knob_inset, knob_y), 2.5, Palette.BRASS_LIGHT)
 
-	# Adjacent cabinets to the LEFT of the sink-base — fill with 24"-wide
-	# doors as much as fits, knobs on the inner edge of each door.
-	var door_w: float = 24.0 * PX_PER_INCH
-	var x: float = sink_doors_left - door_w
-	while x > x_left + 4.0:
-		draw_line(
-			Vector2(x, cab_top + 4),
-			Vector2(x, FLOOR_Y - 4),
-			Color(0, 0, 0, 0.55), 2.0,
-		)
-		# Knob near the door's right edge (so the door opens to the LEFT,
-		# away from the sink). Inset 4" from the seam on the right side.
-		draw_circle(Vector2(x + door_w - 4.0 * PX_PER_INCH, knob_y), 2.5, Palette.BRASS_LIGHT)
-		x -= door_w
-	# Knob for the left-most door (it might not have its own seam if it
-	# runs into x_left; place it 4" from sink_doors_left looking left).
-	draw_circle(
-		Vector2(sink_doors_left - 4.0 * PX_PER_INCH, knob_y),
-		2.5, Palette.BRASS_LIGHT,
-	)
-
-	# Adjacent cabinets to the RIGHT of the sink-base.
-	x = sink_doors_right + door_w
-	while x < x_right - 4.0:
-		draw_line(
-			Vector2(x, cab_top + 4),
-			Vector2(x, FLOOR_Y - 4),
-			Color(0, 0, 0, 0.55), 2.0,
-		)
-		draw_circle(Vector2(x - door_w + 4.0 * PX_PER_INCH, knob_y), 2.5, Palette.BRASS_LIGHT)
-		x += door_w
-	# Right-most door knob.
-	draw_circle(
-		Vector2(sink_doors_right + 4.0 * PX_PER_INCH, knob_y),
-		2.5, Palette.BRASS_LIGHT,
-	)
+	# Adjacent cabinets — one door per region, knob in the center, no
+	# duplicate seams or knobs. If the region is wide enough we split it
+	# into 24"-doors; otherwise one wide door spans it.
+	var door_w: float = 24.0 * PX_PER_INCH  # 96
+	for region in [
+		Rect2(x_left, 0, sink_doors_left - x_left, 0),       # left of sink-base
+		Rect2(sink_doors_right, 0, x_right - sink_doors_right, 0),  # right of sink-base
+	]:
+		_draw_cabinet_doors_in_region(region.position.x, region.position.x + region.size.x,
+			cab_top, knob_y, door_w)
 
 	# Counter-cabinet shadow line.
 	draw_line(
@@ -273,29 +253,73 @@ func _draw_counter_strip(x_left: float, x_right: float) -> void:
 		Palette.METAL_OUTLINE, 1.0, true,
 	)
 
+func _draw_cabinet_doors_in_region(x_left: float, x_right: float,
+		cab_top: float, knob_y: float, target_door_w: float) -> void:
+	# Lower-cabinet variant — seams run from cab_top to floor.
+	_draw_cabinet_doors_in_vertical_region(
+		x_left, x_right, cab_top + 4, FLOOR_Y - 4, knob_y, target_door_w,
+	)
+
+func _draw_cabinet_doors_in_vertical_region(x_left: float, x_right: float,
+		seam_top_y: float, seam_bottom_y: float, knob_y: float,
+		target_door_w: float) -> void:
+	var width: float = x_right - x_left
+	if width <= 8.0:
+		return
+	# Decide how many doors fit: at least 1, at most ceil(width/target).
+	var n: int = max(1, int(round(width / target_door_w)))
+	var door_w: float = width / n
+	for i in range(n):
+		var door_left: float = x_left + i * door_w
+		var door_right: float = door_left + door_w
+		# Internal seams only — skip the leftmost (region boundary).
+		if i > 0:
+			draw_line(
+				Vector2(door_left, seam_top_y),
+				Vector2(door_left, seam_bottom_y),
+				Color(0, 0, 0, 0.55), 2.0,
+			)
+		# Knob centered on each door.
+		draw_circle(
+			Vector2((door_left + door_right) * 0.5, knob_y),
+			2.5, Palette.BRASS_LIGHT,
+		)
+
 func _draw_wall_cabinets(x_left: float, x_right: float) -> void:
 	# Upper cabinets sit 18" above counter (above the splashback) and are
-	# 30" tall. Width matches the counter run.
+	# 30" tall. Width matches the counter run. The door directly above
+	# the sink is a single 24"-wide door — same width as the sink-base
+	# double-door below it, so the upper and lower cabinetry line up.
 	var splash_h: float = 18.0 * PX_PER_INCH
 	var cab_h: float = 30.0 * PX_PER_INCH  # 120 px
 	var cab_bottom: float = COUNTER_Y - splash_h
 	var cab_top: float = cab_bottom - cab_h
 	var cab := Rect2(x_left, cab_top, x_right - x_left, cab_h)
 	draw_rect(cab, Palette.WOOD_DARK)
-	# Light edge along the top (lit from upper-left).
+	# Light edge along the top.
 	draw_rect(Rect2(cab.position, Vector2(cab.size.x, 2)), Palette.WOOD_LIGHT)
-	# Cabinet door cuts every 18".
-	var door_w: float = 18.0 * PX_PER_INCH
-	var x: float = x_left + door_w
-	while x < x_right - 4.0:
-		draw_line(
-			Vector2(x, cab_top + 4),
-			Vector2(x, cab_bottom - 4),
-			Color(0, 0, 0, 0.65), 2.0,
-		)
-		# Knob 6" up from the bottom.
-		draw_circle(Vector2(x - 10, cab_bottom - 6.0 * PX_PER_INCH), 2.5, Palette.BRASS_LIGHT)
-		x += door_w
+
+	# Three regions: left of sink, over-sink (one wide door matching
+	# the sink-base double-door width), right of sink. Each region uses
+	# the shared region-doors helper.
+	var sink_cx: float = STATION_X[STATION_SINK]
+	var over_sink_w: float = 24.0 * PX_PER_INCH  # 96 px (matches sink-base double)
+	var over_sink_left: float = sink_cx - over_sink_w * 0.5
+	var over_sink_right: float = sink_cx + over_sink_w * 0.5
+	var upper_knob_y: float = cab_bottom - 6.0 * PX_PER_INCH
+	_draw_cabinet_doors_in_vertical_region(
+		x_left, over_sink_left, cab_top + 4, cab_bottom - 4, upper_knob_y,
+		18.0 * PX_PER_INCH,
+	)
+	_draw_cabinet_doors_in_vertical_region(
+		over_sink_left, over_sink_right, cab_top + 4, cab_bottom - 4, upper_knob_y,
+		over_sink_w,
+	)
+	_draw_cabinet_doors_in_vertical_region(
+		over_sink_right, x_right, cab_top + 4, cab_bottom - 4, upper_knob_y,
+		18.0 * PX_PER_INCH,
+	)
+
 	# Drop shadow under the cabinets (onto the splashback).
 	draw_rect(
 		Rect2(cab.position + Vector2(0, cab.size.y), Vector2(cab.size.x, 4)),
@@ -305,11 +329,11 @@ func _draw_wall_cabinets(x_left: float, x_right: float) -> void:
 	draw_rect(cab, Palette.METAL_OUTLINE, false, 1.0)
 
 func _draw_range_hood(cx: float) -> void:
-	# 30" wide × 18" tall, mounted 24" above the cooktop (which sits at
-	# COUNTER_Y).
+	# 30" wide × 12" tall, mounted 30" above the cooktop. Shorter hood
+	# than a full chimney-style — fits an apartment kitchen better.
 	var w: float = 30.0 * PX_PER_INCH
-	var h: float = 18.0 * PX_PER_INCH
-	var bottom: float = COUNTER_Y - 24.0 * PX_PER_INCH
+	var h: float = 12.0 * PX_PER_INCH
+	var bottom: float = COUNTER_Y - 30.0 * PX_PER_INCH
 	var top: float = bottom - h
 	var rect := Rect2(cx - w * 0.5, top, w, h)
 	# Body (slightly lighter than stove metal so it reads against the wall).
@@ -399,55 +423,173 @@ func _draw_wall_calendar(top_left: Vector2) -> void:
 	draw_rect(rect, Palette.METAL_OUTLINE, false, 1.0)
 
 ## World position of the journal notebook (in apartment-local coords).
-## Dashboard hit-tests against this for the tap-to-open-journal flow.
-const JOURNAL_W: float = 9.0 * PX_PER_INCH   # 36 px (book width)
-const JOURNAL_H: float = 12.0 * PX_PER_INCH  # 48 px (book "depth" on table)
+## Sits upright on a small wall shelf above the bottling table.
+const JOURNAL_W: float = 6.0 * PX_PER_INCH   # 24 px (book spine width)
+const JOURNAL_H: float = 9.0 * PX_PER_INCH   # 36 px (book height upright)
+## Where the wall shelf hangs.
+const SHELF_BOTTOM_Y: float = COUNTER_Y - 36.0 * PX_PER_INCH  # 36" above counter
+const SHELF_W: float = 36.0 * PX_PER_INCH  # 144 px wide
+
+func _shelf_center_x() -> float:
+	# Above the bottling table.
+	return station_anchor(STATION_BOTTLING_TABLE).x
+
 func journal_rect_world() -> Rect2:
-	# Centered on the bottling table top, sitting on the front-right quadrant.
-	var bottling: Vector2 = station_anchor(STATION_BOTTLING_TABLE)
-	var top_y: float = FLOOR_Y - 30.0 * PX_PER_INCH  # bottling table top y
-	# Place the journal slightly back-right of the table center so it
-	# doesn't crowd the working space players use during bottling.
-	var x: float = bottling.x + 30.0
-	var y: float = top_y - 4.0  # sits on the tabletop with a small bevel
-	return Rect2(x - JOURNAL_W * 0.5, y - JOURNAL_H * 0.5, JOURNAL_W, JOURNAL_H)
+	# Journal stands upright on the shelf, slightly right of center so
+	# there's room for other future trinkets.
+	var shelf_cx: float = _shelf_center_x()
+	var shelf_top_y: float = SHELF_BOTTOM_Y - 1.5 * PX_PER_INCH  # shelf board top
+	var x: float = shelf_cx + 18.0
+	# Book bottom rests on the shelf top.
+	return Rect2(x - JOURNAL_W * 0.5, shelf_top_y - JOURNAL_H, JOURNAL_W, JOURNAL_H)
 
 func _draw_journal_notebook() -> void:
-	var rect: Rect2 = journal_rect_world()
-	# Drop shadow under the notebook.
+	# Draw the wall shelf first — a simple wood plank with under-shadow.
+	var shelf_cx: float = _shelf_center_x()
+	var shelf_thick: float = 1.5 * PX_PER_INCH  # 6 px
+	var shelf_rect := Rect2(
+		shelf_cx - SHELF_W * 0.5,
+		SHELF_BOTTOM_Y - shelf_thick,
+		SHELF_W,
+		shelf_thick,
+	)
+	# Wall mount drop shadow under the shelf.
 	draw_rect(
-		Rect2(rect.position + Vector2(2, 3), rect.size),
+		Rect2(shelf_rect.position + Vector2(0, shelf_rect.size.y), Vector2(shelf_rect.size.x, 4)),
 		Color(0, 0, 0, 0.45),
 	)
-	# Cover (forest-green leather).
-	var cover: Color = Color(0.18, 0.30, 0.22, 1)
-	draw_rect(rect, cover)
-	# Cover lit edge (top + left).
-	draw_rect(Rect2(rect.position, Vector2(rect.size.x, 2)), Color(0.32, 0.46, 0.34, 1))
+	# Shelf board.
+	draw_rect(shelf_rect, Palette.WOOD_MID)
+	draw_rect(Rect2(shelf_rect.position, Vector2(shelf_rect.size.x, 1)), Palette.WOOD_LIGHT)
+	draw_rect(
+		Rect2(shelf_rect.position + Vector2(0, shelf_rect.size.y - 1), Vector2(shelf_rect.size.x, 1)),
+		Palette.WOOD_DARK,
+	)
+	# Two small mounting brackets under the shelf.
+	for bx in [shelf_rect.position.x + 12, shelf_rect.position.x + shelf_rect.size.x - 18]:
+		draw_rect(
+			Rect2(bx, shelf_rect.position.y + shelf_rect.size.y, 6, 8),
+			Palette.METAL_DARK,
+		)
+
+	# Standing upright on the shelf, what's visible is the SPINE, not the
+	# cover — a tall narrow rectangle with decorative gold bands.
+	var rect: Rect2 = journal_rect_world()
+	# Drop shadow.
+	draw_rect(
+		Rect2(rect.position + Vector2(1, 2), rect.size),
+		Color(0, 0, 0, 0.45),
+	)
+	# Spine body (forest-green leather).
+	var spine_color: Color = Color(0.18, 0.30, 0.22, 1)
+	draw_rect(rect, spine_color)
+	# Lit edge along the left of the spine.
 	draw_rect(Rect2(rect.position, Vector2(2, rect.size.y)), Color(0.28, 0.40, 0.30, 1))
-	# Spine binding strip on the left (slightly darker stripe).
+	# Top and bottom decorative gold bands.
+	var band_h: float = 3.0
 	draw_rect(
-		Rect2(rect.position + Vector2(4, 4), Vector2(3, rect.size.y - 8)),
-		Color(0.10, 0.18, 0.13, 1),
+		Rect2(rect.position + Vector2(2, 4), Vector2(rect.size.x - 4, band_h)),
+		Palette.BRASS_LIGHT,
 	)
-	# Page edges showing on the right side (tan stripe).
 	draw_rect(
-		Rect2(rect.position + Vector2(rect.size.x - 3, 4), Vector2(3, rect.size.y - 8)),
-		Color(0.92, 0.86, 0.72, 1),
+		Rect2(rect.position + Vector2(2, rect.size.y - 8), Vector2(rect.size.x - 4, band_h)),
+		Palette.BRASS_LIGHT,
 	)
-	# Title impression on cover (faint gold rectangle).
-	var title_rect := Rect2(
-		rect.position + Vector2(rect.size.x * 0.25, rect.size.y * 0.30),
-		Vector2(rect.size.x * 0.55, 4),
-	)
-	draw_rect(title_rect, Palette.BRASS_LIGHT)
-	# Bookmark ribbon dangling off the bottom.
+	# Title plate in the middle of the spine (small faded gold rectangle).
+	var title_h: float = rect.size.y * 0.30
 	draw_rect(
-		Rect2(rect.position + Vector2(rect.size.x * 0.6, rect.size.y - 2), Vector2(3, 8)),
-		Color(0.78, 0.20, 0.20, 1),
+		Rect2(rect.position + Vector2(3, rect.size.y * 0.42), Vector2(rect.size.x - 6, title_h)),
+		Palette.BRASS_DARK,
 	)
 	# Outline.
 	draw_rect(rect, Color(0, 0, 0, 0.6), false, 1.0)
+
+## Bed dimensions for hit-testing.
+const BED_W: float = 60.0 * PX_PER_INCH   # 240 px (~5')
+const BED_H: float = 30.0 * PX_PER_INCH   # 120 px (mattress + frame + headboard area)
+const BED_HEADBOARD_H: float = 30.0 * PX_PER_INCH  # 120 px (top of headboard above mattress)
+func bed_rect_world() -> Rect2:
+	# Bed footprint including the headboard tower above the mattress.
+	var bed_cx: float = STATION_X[STATION_BED]
+	var x_left: float = bed_cx - BED_W * 0.5
+	var frame_h: float = 18.0 * PX_PER_INCH  # 72 px (box-spring height)
+	var mattress_h: float = 6.0 * PX_PER_INCH  # 24 px
+	var top_y: float = FLOOR_Y - frame_h - mattress_h - BED_HEADBOARD_H
+	var height: float = FLOOR_Y - top_y
+	return Rect2(x_left, top_y, BED_W, height)
+
+func _draw_bed(cx: float) -> void:
+	var frame_h: float = 18.0 * PX_PER_INCH  # 72 px box-spring height
+	var mattress_h: float = 6.0 * PX_PER_INCH  # 24 px
+	var x_left: float = cx - BED_W * 0.5
+	var x_right: float = cx + BED_W * 0.5
+	var frame_top: float = FLOOR_Y - frame_h
+	var mattress_top: float = frame_top - mattress_h
+
+	# 1. Headboard at the LEFT end (closer to the window). 6" thick, ~30" above mattress.
+	var hb_w: float = 3.0 * PX_PER_INCH  # 12 px
+	var hb_top: float = mattress_top - BED_HEADBOARD_H
+	var headboard := Rect2(x_left, hb_top, hb_w, mattress_top - hb_top)
+	# Drop shadow on the wall behind the headboard.
+	draw_rect(
+		Rect2(headboard.position + Vector2(headboard.size.x, 4), Vector2(8, headboard.size.y)),
+		Color(0, 0, 0, 0.30),
+	)
+	draw_rect(headboard, Palette.WOOD_DARK)
+	draw_rect(Rect2(headboard.position, Vector2(headboard.size.x, 2)), Palette.WOOD_LIGHT)
+	# Headboard top finial — slightly wider cap.
+	draw_rect(
+		Rect2(headboard.position + Vector2(-2, 0), Vector2(headboard.size.x + 4, 4)),
+		Palette.WOOD_MID,
+	)
+
+	# 2. Box-spring / frame — thick wooden rail under the mattress.
+	var frame := Rect2(x_left + hb_w, frame_top, x_right - x_left - hb_w, frame_h)
+	draw_rect(frame, Palette.WOOD_DARK)
+	# Lit edge along top of frame.
+	draw_rect(Rect2(frame.position, Vector2(frame.size.x, 2)), Palette.WOOD_LIGHT)
+	# Bed feet showing under the frame at each end.
+	for fx in [frame.position.x + 4, frame.position.x + frame.size.x - 16]:
+		draw_rect(Rect2(fx, FLOOR_Y - 6, 12, 6), Palette.WOOD_DARK)
+
+	# 3. Mattress — light cream cushion on top of the frame.
+	var mattress := Rect2(x_left + hb_w, mattress_top, x_right - x_left - hb_w, mattress_h)
+	var mattress_color: Color = Color(0.92, 0.88, 0.78, 1)
+	draw_rect(mattress, mattress_color)
+	# Top edge highlight.
+	draw_rect(Rect2(mattress.position, Vector2(mattress.size.x, 2)), Color(0.96, 0.92, 0.82, 1))
+	# Tufting buttons across the mattress side.
+	for tx in range(int(mattress.position.x + 16), int(mattress.position.x + mattress.size.x - 8), 32):
+		draw_circle(Vector2(tx, mattress.position.y + mattress.size.y * 0.5), 1.5, Color(0.78, 0.72, 0.62, 1))
+
+	# 4. Comforter draped over the mattress (slightly thicker top layer).
+	var comforter := Rect2(
+		mattress.position + Vector2(0, -3),
+		Vector2(mattress.size.x, 6),
+	)
+	draw_rect(comforter, Color(0.42, 0.30, 0.28, 1))  # warm muted brown
+	draw_rect(Rect2(comforter.position, Vector2(comforter.size.x, 1)), Color(0.55, 0.42, 0.38, 1))
+
+	# 5. Pillows at the head of the mattress (left end).
+	var pillow_w: float = 16.0 * PX_PER_INCH  # 64 px
+	var pillow_h: float = 5.0 * PX_PER_INCH  # 20 px
+	var pillow_x: float = mattress.position.x + 4
+	var pillow_y: float = mattress.position.y - pillow_h + 2
+	var pillow := Rect2(pillow_x, pillow_y, pillow_w, pillow_h)
+	draw_rect(pillow, Color(0.96, 0.94, 0.88, 1))
+	draw_rect(Rect2(pillow.position, Vector2(pillow.size.x, 2)), Color(1, 0.98, 0.94, 1))
+	# Subtle pillow seam.
+	draw_line(
+		Vector2(pillow.position.x + 4, pillow.position.y + pillow.size.y * 0.5),
+		Vector2(pillow.position.x + pillow.size.x - 4, pillow.position.y + pillow.size.y * 0.5),
+		Color(0.78, 0.74, 0.68, 0.5), 0.5,
+	)
+	# Outline around the pillow.
+	draw_rect(pillow, Color(0, 0, 0, 0.4), false, 1.0)
+
+	# 6. Bed outline (frame edge for crispness).
+	draw_rect(frame, Color(0, 0, 0, 0.45), false, 1.0)
+	draw_rect(mattress, Color(0, 0, 0, 0.35), false, 1.0)
 
 func _draw_baseboard() -> void:
 	# Baseboard runs along the visible wall gaps just above floor: 4" tall.
@@ -458,7 +600,7 @@ func _draw_baseboard() -> void:
 	var segments := [
 		Rect2(0, bb_y, 60, bb_h),       # left of closet
 		Rect2(180, bb_y, 60, bb_h),     # closet → bottling table gap
-		Rect2(900, bb_y, PANORAMA_W - 900, bb_h),  # right of stove → end
+		Rect2(900, bb_y, 300, bb_h),    # right of stove → bed start
 	]
 	for seg in segments:
 		draw_rect(seg, Palette.WOOD_DARK)

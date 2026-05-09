@@ -114,10 +114,12 @@ func _compute_station_rects() -> void:
 	_station_rects[Apartment2D.STATION_BOTTLING_TABLE] = Rect2(
 		bottling.x - 120, bottling.y - 80, 240, 160,
 	)
-	# Journal sits on the bottling table — its own hotspot, takes
-	# priority over the bottling-table hotspot since it overlaps.
+	# Bed footprint (mattress + frame + headboard tower).
+	_station_rects[Apartment2D.STATION_BED] = _apartment.bed_rect_world().grow(8.0)
+	# Journal sits on a wall shelf above the bottling table — its own
+	# hotspot, takes priority over the bottling-table hotspot.
 	var jr: Rect2 = _apartment.journal_rect_world()
-	_station_rects[JOURNAL_STATION_ID] = jr.grow(8.0)
+	_station_rects[JOURNAL_STATION_ID] = jr.grow(10.0)
 
 # ---- Camera placement & pan ----
 
@@ -193,6 +195,8 @@ func _on_station_tapped(station: int) -> void:
 			_on_stove_tapped()
 		Apartment2D.STATION_BOTTLING_TABLE:
 			_on_bottling_table_tapped()
+		Apartment2D.STATION_BED:
+			_on_bed_tapped()
 
 # ---- Per-station behavior ----
 
@@ -260,6 +264,12 @@ func _on_journal_tapped() -> void:
 	var main := get_tree().root.get_node_or_null("Main")
 	if main and main.has_method("mount_active_scene"):
 		main.mount_active_scene(JOURNAL_SCENE)
+
+func _on_bed_tapped() -> void:
+	# Lying down advances the day clock. Same effect as the HUD Rest
+	# button, but the player acts on the world instead of a chrome
+	# button.
+	TimeService.advance_day()
 
 func _on_bottling_table_tapped() -> void:
 	# v1: bottling happens through the closet's "Check fermenter" modal

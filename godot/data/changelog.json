@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.2.78",
+    "date": "2026-05-09",
+    "bullets": [
+      "Added a bed on the right side of the apartment. Tap it to advance the day — same effect as the HUD Rest button, but you act on the world instead of a chrome icon. Apartment panorama widened to 1440 px to fit the bed; pan camera right to see it.",
+      "Range hood shrunk: 18\" → 12\" tall, mounted 30\" above the cooktop instead of 24\". Reads more like a slim apartment hood, less like a giant chimney.",
+      "Sink-base cabinet knobs moved to the middle of the door (was near the top, hugging the counter seam). The over-sink wall cabinet is now a single 24\" door — same width as the sink-base double-door below — so upper and lower cabinetry line up. Adjacent wall cabinets stay at 18\" doors.",
+      "Cleaned up the cabinet-door layout logic to use a shared region helper. No more duplicate knobs near the sink-base seams.",
+      "Brewing journal moved off the bottling table onto a small wall shelf above it. The notebook stands upright on the shelf showing its spine (forest-green leather with brass-trim bands and a title plate). Tap the journal as before to open the journal scene."
+    ]
+  },
+  {
     "version": "0.2.77",
     "date": "2026-05-09",
     "bullets": [
