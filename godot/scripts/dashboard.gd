@@ -185,26 +185,44 @@ func _checklist_row(brew: Dictionary) -> Control:
 	row.custom_minimum_size = Vector2(0, 44)
 
 	var label_text: String
+	var on_press: Callable
 	match stage:
+		BrewState.STAGE_BREWING_DAY:
+			# Player closed the brewing-day scene mid-flow. Tapping the
+			# row re-mounts brewing_day with this brew_id; brewing_day's
+			# _resume_stage_index walks the recorded outcomes and starts
+			# at the first stage without one.
+			label_text = "Resume brewing — %s" % name
+			on_press = func(): _on_resume_brewing(brew_id)
 		BrewState.STAGE_FERMENTING:
 			var ferm: int = int(snapshot.get("fermentation_days", 5))
 			label_text = "Check fermenter — %s, day %d/%d" % [name, elapsed, ferm]
+			on_press = func(): _on_check_brew(brew_id)
 		BrewState.STAGE_BOTTLED_CONDITIONING:
 			var cond: int = int(snapshot.get("condition_days", 14))
 			label_text = "Check conditioning — %s, day %d/%d" % [name, elapsed, cond]
+			on_press = func(): _on_check_brew(brew_id)
 		_:
 			label_text = "%s · %s" % [name, stage]
+			on_press = func(): _on_check_brew(brew_id)
 	row.text = label_text
 	row.add_theme_font_size_override("font_size", 13)
 
-	# Visual cue when ready without saying so explicitly per 3.7. A small
-	# ▶ marker on actionable rows; in-progress rows just sit there.
-	if _is_actionable(stage, elapsed, snapshot):
+	# Visual cue when ready (or always for resumable brewing-day brews —
+	# the player needs a path forward). 3.7's "no pre-disclosure" rule
+	# applies to fermenting / conditioning state; an interrupted brewing
+	# day is the player's own state, not the world's.
+	if stage == BrewState.STAGE_BREWING_DAY or _is_actionable(stage, elapsed, snapshot):
 		row.add_theme_color_override("font_color", Color(0.96, 0.78, 0.32))
 		row.text = "▶  %s" % row.text
 
-	row.pressed.connect(func(): _on_check_brew(brew_id))
+	row.pressed.connect(on_press)
 	return row
+
+func _on_resume_brewing(brew_id: String) -> void:
+	var main := get_tree().root.get_node_or_null("Main")
+	if main and main.has_method("mount_active_scene"):
+		main.mount_active_scene(BREWING_DAY_SCENE, func(inst): inst.brew_id = brew_id)
 
 func _is_actionable(stage: String, elapsed: int, snapshot: Dictionary) -> bool:
 	if stage == BrewState.STAGE_FERMENTING:

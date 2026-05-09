@@ -77,9 +77,28 @@ func _ready() -> void:
 	_resolve_brew_or_demo()
 	_recipe_title.text = _recipe.display_name if _recipe else "—"
 	_stages = _stages_for_method(_recipe.method if _recipe else "EXTRACT")
-	_current_stage_index = clampi(initial_stage_index, 0, _stages.size() - 1)
+	# Resume support: if the brew already has outcomes recorded for the
+	# first N stages (player closed the scene mid-flow), pick up where
+	# they left off. Demo-mode (no brew_id) uses initial_stage_index.
+	if not _brew.is_empty():
+		_current_stage_index = _resume_stage_index()
+	else:
+		_current_stage_index = clampi(initial_stage_index, 0, _stages.size() - 1)
 	_render_stage_list()
 	_mount_current_stage()
+
+func _resume_stage_index() -> int:
+	## Walks the stage list and returns the index of the first stage
+	## without a recorded outcome on the brew. Tapping Close partway
+	## through a brew leaves the brew with outcomes for the completed
+	## stages but no record for the interrupted one; resuming should
+	## remount that stage.
+	var outcomes: Dictionary = _brew.get("outcomes", {})
+	for i in range(_stages.size()):
+		var stage_id := String(_stages[i]["id"])
+		if not outcomes.has(stage_id):
+			return i
+	return _stages.size()
 
 func _resolve_brew_or_demo() -> void:
 	if brew_id != "":
@@ -165,6 +184,11 @@ func _complete_brew() -> void:
 		var on_day: int = TimeService.day_clock
 		_brew = BrewState.advance_stage(_brew, BrewState.STAGE_FERMENTING, on_day)
 		_replace_brew_in_flight(_brew)
+	# Tell the dashboard to re-render so the row swaps from "Resume
+	# brewing" to "Check fermenter" the moment the player lands back
+	# on the home screen — without waiting for the next rest tap.
+	GameState.notify_state_loaded()
+	SaveService.flush_now()
 	brew_completed.emit(brew_id)
 	# Hand control back to the dashboard. Main.clear_active_scene also
 	# stops the scene clock per 4.1.
@@ -181,9 +205,13 @@ func _replace_brew_in_flight(updated: Dictionary) -> void:
 
 func _on_close_pressed() -> void:
 	# User-initiated bail-out. Brew stays at its current stage in
-	# brews_in_flight; player can resume by tapping the brew on the
-	# dashboard later (button wiring lands when step 6 + the resume
-	# affordance are added).
+	# brews_in_flight with all outcomes recorded so far; tapping
+	# "Resume brewing — <name>" on the dashboard checklist re-mounts
+	# this scene and picks up at the first stage without an outcome.
+	# Notify state_loaded so the dashboard's checklist row swaps from
+	# "Start brewing" hint to a Resume row immediately.
+	GameState.notify_state_loaded()
+	SaveService.flush_now()
 	var main := get_tree().root.get_node_or_null("Main")
 	if main and main.has_method("clear_active_scene"):
 		main.clear_active_scene()

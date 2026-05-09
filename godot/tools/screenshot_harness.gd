@@ -15,6 +15,8 @@ const SCENES := [
 	{"name": "main", "path": "res://scenes/main.tscn", "frames": 5},
 	{"name": "main_with_brew", "path": "res://scenes/main.tscn", "frames": 5,
 		"synthetic_brew": {"stage": "fermenting", "days_elapsed_in_stage": 3}},
+	{"name": "main_resume_brewing", "path": "res://scenes/main.tscn", "frames": 5,
+		"synthetic_brew": {"stage": "brewing_day", "days_elapsed_in_stage": 0}},
 	{"name": "main_ready_to_bottle", "path": "res://scenes/main.tscn", "frames": 5,
 		"synthetic_brew": {"stage": "fermenting", "days_elapsed_in_stage": 5}},
 	{"name": "main_ready_to_taste", "path": "res://scenes/main.tscn", "frames": 5,

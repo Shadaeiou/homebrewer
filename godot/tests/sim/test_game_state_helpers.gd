@@ -42,6 +42,17 @@ func test_start_brewing_issues_unknown_recipe() -> void:
 	assert_true(issues.size() >= 1)
 	assert_string_contains(String(issues[0]), "not unlocked")
 
+func test_start_brewing_issues_blocks_when_already_brewing() -> void:
+	# Mid-brew lockout — you've got one stove and one kettle, so a brew
+	# in BREWING_DAY blocks Start brewing until you finish (or Close).
+	var b := BrewState.make_new("b1", "apartment_pale_ale", {}, 0, 1)
+	# stage defaults to STAGE_BREWING_DAY in make_new.
+	GameState.data["brews_in_flight"].append(b)
+	var issues: Array = GameState.start_brewing_issues("apartment_pale_ale")
+	assert_true(issues.size() >= 1)
+	var joined := " ".join(issues.map(func(s): return String(s)))
+	assert_string_contains(joined, "already brewing")
+
 func test_start_brewing_issues_no_fermenter() -> void:
 	# Park a fermenting brew in the bucket so no fermenter is free.
 	var b := BrewState.make_new("b1", "apartment_pale_ale", {}, 0, 1)

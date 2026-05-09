@@ -221,6 +221,14 @@ func start_brewing_issues(recipe_id: String) -> Array:
 	if not known.has(recipe_id):
 		issues.append("Recipe not unlocked")
 		return issues
+	# Already mid-brew? You only have one stove + kettle — finish or
+	# abandon that batch before starting another. Per 4.1 brewing day
+	# is a single continuous active scene; stacking two BREWING_DAY
+	# brews makes no sense.
+	for b in data.get("brews_in_flight", []):
+		if String(b.get("stage", "")) == BrewState.STAGE_BREWING_DAY:
+			issues.append("You're already brewing — finish or close that batch first")
+			return issues
 	if free_fermenter_count() <= 0:
 		issues.append("No fermenter available — bottle a brew first")
 	# v1 ingredient check: any ingredient row missing from inventory.ingredients

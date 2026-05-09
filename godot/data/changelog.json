@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.2.64",
+    "date": "2026-05-09",
+    "bullets": [
+      "Fixed: hitting Close mid-brew left a Today checklist row reading brewing_day with no way to interact with it. Now closing the brewing-day scene leaves a Resume brewing — Apartment Pale Ale row in gold; tap it to re-open the scene at the first stage you hadn't finished yet.",
+      "Fixed: you could stack two brewing-day brews by hitting Start brewing again. Start brewing is now disabled with a You're already brewing — finish or close that batch first hint until the in-progress brew is resolved.",
+      "Fixed: finishing a brewing day didn't refresh the dashboard until you tapped Get some rest. Brewing day now notifies the dashboard the moment you finish (or close), so the Today list updates immediately."
+    ]
+  },
+  {
     "version": "0.2.63",
     "date": "2026-05-09",
     "bullets": [

@@ -76,6 +76,24 @@ func test_completing_all_stages_transitions_to_fermenting() -> void:
 	var brews: Array = GameState.data["brews_in_flight"]
 	assert_eq(String(brews[0]["stage"]), BrewState.STAGE_FERMENTING)
 
+func test_resumes_at_first_stage_without_outcome() -> void:
+	# Player completed sanitize + fill_kettle, then hit Close. Re-mounting
+	# the scene with the same brew_id should pick up at "heat" (the third
+	# stage, index 2 in EXTRACT_STAGES).
+	GameState.reset_to_new_career()
+	var brew := BrewState.make_new("brew_resume_1", "apartment_pale_ale", {}, 0, 1)
+	brew["outcomes"] = {
+		"sanitize":    {"actual": {}, "care_factor": 1.0, "risk_deltas": {},
+			"xp_gained": {}, "journal_notes": [], "skill_snapshot": {}},
+		"fill_kettle": {"actual": {}, "care_factor": 1.0, "risk_deltas": {},
+			"xp_gained": {}, "journal_notes": [], "skill_snapshot": {}},
+	}
+	GameState.data["brews_in_flight"].append(brew)
+	var s := _mount_with_brew("brew_resume_1")
+	await wait_frames(1)
+	# heat is index 2 (sanitize=0, fill_kettle=1, heat=2).
+	assert_eq(s._current_stage_index, 2)
+
 func test_demo_mode_renders_when_no_brew_id_passed() -> void:
 	# Harness mounts the scene without a brew_id; it should fall back to
 	# APA so the screenshot has something to show.
