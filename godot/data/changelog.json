@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.2.83",
+    "date": "2026-05-09",
+    "bullets": [
+      "Killed the wizard. There's no more step-by-step \"Step 2 of 7 · Heat the water\" wrapper after fill kettle. Each station tap mounts ONE mini-game directly based on the active brew's current step, then returns you to the apartment when it's done.",
+      "Tap the SINK with no brew + the kettle in inventory → starts a brew + opens fill kettle. Tap the STOVE with a filled kettle in flight → opens the heat mini-game (or pour LME / boil with hops, depending on which step is next). Tap the BOTTLING TABLE → opens transfer + pitch. Tap a station whose step isn't current → silent ignore.",
+      "Sanitize is auto-completed when you start a brew (default care factor) so the player doesn't sit through a wizard panel for a step that's just \"wipe down the gear\" — re-add a real sanitize mini-game later if it becomes a meaningful interaction.",
+      "When all brewing-day steps are done, the brew advances to fermenting on its own. Tap the closet to check the fermenter."
+    ]
+  },
+  {
     "version": "0.2.82",
     "date": "2026-05-09",
     "bullets": [

@@ -20,7 +20,6 @@ extends Control
 ## (e.g. inside the brewing-day scene). Dashboard owns the gesture.
 
 const APARTMENT_SCENE := preload("res://scenes/lib/apartment_2d.tscn")
-const BREWING_DAY_SCENE     := preload("res://scenes/brewing_day.tscn")
 const BOTTLING_SCENE         := preload("res://scenes/minigames/bottling.tscn")
 const TASTING_SCENE          := preload("res://scenes/minigames/tasting.tscn")
 const JOURNAL_SCENE          := preload("res://scenes/journal.tscn")
@@ -28,6 +27,36 @@ const PHONE_OVERLAY_SCENE    := preload("res://scenes/phone/phone_overlay.tscn")
 const CHECK_FERMENTER_MODAL  := preload("res://scenes/modals/check_fermenter.tscn")
 const STATION_PICKER_MODAL   := preload("res://scenes/modals/station_picker.tscn")
 const BREW_DETAILS_MODAL     := preload("res://scenes/modals/brew_details.tscn")
+
+## Mini-game scene per brewing-day step. Tapping a station mounts ONE
+## of these directly — there is no wizard / step-by-step wrapper. Each
+## scene emits minigame_completed(outcome) when done; the dashboard
+## records the outcome on the active brew, advances its step, and
+## returns to the apartment view. The player drives advancement by
+## tapping the next station themselves.
+const MINIGAME_SCENES: Dictionary = {
+	"sanitize":       preload("res://scenes/minigames/sanitize.tscn"),
+	"fill_kettle":    preload("res://scenes/minigames/fill_kettle.tscn"),
+	"add_lme":        preload("res://scenes/minigames/pour_lme.tscn"),
+	"boil_with_hops": preload("res://scenes/minigames/boil_with_hops.tscn"),
+	"cool_wort":      preload("res://scenes/minigames/cool_wort.tscn"),
+	"transfer_pitch": preload("res://scenes/minigames/transfer_pitch.tscn"),
+}
+
+## Which station is responsible for which brewing-day step.
+const STATION_STEPS: Dictionary = {
+	Apartment2D.STATION_SINK: ["sanitize", "fill_kettle", "cool_wort"],
+	Apartment2D.STATION_STOVE: ["heat", "add_lme", "boil_with_hops"],
+	Apartment2D.STATION_BOTTLING_TABLE: ["transfer_pitch"],
+}
+
+## Brewing-day step list (extract method). The brew advances through
+## these in order; current step = first one without an outcome on the
+## brew dict.
+const EXTRACT_STEPS: Array = [
+	"sanitize", "fill_kettle", "heat", "add_lme",
+	"boil_with_hops", "cool_wort", "transfer_pitch",
+]
 
 ## Pseudo-station-ID used internally by the journal hotspot. Negative so
 ## it can't collide with a real Apartment2D station enum value.
@@ -203,30 +232,87 @@ func _on_station_tapped(station: int) -> void:
 # ---- Per-station behavior ----
 
 func _on_sink_tapped() -> void:
-	# Resume an in-flight brew without prompting — that's the natural
-	# direct continuation. Otherwise open the inventory picker so the
-	# player chooses what to put in the basin.
-	var resumable: Dictionary = _find_brew_in_stage(BrewState.STAGE_BREWING_DAY)
-	if not resumable.is_empty():
-		_open_brewing_day(String(resumable.get("brew_id", "")))
+	_handle_station_tap(Apartment2D.STATION_SINK)
+
+func _handle_station_tap(station: int) -> void:
+	# 1. If there's an active brew in BREWING_DAY, find its current step.
+	# 2. If that step belongs to this station, mount the mini-game directly.
+	# 3. Otherwise (no brew, or this isn't the step's station), open the
+	#    inventory picker so the player chooses what to do here.
+	var brew: Dictionary = _find_brew_in_stage(BrewState.STAGE_BREWING_DAY)
+	if not brew.is_empty():
+		var step_id: String = _current_brew_step(brew)
+		if step_id != "" and step_id in STATION_STEPS.get(station, []):
+			_mount_minigame_for_step(brew, step_id)
+			return
+		# This station isn't where the next step happens — silent ignore.
 		return
-	# Always open the picker — the picker itself shows what's available
-	# (or notes that nothing fits if the inventory is empty for this
-	# station). Ingredient checks happen when the player picks the kettle.
-	_open_picker_for(Apartment2D.STATION_SINK, "What goes in the sink?",
-		_on_sink_item_picked)
+	# No active brew. Sink is the only station that can START a brew
+	# (player picks the empty kettle to fill it). Other stations are
+	# silent until a brew is in flight.
+	if station != Apartment2D.STATION_SINK:
+		return
+	_open_picker_for(station, "What goes in the sink?", _on_sink_item_picked)
 
 func _on_sink_item_picked(equipment_id: String) -> void:
 	if equipment_id == "kettle_5gal":
-		# Block the brew start if ingredients are missing — but the
-		# picker has already closed by the time we get here, so the
-		# message goes through Messages-style toast (TODO) instead of
-		# a HUD prompt. For now, silently return; player has to shop.
 		var issues: Array = GameState.start_brewing_issues(STARTER_RECIPE_ID)
 		if issues.is_empty():
-			_start_new_brew()
+			_start_new_brew_and_open_first_step()
 
-func _start_new_brew() -> void:
+func _current_brew_step(brew: Dictionary) -> String:
+	# Returns the first brewing-day step that hasn't been completed.
+	var outcomes: Dictionary = brew.get("outcomes", {})
+	for step_id in EXTRACT_STEPS:
+		if not outcomes.has(step_id):
+			return step_id
+	return ""
+
+func _mount_minigame_for_step(brew: Dictionary, step_id: String) -> void:
+	var scene: PackedScene = MINIGAME_SCENES.get(step_id)
+	if scene == null:
+		return  # Step not implemented yet — silent ignore.
+	var brew_id: String = String(brew.get("brew_id", ""))
+	var main := get_tree().root.get_node_or_null("Main")
+	if main == null or not main.has_method("mount_active_scene"):
+		return
+	main.mount_active_scene(scene, func(inst):
+		var stage_meta: Dictionary = {"id": step_id, "title": step_id}
+		if inst.has_method("set_stage_meta"):
+			inst.set_stage_meta(stage_meta)
+		if inst.has_signal("minigame_completed"):
+			inst.minigame_completed.connect(
+				func(outcome): _on_minigame_completed(brew_id, step_id, outcome),
+			)
+	)
+
+func _on_minigame_completed(brew_id: String, step_id: String, outcome: Dictionary) -> void:
+	# Record the outcome on the active brew and advance its step. Return
+	# to the apartment view — the player chooses the next station.
+	var brews: Array = GameState.data.get("brews_in_flight", [])
+	for i in range(brews.size()):
+		if String(brews[i].get("brew_id", "")) == brew_id:
+			brews[i] = BrewState.record_outcome(brews[i], step_id, outcome)
+			# If all brewing-day steps are done, advance brew to FERMENTING.
+			if _all_brewing_day_steps_done(brews[i]):
+				brews[i] = BrewState.advance_stage(
+					brews[i], BrewState.STAGE_FERMENTING, TimeService.day_clock,
+				)
+			break
+	GameState.notify_state_loaded()
+	SaveService.flush_now()
+	var main := get_tree().root.get_node_or_null("Main")
+	if main and main.has_method("clear_active_scene"):
+		main.clear_active_scene()
+
+func _all_brewing_day_steps_done(brew: Dictionary) -> bool:
+	var outcomes: Dictionary = brew.get("outcomes", {})
+	for step_id in EXTRACT_STEPS:
+		if not outcomes.has(step_id):
+			return false
+	return true
+
+func _start_new_brew_and_open_first_step() -> void:
 	var recipe: RecipeDef = load("res://data/recipes/%s.tres" % STARTER_RECIPE_ID)
 	var brew_id: String = GameState.make_brew_id()
 	var seed: int = int(GameState.data.get("rng_state", {}).get("next_brew_seed", 0))
@@ -236,7 +322,25 @@ func _start_new_brew() -> void:
 	)
 	GameState.data["brews_in_flight"].append(brew)
 	GameState.data["rng_state"]["next_brew_seed"] = randi()
-	_open_brewing_day(brew_id)
+	# The brew's first step is "sanitize" — but for now we let the player
+	# go straight to fill_kettle since they tapped the sink with a kettle.
+	# Auto-complete sanitize with a default outcome so the brew proceeds.
+	var sanitize_outcome: Dictionary = {
+		"actual": {},
+		"care_factor": 0.7,
+		"risk_deltas": {},
+		"xp_gained": {},
+		"journal_notes": ["Wiped down the gear before pulling out the kettle."],
+		"skill_snapshot": SkillXP.snapshot(GameState.data.get("skills", {})),
+	}
+	brew = BrewState.record_outcome(brew, "sanitize", sanitize_outcome)
+	# Replace the brew in the array.
+	for i in range(GameState.data["brews_in_flight"].size()):
+		if String(GameState.data["brews_in_flight"][i].get("brew_id", "")) == brew_id:
+			GameState.data["brews_in_flight"][i] = brew
+			break
+	# Mount fill_kettle directly.
+	_mount_minigame_for_step(brew, "fill_kettle")
 
 func _open_picker_for(station: int, title: String, on_picked: Callable) -> void:
 	var main := get_tree().root.get_node_or_null("Main")
@@ -259,11 +363,7 @@ func _on_closet_tapped() -> void:
 		main.push_modal(CHECK_FERMENTER_MODAL, func(inst): inst.brew_id = brew_id)
 
 func _on_stove_tapped() -> void:
-	var resumable: Dictionary = _find_brew_in_stage(BrewState.STAGE_BREWING_DAY)
-	if not resumable.is_empty():
-		_open_brewing_day(String(resumable.get("brew_id", "")))
-		return
-	# v1: stove only matters during a brew — silent ignore otherwise.
+	_handle_station_tap(Apartment2D.STATION_STOVE)
 
 func _on_front_door_tapped() -> void:
 	# v1: nothing to do outside yet. Once we wire deliveries / the bar /
@@ -282,14 +382,7 @@ func _on_bed_tapped() -> void:
 	TimeService.advance_day()
 
 func _on_bottling_table_tapped() -> void:
-	# v1: bottling happens through the closet's "Check fermenter" modal
-	# once a brew is ready. Silent ignore here.
-	pass
-
-func _open_brewing_day(brew_id: String) -> void:
-	var main := get_tree().root.get_node_or_null("Main")
-	if main and main.has_method("mount_active_scene"):
-		main.mount_active_scene(BREWING_DAY_SCENE, func(inst): inst.brew_id = brew_id)
+	_handle_station_tap(Apartment2D.STATION_BOTTLING_TABLE)
 
 # ---- HUD render ----
 
