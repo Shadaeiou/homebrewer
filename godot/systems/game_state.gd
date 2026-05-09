@@ -249,4 +249,12 @@ func _on_day_advanced(new_day: int) -> void:
 	# SaveService.save_now writes with the new day_clock baked in.
 	if data.has("player_meta"):
 		data["player_meta"]["day_clock"] = new_day
+	# Tick days_elapsed_in_stage for each in-flight brew. Per 4.1: only
+	# day_clock moves time forward for fermentation/conditioning; brewing-day
+	# and bottling-day stages don't accrue days_elapsed because the player
+	# is actively in the scene during those.
+	for brew in data.get("brews_in_flight", []):
+		var stage: String = String(brew.get("stage", ""))
+		if stage == BrewState.STAGE_FERMENTING or stage == BrewState.STAGE_BOTTLED_CONDITIONING:
+			brew["days_elapsed_in_stage"] = int(brew.get("days_elapsed_in_stage", 0)) + 1
 	day_advanced.emit(new_day)

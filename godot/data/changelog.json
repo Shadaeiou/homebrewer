@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.2.60",
+    "date": "2026-05-09",
+    "bullets": [
+      "Dashboard now shows Brews in flight — each brew lists its name, stage (fermenting / conditioning), and day-N-of-M progress so you can see what's actually happening after the brewing day ends.",
+      "Get-some-rest now actually ticks the brew forward. Each rest tap increments fermenting and conditioning brews' days_elapsed; when a brew hits its target days, the line turns green and reads ready to bottle (or ready to drink). Bottling itself isn't a real action yet — that lands once the bottling-day flow ships — but at least the path forward is visible instead of looking stuck.",
+      "Brewing-day brews don't accrue days because the player is in the active scene during them (per the design's two-clocks rule)."
+    ]
+  },
+  {
     "version": "0.2.59",
     "date": "2026-05-09",
     "bullets": [

@@ -13,6 +13,8 @@ extends SceneTree
 
 const SCENES := [
 	{"name": "main", "path": "res://scenes/main.tscn", "frames": 5},
+	{"name": "main_with_brew", "path": "res://scenes/main.tscn", "frames": 5,
+		"synthetic_brew": {"stage": "fermenting", "days_elapsed_in_stage": 3}},
 	{"name": "brewing_day", "path": "res://scenes/brewing_day.tscn", "frames": 5},
 	{"name": "brewing_day_fill_kettle", "path": "res://scenes/brewing_day.tscn",
 		"frames": 5, "props": {"initial_stage_index": 1}},
@@ -38,6 +40,29 @@ func _initialize() -> void:
 	for spec in SCENES:
 		await _capture(spec)
 	quit()
+
+func _inject_synthetic_brew(spec: Dictionary) -> void:
+	# Make sure GameState is reset to a fresh career so the recipe knowledge
+	# + equipment seeds are present, then push a synthetic brew with the
+	# requested stage / elapsed values.
+	var GameStateNode = root.get_node_or_null("GameState")
+	if GameStateNode == null:
+		return
+	GameStateNode.reset_to_new_career()
+	var brew := {
+		"brew_id": "synthetic_1",
+		"recipe_id": "apartment_pale_ale",
+		"recipe_snapshot": load("res://data/recipes/apartment_pale_ale.tres").to_snapshot(),
+		"stage": String(spec.get("stage", "fermenting")),
+		"stage_started_day": 0,
+		"days_elapsed_in_stage": int(spec.get("days_elapsed_in_stage", 0)),
+		"outcomes": {},
+		"risk_profile": {},
+		"equipment_used": [],
+		"anomalies": [],
+		"rng_state": 1,
+	}
+	GameStateNode.data["brews_in_flight"].append(brew)
 
 func _bootstrap_autoloads() -> void:
 	var autoloads := [
@@ -69,6 +94,12 @@ func _capture(spec: Dictionary) -> void:
 	if packed == null:
 		push_error("Could not load scene: %s" % path)
 		return
+
+	# Pre-mount: optionally inject a synthetic brew into GameState so the
+	# dashboard "Brews in flight" section has something to render.
+	var synthetic: Dictionary = spec.get("synthetic_brew", {})
+	if not synthetic.is_empty():
+		_inject_synthetic_brew(synthetic)
 
 	var instance: Node = packed.instantiate()
 	# Apply pre-_ready props so the scene wakes up with the harness's setup.

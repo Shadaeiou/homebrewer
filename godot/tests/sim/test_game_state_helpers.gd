@@ -52,6 +52,40 @@ func test_start_brewing_issues_no_fermenter() -> void:
 	var joined := " ".join(issues.map(func(s): return String(s)))
 	assert_string_contains(joined, "fermenter")
 
+func test_day_advance_ticks_fermenting_brew_days_elapsed() -> void:
+	# Per 4.1: only fermentation/conditioning brews accrue days_elapsed
+	# (the player is in the active scene during brewing-day).
+	var fermenting := BrewState.make_new("b1", "apartment_pale_ale", {}, 0, 1)
+	fermenting["stage"] = BrewState.STAGE_FERMENTING
+	GameState.data["brews_in_flight"].append(fermenting)
+	# Reset day_clock to a known baseline (avoid leftover state from other tests).
+	TimeService.day_clock = 0
+	GameState.data["player_meta"]["day_clock"] = 0
+	GameState._on_day_advanced(1)
+	assert_eq(int(GameState.data["brews_in_flight"][0]["days_elapsed_in_stage"]), 1)
+	GameState._on_day_advanced(2)
+	GameState._on_day_advanced(3)
+	assert_eq(int(GameState.data["brews_in_flight"][0]["days_elapsed_in_stage"]), 3)
+
+func test_day_advance_does_not_tick_brewing_day_brews() -> void:
+	# Brewing-day brews don't accrue days_elapsed — the player is in the
+	# active scene while it runs; days_elapsed only matters for passive
+	# fermentation / conditioning rhythm.
+	var brewing := BrewState.make_new("b1", "apartment_pale_ale", {}, 0, 1)
+	# stage defaults to STAGE_BREWING_DAY
+	GameState.data["brews_in_flight"].append(brewing)
+	GameState._on_day_advanced(1)
+	GameState._on_day_advanced(2)
+	assert_eq(int(GameState.data["brews_in_flight"][0]["days_elapsed_in_stage"]), 0)
+
+func test_day_advance_ticks_conditioning_brew_days_elapsed() -> void:
+	var conditioning := BrewState.make_new("b1", "apartment_pale_ale", {}, 0, 1)
+	conditioning["stage"] = BrewState.STAGE_BOTTLED_CONDITIONING
+	GameState.data["brews_in_flight"].append(conditioning)
+	GameState._on_day_advanced(1)
+	GameState._on_day_advanced(2)
+	assert_eq(int(GameState.data["brews_in_flight"][0]["days_elapsed_in_stage"]), 2)
+
 func test_make_brew_id_unique_within_test() -> void:
 	# Time.get_ticks_msec advances monotonically; consecutive calls in the
 	# same frame may return the same value, so we just check non-empty +

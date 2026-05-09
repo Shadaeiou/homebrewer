@@ -22,6 +22,8 @@ const STARTER_RECIPE_ID := "apartment_pale_ale"
 @onready var cash_label: Label = %CashLabel
 @onready var bottles_label: Label = %BottlesLabel
 @onready var rest_button: Button = %RestButton
+@onready var brews_header: Label = %BrewsHeader
+@onready var brews_list: VBoxContainer = %BrewsList
 @onready var start_brewing_button: Button = %StartBrewingButton
 @onready var start_brewing_hint: Label = %StartBrewingHint
 @onready var version_label: Label = %VersionLabel
@@ -77,7 +79,76 @@ func _render_state() -> void:
 		int(bottles.get("available", 0)),
 		int(bottles.get("in_use", 0)),
 	]
+	_render_brews_in_flight()
 	_render_start_brewing()
+
+func _render_brews_in_flight() -> void:
+	for child in brews_list.get_children():
+		child.queue_free()
+	var brews: Array = GameState.data.get("brews_in_flight", [])
+	if brews.is_empty():
+		brews_header.visible = false
+		return
+	brews_header.visible = true
+	for brew in brews:
+		brews_list.add_child(_brew_row(brew))
+
+func _brew_row(brew: Dictionary) -> Control:
+	# Bridge UI for the post-brew gap: per Appendix B the dashboard will
+	# eventually surface a daily checklist with "Check fermenter" perception
+	# entries, ambient morning summary, anomaly cues, etc. Until that
+	# fermentation rhythm lands (step 10), at least show the brew exists
+	# and where it is in its arc.
+	var stage: String = String(brew.get("stage", ""))
+	var snapshot: Dictionary = brew.get("recipe_snapshot", {})
+	var name: String = String(snapshot.get("display_name", brew.get("recipe_id", "Brew")))
+	var elapsed: int = int(brew.get("days_elapsed_in_stage", 0))
+
+	var row := PanelContainer.new()
+	var inner := VBoxContainer.new()
+	inner.add_theme_constant_override("separation", 2)
+	row.add_child(inner)
+
+	var title := Label.new()
+	title.text = name
+	title.add_theme_font_size_override("font_size", 14)
+	title.add_theme_color_override("font_color", Color(0.95, 0.91, 0.84))
+	inner.add_child(title)
+
+	var status := Label.new()
+	status.text = _stage_status_text(stage, elapsed, snapshot)
+	status.add_theme_font_size_override("font_size", 12)
+	status.add_theme_color_override("font_color", _stage_status_color(stage, elapsed, snapshot))
+	inner.add_child(status)
+	return row
+
+func _stage_status_text(stage: String, elapsed: int, snapshot: Dictionary) -> String:
+	match stage:
+		BrewState.STAGE_BREWING_DAY:
+			return "Brewing day in progress"
+		BrewState.STAGE_FERMENTING:
+			var ferm_days: int = int(snapshot.get("fermentation_days", 5))
+			if elapsed >= ferm_days:
+				return "Fermenting · ready to bottle (day %d of %d)" % [elapsed, ferm_days]
+			return "Fermenting · day %d of %d" % [elapsed, ferm_days]
+		BrewState.STAGE_BOTTLED_CONDITIONING:
+			var cond_days: int = int(snapshot.get("condition_days", 14))
+			if elapsed >= cond_days:
+				return "Conditioning · ready to drink (day %d of %d)" % [elapsed, cond_days]
+			return "Conditioning · day %d of %d" % [elapsed, cond_days]
+		_:
+			return stage
+
+func _stage_status_color(stage: String, elapsed: int, snapshot: Dictionary) -> Color:
+	if stage == BrewState.STAGE_FERMENTING:
+		var ferm_days: int = int(snapshot.get("fermentation_days", 5))
+		if elapsed >= ferm_days:
+			return Color(0.55, 0.90, 0.55)  # green — ready
+	if stage == BrewState.STAGE_BOTTLED_CONDITIONING:
+		var cond_days: int = int(snapshot.get("condition_days", 14))
+		if elapsed >= cond_days:
+			return Color(0.55, 0.90, 0.55)
+	return Color(0.78, 0.74, 0.70)
 
 func _render_start_brewing() -> void:
 	var issues: Array = GameState.start_brewing_issues(STARTER_RECIPE_ID)
