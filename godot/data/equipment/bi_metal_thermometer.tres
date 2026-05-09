@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="EquipmentArchetype" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/equipment_archetype.gd" id="1_equip"]
+
+[resource]
+script = ExtResource("1_equip")
+archetype_id = "bi_metal_thermometer"
+display_name = "Bi-Metal Stick Thermometer"
+category = "thermometer"
+properties = {
+"type": "ANALOG_BIMETAL",
+"precision_f": 5.0,
+"response_time": "SLOW",
+"max_temp_f": 220.0
+}
+starting_state = "CLEAN"
+description = "Cheap analog thermometer. ±5°F precision and a slow needle — by the time it settles your wort has moved on."

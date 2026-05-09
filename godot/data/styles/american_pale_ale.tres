@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="StyleProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/style_profile.gd" id="1_style"]
+
+[resource]
+script = ExtResource("1_style")
+style_id = "american_pale_ale"
+display_name = "American Pale Ale"
+description = "Moderate-strength American pale ale. Clean, hop-forward, balanced. Cascade-style citrus / pine hops are typical. The forgiving entry point for hop-forward American styles."
+og_min = 1.045
+og_max = 1.060
+fg_min = 1.010
+fg_max = 1.015
+ibu_min = 30.0
+ibu_max = 50.0
+srm_min = 5.0
+srm_max = 10.0
+abv_min = 4.5
+abv_max = 6.2

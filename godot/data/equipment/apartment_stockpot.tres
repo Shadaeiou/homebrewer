@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="EquipmentArchetype" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/equipment_archetype.gd" id="1_equip"]
+
+[resource]
+script = ExtResource("1_equip")
+archetype_id = "apartment_stockpot"
+display_name = "Apartment Stockpot"
+category = "kettle"
+properties = {
+"volume_capacity_gal": 5.0,
+"volume_markings": "NONE",
+"has_thermometer": false,
+"has_spigot": false,
+"material": "ALUMINUM",
+"precision_for_volume": 0.4,
+"precision_for_temp": 0.0,
+"sanitation_decay_per_use": "HIGH"
+}
+starting_state = "USED"
+description = "Your old pasta stockpot. Aluminum, no markings, no thermometer. It boils water; that's about all you can ask of it."

@@ -1,0 +1,44 @@
+[gd_resource type="Resource" script_class="RecipeDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/recipe_def.gd" id="1_recipedef"]
+
+[resource]
+script = ExtResource("1_recipedef")
+recipe_id = "apartment_pale_ale"
+display_name = "Apartment Pale Ale"
+style = "american_pale_ale"
+method = "EXTRACT"
+batch_size_gal = 5.0
+boil_volume_gal = 2.5
+boil_minutes = 60
+target_og = 1.045
+target_fg = 1.012
+target_ibu = 30.0
+target_srm = 8.0
+target_abv = 4.5
+fermentables = Array[Dictionary]([{
+"item": "Light Malt Extract (LME)",
+"weight_lb": 6.0
+}])
+hop_schedule = Array[Dictionary]([{
+"item": "Cascade",
+"weight_oz": 1.0,
+"minutes_remaining": 60
+}, {
+"item": "Cascade",
+"weight_oz": 0.5,
+"minutes_remaining": 15
+}, {
+"item": "Cascade",
+"weight_oz": 0.5,
+"minutes_remaining": 0
+}])
+yeast = {
+"item": "US-05 dry ale",
+"attenuation": 0.75,
+"pitch_temp_c": 20.0
+}
+fermentation_temp_c = 19.0
+fermentation_days = 5
+condition_days = 14
+priming_sugar_oz = 5.0

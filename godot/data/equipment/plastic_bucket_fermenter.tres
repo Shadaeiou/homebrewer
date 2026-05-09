@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="EquipmentArchetype" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/equipment_archetype.gd" id="1_equip"]
+
+[resource]
+script = ExtResource("1_equip")
+archetype_id = "plastic_bucket_fermenter"
+display_name = "Plastic Bucket Fermenter"
+category = "fermenter"
+properties = {
+"volume_capacity_gal": 6.5,
+"transparent": false,
+"has_temp_probe": false,
+"airlock_grommet": true,
+"thermotape_installed": false,
+"sanitation_decay_per_use": "MEDIUM"
+}
+starting_state = "USED"
+description = "6.5-gallon food-grade plastic bucket with a drilled lid and an airlock grommet. Opaque — you can't see what's happening inside without opening it."

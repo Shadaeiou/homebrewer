@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EquipmentArchetype" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/equipment_archetype.gd" id="1_equip"]
+
+[resource]
+script = ExtResource("1_equip")
+archetype_id = "wing_capper"
+display_name = "Wing Capper"
+category = "capper"
+properties = {
+"type": "WING",
+"requires_squeeze_gesture": true,
+"reliability": 0.7
+}
+starting_state = "CLEAN"
+description = "Hand-squeeze wing capper. Cheap and reliable enough — but every cap is a workout, and a sloppy squeeze leaves a bad seal."
