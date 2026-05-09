@@ -18,186 +18,191 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.13, 0.10, 0.08, 1)
+color = Color(0.04, 0.04, 0.05, 1)
 
-[node name="Margin" type="MarginContainer" parent="."]
+[node name="ApartmentViewport" type="Control" parent="."]
+unique_name_in_owner = true
+clip_contents = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 24
-theme_override_constants/margin_top = 48
-theme_override_constants/margin_right = 24
-theme_override_constants/margin_bottom = 24
 
-[node name="Body" type="VBoxContainer" parent="Margin"]
-layout_mode = 2
-theme_override_constants/separation = 16
+[node name="Hud" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
-[node name="Title" type="Label" parent="Margin/Body"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.96, 0.78, 0.32, 1)
-theme_override_font_sizes/font_size = 36
-text = "Homebrewer"
-horizontal_alignment = 1
+[node name="StatsChip" type="VBoxContainer" parent="Hud"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 0.0
+anchor_right = 0.0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 220.0
+offset_bottom = 80.0
+grow_horizontal = 1
+mouse_filter = 2
+theme_override_constants/separation = 0
 
-[node name="DayLabel" type="Label" parent="Margin/Body"]
+[node name="DayLabel" type="Label" parent="Hud/StatsChip"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.95, 0.91, 0.84, 1)
-theme_override_font_sizes/font_size = 22
 text = "Day 0"
-horizontal_alignment = 1
+theme_override_font_sizes/font_size = 16
+modulate = Color(0.95, 0.91, 0.84, 1)
 
-[node name="StatsRow" type="HBoxContainer" parent="Margin/Body"]
-layout_mode = 2
-alignment = 1
-theme_override_constants/separation = 24
-
-[node name="CashLabel" type="Label" parent="Margin/Body/StatsRow"]
+[node name="MoneyRow" type="Label" parent="Hud/StatsChip"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.96, 0.78, 0.32, 1)
-theme_override_font_sizes/font_size = 18
-text = "$30"
+text = "$30 · 24 bottles"
+theme_override_font_sizes/font_size = 12
+modulate = Color(0.85, 0.78, 0.70, 1)
 
-[node name="BottlesLabel" type="Label" parent="Margin/Body/StatsRow"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_colors/font_color = Color(0.85, 0.78, 0.70, 1)
-theme_override_font_sizes/font_size = 14
-text = "Bottles: 24 available · 0 in use"
-
-[node name="MorningSummary" type="Label" parent="Margin/Body"]
+[node name="MorningSummary" type="Label" parent="Hud/StatsChip"]
 unique_name_in_owner = true
 layout_mode = 2
 text = ""
-theme_override_colors/font_color = Color(0.78, 0.74, 0.70, 1)
-theme_override_font_sizes/font_size = 13
-horizontal_alignment = 1
+theme_override_font_sizes/font_size = 11
+modulate = Color(0.65, 0.62, 0.58, 1)
 autowrap_mode = 3
 
-[node name="ChecklistHeader" type="Label" parent="Margin/Body"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Today"
-theme_override_colors/font_color = Color(0.96, 0.78, 0.32, 1)
-theme_override_font_sizes/font_size = 14
+[node name="HudIcons" type="VBoxContainer" parent="Hud"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -76.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = 220.0
+grow_horizontal = 0
+theme_override_constants/separation = 6
 
-[node name="ChecklistList" type="VBoxContainer" parent="Margin/Body"]
+[node name="PhoneButton" type="Button" parent="Hud/HudIcons"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 40)
 layout_mode = 2
-theme_override_constants/separation = 4
+text = "Phone"
+flat = true
+modulate = Color(0.95, 0.91, 0.84, 0.85)
+theme_override_font_sizes/font_size = 13
 
-[node name="StartBrewingButton" type="Button" parent="Margin/Body"]
+[node name="JournalButton" type="Button" parent="Hud/HudIcons"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 56)
+custom_minimum_size = Vector2(64, 40)
 layout_mode = 2
-text = "Start brewing"
+text = "Journal"
+flat = true
+modulate = Color(0.95, 0.91, 0.84, 0.85)
+theme_override_font_sizes/font_size = 13
 
-[node name="StartBrewingHint" type="Label" parent="Margin/Body"]
+[node name="RestButton" type="Button" parent="Hud/HudIcons"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 40)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.78, 0.55, 0.42, 1)
-theme_override_font_sizes/font_size = 12
+text = "Rest"
+flat = true
+modulate = Color(0.96, 0.78, 0.32, 1)
+theme_override_font_sizes/font_size = 13
+
+[node name="ActionPrompt" type="Label" parent="Hud"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -220.0
+offset_top = -120.0
+offset_right = 220.0
+offset_bottom = -52.0
+grow_horizontal = 2
+grow_vertical = 0
 text = ""
 horizontal_alignment = 1
-visible = false
-
-[node name="RestButton" type="Button" parent="Margin/Body"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 56)
-layout_mode = 2
-text = "Get some rest →"
-
-[node name="BottomRow" type="HBoxContainer" parent="Margin/Body"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="PhoneButton" type="Button" parent="Margin/Body/BottomRow"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-flat = true
-text = "Phone"
-modulate = Color(0.85, 0.78, 0.70, 1)
+vertical_alignment = 1
+autowrap_mode = 3
 theme_override_font_sizes/font_size = 13
+modulate = Color(0.96, 0.78, 0.32, 1)
 
-[node name="JournalButton" type="Button" parent="Margin/Body/BottomRow"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-flat = true
-text = "Brewery journal"
-modulate = Color(0.85, 0.78, 0.70, 1)
-theme_override_font_sizes/font_size = 13
-
-[node name="VersionLabel" type="Label" parent="Margin/Body"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_colors/font_color = Color(0.65, 0.62, 0.58, 1)
-theme_override_font_sizes/font_size = 13
-text = "v0.0.0 (build 0)"
-horizontal_alignment = 1
-
-[node name="UpdateBanner" type="PanelContainer" parent="Margin/Body"]
+[node name="UpdateBanner" type="PanelContainer" parent="Hud"]
 unique_name_in_owner = true
 visible = false
-layout_mode = 2
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -180.0
+offset_top = 12.0
+offset_right = 180.0
+offset_bottom = 56.0
+grow_horizontal = 2
 
-[node name="UpdateRow" type="HBoxContainer" parent="Margin/Body/UpdateBanner"]
+[node name="UpdateRow" type="HBoxContainer" parent="Hud/UpdateBanner"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="UpdateLabel" type="Label" parent="Margin/Body/UpdateBanner/UpdateRow"]
+[node name="UpdateLabel" type="Label" parent="Hud/UpdateBanner/UpdateRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.96, 0.78, 0.32, 1)
-theme_override_font_sizes/font_size = 14
+size_flags_vertical = 4
 text = "Update available"
-autowrap_mode = 3
+theme_override_font_sizes/font_size = 12
+modulate = Color(0.96, 0.78, 0.32, 1)
 
-[node name="UpdateButton" type="Button" parent="Margin/Body/UpdateBanner/UpdateRow"]
+[node name="UpdateButton" type="Button" parent="Hud/UpdateBanner/UpdateRow"]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_vertical = 4
 text = "Update"
 
-[node name="Divider" type="HSeparator" parent="Margin/Body"]
-layout_mode = 2
-
-[node name="ChangelogHeader" type="Label" parent="Margin/Body"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.96, 0.78, 0.32, 1)
-theme_override_font_sizes/font_size = 18
-text = "What's new"
-
-[node name="Scroll" type="ScrollContainer" parent="Margin/Body"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="ChangelogContainer" type="VBoxContainer" parent="Margin/Body/Scroll"]
+[node name="VersionLabel" type="Label" parent="Hud"]
 unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 12
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -120.0
+offset_top = -28.0
+offset_right = -12.0
+offset_bottom = -8.0
+grow_horizontal = 0
+grow_vertical = 0
+text = "v0.0.0"
+horizontal_alignment = 2
+theme_override_font_sizes/font_size = 10
+modulate = Color(0.55, 0.52, 0.50, 1)
 
-[node name="DevResetButton" type="Button" parent="Margin/Body"]
+[node name="DevResetButton" type="Button" parent="Hud"]
 unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 4
-text = "Reset save (dev)"
-modulate = Color(0.78, 0.55, 0.42, 1)
-theme_override_font_sizes/font_size = 12
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = -28.0
+offset_right = 80.0
+offset_bottom = -8.0
+grow_vertical = 0
+text = "Dev reset"
+flat = true
+theme_override_font_sizes/font_size = 10
+modulate = Color(0.55, 0.40, 0.32, 1)
 
 [node name="ResetConfirmDialog" type="ConfirmationDialog" parent="."]
 unique_name_in_owner = true
 title = "Reset save"
 ok_button_text = "Wipe and start over"
 cancel_button_text = "Cancel"
-dialog_text = "This will delete your save and journal and start a fresh career.
-Use this if a brew is stuck in a state the current build can't progress out of (no bottling, no anomaly recovery, etc.).
-Removed before launch."
+dialog_text = "This will delete your save and journal and start a fresh career."

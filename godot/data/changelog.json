@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.2.73",
+    "date": "2026-05-09",
+    "bullets": [
+      "No more landing page. The apartment IS the home screen — kettle on the counter, brass faucet above, stove and bottling table flanking. Open the app and you're already in the kitchen.",
+      "All brewing actions are tap-the-world: tap the kettle to start a brew (or resume one mid-flow), tap the closet to check the fermenter or the conditioning rack. The old Start brewing / Check fermenter / Resume brewing buttons are gone.",
+      "Status moves to a tiny HUD: day + cash + bottles top-left, Phone / Journal / Rest icons top-right, a floating prompt above the version row tells you what tapping the highlighted object will do (or what's blocking it — \"Need ingredients. Tap the phone to shop.\").",
+      "Changelog scroll left the home view; updates ship via the in-app updater banner instead. The new-build hype is over after rev 70 anyway."
+    ]
+  },
+  {
     "version": "0.2.72",
     "date": "2026-05-09",
     "bullets": [
