@@ -2,7 +2,7 @@
 
 The canonical game design document. Internal only — not shipped to the player.
 
-This is being assembled in passes. Sections 0–3 + Appendices A and B were the first pass. Section 4 (Time, Concurrency, Conditioning) is being filled in piece by piece as design conversations resolve. Sections 5–9 (Economy, UX/UI, Technical Architecture, Save Schema, Mini-Game Build Plan) are queued. When a section locks, it stays locked unless the design explicitly revisits it. When implementation starts, this document is the spec; if the spec is wrong, fix the spec, then fix the code.
+This is being assembled in passes. Sections 0–3 + Appendices A and B were the first pass. Section 4 (Time, Concurrency, Conditioning, Commitments) and Section 8 (Save Schema Outline) are being filled in piece by piece as design conversations resolve. Sections 5–7 (Economy, UX/UI, Technical Architecture) and Section 9 (Mini-Game Build Plan) are queued, plus the full pass on Section 8. When a section locks, it stays locked unless the design explicitly revisits it. When implementation starts, this document is the spec; if the spec is wrong, fix the spec, then fix the code.
 
 `CLAUDE.md` continues to define repo rules (commit to main, every player-visible commit bumps `changelog.json`, etc.). This document defines what the game **is**.
 
@@ -14,7 +14,7 @@ This is being assembled in passes. Sections 0–3 + Appendices A and B were the 
 - **Section 1** — the world, who's in it, the phone interface that ties social/customer/news/shopping together.
 - **Section 2** — what one career looks like across decades of in-game time, and what prestige carries forward when you start over.
 - **Section 3** — the brewing simulation. The outcome model, the equipment-as-properties model, the care system, skill axes, the risk profile, the discovery principle, the three v1 styles, the twelve v1 mini-games and their consequences.
-- **Section 4** — time and concurrency. Two clocks (scene + day), how parallel brews coexist, why conditioning is passive and how the keg unlock breaks the apartment-tier wait. Drives most save-state and scheduling decisions downstream.
+- **Section 4** — time and concurrency. Two clocks (scene + day), how parallel brews coexist, why conditioning is passive and how the keg unlock breaks the apartment-tier wait, and how time-bound commitments (orders, social events, competitions) work via the Calendar. Drives most save-state and scheduling decisions downstream.
 - **Appendix A** — the first brewing day, narrated step by step with concrete failure modes for each step. The canonical worked example. If anything in Section 3 contradicts Appendix A, Appendix A wins; fix Section 3.
 - **Appendix B** — the five days of the first brew's fermentation period, with the daily checklist + discovery UX shown moment by moment. Validates the daily rhythm.
 
@@ -125,7 +125,7 @@ Within one destination (e.g., the home town in v1), progression goes:
 - **Garage / backyard.** Larger kettle, possibly multiple fermenters, more bottles or first kegs, dedicated brewing space (no longer competing with kitchen). Larger customer base, first bulk orders from local bars, first competitions.
 - **Pro brewery.** Real stainless equipment, multiple parallel batches, full control over water chemistry, employees (eventually), distribution. Wholesale orders, competition entries, regional renown.
 
-Movement between tiers is voluntary and reversible. You upgrade by accumulating cash and choosing to invest. You can downsize voluntarily (sell equipment, move back to garage scale) if you over-extended. Forced downsize happens via bankruptcy; see 2.6.
+Movement between tiers is voluntary and reversible. You upgrade by accumulating cash and choosing to invest. You can downsize voluntarily (sell equipment, move back to garage scale) if you over-extended. Forced downsize happens via bankruptcy; see 2.7.
 
 ### 2.3 Destinations (prestige carry)
 
@@ -145,7 +145,7 @@ v1 ships with one destination. Subsequent destinations are content updates that 
 
 | Carries forward | Does NOT carry forward |
 |---|---|
-| Skill levels (with a small reset penalty — say, drop 20% to keep early-game challenge) | Cash |
+| Skill **levels** (penalty: drop 20% of current levels per axis, rounded down, floor 0 — a maxed level-30 skill becomes level 24, a level-7 skill becomes level 5; "20%" is tuning, locked in for save-schema purposes but expected to move during playtest) | Cash |
 | Recipe knowledge (you remember styles you've mastered, but need to re-brew them once to "prove" it again) | Current equipment |
 | One pinned recipe of your choice | In-progress brews (ferment, condition) |
 | Achievement / brewery journal of past breweries (read-only memorial) | Customer relationships |
@@ -167,12 +167,32 @@ The game can suggest prestige when these are met ("You've reached the natural en
 
 When destinations beyond Tier 2 ship, "world-renowned" becomes "you've prestiged through three or more destinations and won majors in each."
 
-### 2.6 Failure / bankruptcy
+### 2.6 Economy is load-bearing from day one
 
-Money can run out. The game's response scales with where you are:
+Money is **not flavor**. From the player's first $30 onward, the economy is a real pressure system that constrains and shapes decisions at every tier. The reasons are concrete:
 
-- **Apartment scale, broke.** A friend (Marcus) bails you out with a small loan + faith. No equipment lost. Mild story moment via texts. Realistic max loan: $50–100.
-- **Garage scale, broke.** A customer (Mom, Marcus, the local bar owner) offers an advance against a bulk order. You owe a delivery by a deadline, scaled to the advance. Adds pressure but no equipment loss.
+- **The $30 starter is intentionally insufficient** to buy everything on the recipe (Appendix A's shopping list totals $39). The player MUST trade off — skip sanitizer (real infection-risk floor), skip spring water (real water-chemistry drift), or skip a small consumable that hurts later.
+- **Every brew costs ingredients that were paid for.** No infinite cycle; cash flow is tracked.
+- **Every customer payment is real cash that affects future spending.** Mom's stout order isn't a story beat — it's revenue that pays for the next brew's ingredients.
+- **Every equipment purchase displaces other purchases.** The $5 thermotape vs. saving for a $25 brew belt is a real choice, not flavor.
+- **The player can genuinely run out of money** at any tier. Bankruptcy mechanics (2.7) are real gameplay events with real terms, not soft narrative bailouts.
+
+This is in contrast to a "tutorial → real" curve where apartment is cosmetic and only later tiers bite. The decision is that **apartment-scale economy is already real**, just at smaller numbers. The trade-offs are smaller in absolute dollars but proportionally just as load-bearing on the player's choices. A first brew where the player chose tap-over-spring-water to afford sanitizer carries that consequence into the finished beer; a player who can't afford ingredients for brew #2 has to actually do something about it (sell bottles to Marcus, accept Mom's loan with terms, take an early customer advance).
+
+This decision shapes downstream design:
+
+- **Save schema (Section 8 / item #10) must persist:** cash balance, outstanding loans (including informal ones like Marcus's bailouts) with terms, customer advances and their delivery deadlines, recurring expenses (rent at higher tiers), bottle/ingredient inventories.
+- **Section 5 (Economy) is built on this premise** — pricing curves, customer payouts, competition prizes, and trend multipliers all assume the player feels them.
+- **Calendar is partially driven by economy** — customer-order deadlines, loan repayment deadlines, and trend windows are all calendar entries (item #9 territory).
+
+The other end of the spectrum (cosmetic-throughout, where the player can never genuinely lose to economics) is explicitly rejected — it would undermine Tenet 2 (outcomes from your choices) at the resource level.
+
+### 2.7 Failure / bankruptcy
+
+Money can run out. The game's response scales with where you are, but every tier's response is a **real gameplay event with terms**, not a soft narrative bailout (per 2.6):
+
+- **Apartment scale, broke.** Marcus offers a small loan with real terms — typically $40–80 in cash with strings: you owe him a 6-pack of your next batch (consuming 6 bottles from your inventory), first dibs at the next party, and a soft promise of "I get to brag about you to my friends." Loan is finite per scale (one outstanding Marcus loan at a time; he won't lend again until repaid). If the player exhausts Marcus's patience (multiple unpaid loans, missed party deliveries), Marcus stops lending until a relationship-repair beat lands. Mom may also offer a small advance — pay-in-advance for a bottle order with an explicit delivery deadline. The bailouts are real cash that costs real future bottles or future brews; no equipment is ever lost at apartment scale, but the player can absolutely feel stuck if they mismanage.
+- **Garage scale, broke.** A customer (local bar owner, brewing-club member, returning friends/family) offers an advance against a bulk order. Real deadline, scaled to the advance. Missed delivery = relationship hit + possibly cash penalty. Adds genuine pressure; no equipment loss yet, but reputation matters at this tier and missed orders propagate.
 - **Pro brewery, broke.** An angel investor steps in, but takes a real cost. The player chooses:
   - **Equity:** lower payouts on every future sale until the loan is paid back (with interest)
   - **Forced downsize:** sell your fanciest equipment, possibly move back to garage scale.
@@ -181,7 +201,7 @@ Money can run out. The game's response scales with where you are:
 
 This makes downsize a tool, not just a punishment. The downsize-then-rebuild story arc is intentionally available — pro brewer who made bad decisions retreats to apartment to consolidate, then rebuilds smarter.
 
-### 2.7 Trends (apartment vs. pro)
+### 2.8 Trends (apartment vs. pro)
 
 - **Apartment scale.** NPCs have stable preferences. Marcus likes IPAs; Mom likes pale ales; Dad likes stouts. They drink what they like. A rare event might shift a preference (Cara starts liking sours after seeing a TikTok), but mostly you're brewing for known palates.
 - **Garage scale.** Local bar owners, brewing clubs, and your social-media followers introduce a softer trend signal. Some weeks pale ales sell better than IPAs; some weeks the inverse. You're learning to read demand.
@@ -308,6 +328,10 @@ Trade-offs:
 
 Lazy is correct sometimes (low-stakes pale ale for friends). Wrong other times (competition entry). Strategic.
 
+#### Care is breadth, not order
+
+Care is a continuous factor (0.6–1.0) emerging from the *breadth* of optional sub-actions taken — "did you also Star San? did you also drip-dry?" It does not police the *order* of actions. Order-mattering interactions (e.g., the LME pour: burner OFF → start stirring → pour LME) are a separate interaction shape called **procedure**, defined in 3.9. Procedure produces discrete events with sometimes-catastrophic outcomes; care produces a continuous drift modifier. The two coexist within a mini-game (the LME pour is procedure for the action order, with care still derivable from optional sub-actions like rehearsing your stir grip), but the architecture treats them as different mechanisms.
+
 ### 3.4 Skill Axes
 
 Six axes. All grow from real-stakes reps only — no practice mode, no XP from drills.
@@ -318,12 +342,68 @@ Six axes. All grow from real-stakes reps only — no practice mode, no XP from d
 | **Temperature Control** | Mash temp hold accuracy; ferment temp anomaly response; cool-stage timing | Mash steps within target, anomaly mitigations |
 | **Timing** | Hop drop accuracy; boil duration accuracy; bottling priming sugar steep | Hop additions on schedule, boil duration ±N min |
 | **Process** | General execution quality (transfers, pitches, captures); reduces splash/oxidation | Transfers without spillage, pitches with even distribution |
-| **Palate** | Tasting accuracy in finished beer; ability to detect off-flavors | Pour-and-taste interactions; comparing tasting notes to actual brew data |
-| **Water Chemistry** | Water-treatment effectiveness; recipe-faithfulness for chemistry-sensitive styles | Late unlock — gated by Sanitation reaching mid-tier and at least one all-grain brew completed |
+| **Palate** | Reading **other brewers' beers** primarily — flavor identification, body, recipe inference at high tiers; reading carb level + flavor on conditioning testers (only Palate-gated read; no equipment substitute on bottle-conditioned beer); reading your own finished brew (the journal post-mortem still teaches the truth, but Palate lets you read it in the glass first) | Comparison tastings at NPC events (Tim's tasting club, brewing-club meetings, competitions you judge); journal-confirmation loop on your own brews (you sense → journal confirms → +XP whether you guessed right or wrong); forum threads on flavor vocabulary (small but reliable); modest base rate from tasting your own finished beer |
+| **Water Chemistry** | Water-treatment effectiveness; recipe-faithfulness for chemistry-sensitive styles | **Equipment-gated.** Invisible until the player owns a pH meter or water-test kit (typically the WC IPA / Dry Stout era when all-grain begins). Once unlocked, XP from successful pH-target hits during mash, water-treatment additions matching style profile, and journal callouts confirming chemistry choices. See note on the equipment-perception pattern below. |
 
 Skill levels grow on a curve: early levels are fast (XP_to_next = 100), late levels are slow (XP_to_next = 10000+). The curve makes early progress feel responsive and late mastery feel earned.
 
 Skill caps achievable outcomes. **At zero skill, A+ outcomes are unachievable even with perfect play.** Your first beer cannot be a competition winner. As skill grows, the achievable ceiling rises. Pro-tier brewing demands mid-to-high skill across multiple axes.
+
+#### How the skill cap works mechanically
+
+The drift model in 3.1 is statistical — a lucky tight Gaussian roll could in theory put a zero-skill brew on target. The grade ceiling is therefore a **separate function on top of drift**, not a property of drift. Per skill axis:
+
+| Skill level | Max grade contributed |
+|---|---|
+| 0 | C |
+| 5 | B |
+| 10 | A- |
+| 15 | A |
+| 20+ | A+ |
+
+The brew's overall grade ceiling = `min` across the **relevant** skill axes for that recipe. Recipe operations determine which axes are relevant: extract APA invokes {Sanitation, Temp Control, Timing, Process}; all-grain Stout adds Water Chemistry — but only when the player owns and uses a pH meter (per the equipment-perception note above; without the equipment, water chemistry is invisible and doesn't cap). The brew's final grade = `min(drift_derived_grade, brew_grade_ceiling)`.
+
+Two implications worth pinning:
+
+- **Palate is not a brew-grade skill.** Palate caps perception (reading other brewers' beer; identifying flavors in your own at tasting), not the brew you make. A beer made by a tin-tongued brewer who happens to be a wizard at sanitation, timing, temp, and process can absolutely score A+; they just can't taste why.
+- **Maxed skills flatline at A+ by design.** Once your relevant axes are all level 20+, casual brews are reliably A+. Endgame challenge moves to competition rubrics (which can score finer gradations within the A range — likely a v2+ extension on top of consumer grade), trend-fitting at pro tier, exotic styles that test fresh axes, recipe invention, and tight-deadline / constrained brews. Mastery doesn't run out of things to do; it just stops being measured by consumer-grade.
+
+The prestige penalty (2.4) drops levels by 20% rounded down, floor 0. A pre-prestige max-out (level 30) drops to level 24 — still in the level-20+ plateau, still capped at A+. The "world-renowned brewer with starter gear still makes good beer" effect is real, mediated through drift (3.1's `equipment_precision` does the work) — apartment-tier equipment loosens the actual brew toward A/A-, while the skill ceiling stays at A+.
+
+#### Skill snapshots per interaction (no retroactive propagation)
+
+Each mini-game interaction snapshots the relevant skill level at the moment it executes, and that snapshot drives the outcome. XP earned by the interaction is awarded *after* the outcome is computed, so an interaction never benefits from the XP it just produced. In-flight brews therefore do not retroactively benefit from skill growth that happens during their fermentation/conditioning window.
+
+Worked example for an Apartment Pale Ale:
+
+- **Day 0** — kettle fill executes with Process level 7. Drift uses 7. +5 Process XP after.
+- **Day 0** — boil executes with Timing level 6. Drift uses 6. +8 Timing XP after.
+- **Day 5** — bottling fill executes with Process level 8 (you've leveled). Drift uses 8.
+- **Day 19** — final tasting executes with Palate level 4. Reveal uses 4. +12 Palate XP after.
+- **Day 19** — same evening, you start prep on the next brew. Process level is whatever it is *now*. The Day-0 brew's Day-0 Process value is unaffected.
+
+Three implications worth pinning:
+
+- **Journal honesty.** Each interaction's snapshot skill level is part of its journal record. The post-mortem can faithfully show "your Process was 7 when you did this kettle-fill" — useful teaching, no retconning.
+- **Long brews don't benefit from their own ferment-window XP.** A Stout that ferments 10 days and conditions 14 days does not retroactively pull in skill XP earned during those 24 days. Realistic — palate growth on Day 22 doesn't make the wort you boiled on Day 0 better.
+- **Tasting and conditioning testers snapshot Palate at the moment they execute.** Your Day-19 final tasting reads with Day-19-start Palate, not Day-19-end-of-tasting Palate. The XP from that tasting lands after, benefiting future tastings of *other* beers.
+
+#### Two skills are worth calling out
+
+**Palate is the social skill.** Unlike the other five — which earn XP primarily from your own brewing reps — Palate's main loop is *evaluating other people's beer*. Your own beer's truth lives in the journal post-mortem; Palate is what lets you read commercial references, tasting-club submissions, competition entries you're judging, the IPA Marcus brought back from the brewery he visited.
+
+The reading scales hard with level:
+- **Low Palate:** "tastes like beer."
+- **Mid Palate:** "American pale ale, fairly hoppy, clean yeast — US-05 territory."
+- **High Palate:** effectively reverse-engineers the recipe from a glass — style, OG range, hop varieties in the dry hop, yeast profile, fermentation temp tells, even whether it was extract or all-grain.
+
+This is the skill that bridges tasting other brewers' work and inventing your own recipes (the late-game recipe-invention unlock). It also gates judging credibly at competitions — a low-Palate player can technically enter a judging slot, but their feedback to entrants is shallow and the in-fiction community notices.
+
+**Water Chemistry is the canonical equipment-perception skill.** Per Tenet 3, equipment unlocks perception. Water chemistry is the cleanest example of that pattern: until the player owns a pH meter or water-test kit, water chemistry is invisible. The simulation still computes it — your tap water has whatever profile the regional preset gives it; brews drift accordingly — but the player can't see it, the journal doesn't mention it, and there is no Water Chemistry skill track yet.
+
+The moment a pH meter ships, the dimension lights up: mash-prep mini-games gain a "check pH" sub-action, the journal starts calling out chemistry effects ("mash pH was 5.8 — high for this style; contributed to the harsh finish"), and Water Chemistry XP starts accruing from informed choices. Players retroactively understand "*oh, that's why my IPA was harsh*" the first time a pH meter shows them what was happening invisibly all along.
+
+This pattern — equipment as the perception unlock that lights up an entire subsystem — repeats at smaller scale elsewhere: thermotape unlocks fermenter temp from outside, hydrometer unlocks SG, refractometer unlocks SG without the oxidation cost. Water Chemistry is just the biggest, latest, and most consequential version of the same idea.
 
 ### 3.5 The Risk Profile
 
@@ -343,8 +423,10 @@ Every brew carries a hidden `RiskProfile` that fills up during active stages. Pl
 #### Reveal model
 
 - **During the brew:** the player perceives risks indirectly via skill-gated cues. Low Process skill: "the wort smells weird" (could be a lot of things). High Process skill: "that's a touch of DMS — your boil was gentle."
-- **At tasting (Pour & Taste mini-game):** Palate skill gates how many of the actual flavors the player can identify. Low Palate: "tastes like beer." High Palate: "smells of cardboard and slight sourness; the head doesn't hold."
+- **At tasting (Pour & Taste mini-game):** Palate skill gates how many of the actual flavors the player can identify in the finished beer. Low Palate: "tastes like beer." High Palate: "smells of cardboard and slight sourness; the head doesn't hold." (Palate's primary load-bearing read is on *other people's* beer per 3.4; this in-the-moment read of your own brew is a smaller secondary use.)
 - **In the journal, post-mortem:** all risk axes are revealed numerically + narratively. "Oxidation: 6/10. Cause: splashy transfer at bottling. Effect: cardboard finish in 4 weeks." Teaches the player what they did and didn't do.
+
+**The journal does not violate Tenet 4.** Tenet 4 ("the game discloses nothing it shouldn't") governs *in-the-moment* perception during play — what the player can see while a brew is happening, while they have agency to act on it. Anomalies stay ambient until the player chooses to look; flavors stay vague until skill or equipment makes them legible. The journal post-mortem is a **post-hoc teacher**, not an in-the-moment disclosure: its full numeric/narrative reveal happens *after* the brew is graded and the player has no further actions to take on it. That's intentional — it's the design's main feedback channel for getting better between brews. The two reveal modes layer cleanly: discover what you can in real time (skill- and equipment-gated), then the journal fills in the gaps so next time you can catch it earlier.
 
 ### 3.6 Recipe as Target
 
@@ -378,9 +460,28 @@ Apartment Pale Ale:
     priming_sugar_oz: 5
 ```
 
-The recipe is the **truth**. The brewing simulation computes drift between actual outcomes and these targets. Grading is a function of cumulative drift across all axes.
+The recipe is the **truth** for the player's own self-evaluation. The brewing simulation computes drift between actual outcomes and these targets. Self-evaluation grading (the journal post-mortem grade — "did you make what you intended?") is a function of cumulative drift across all axes against the recipe.
 
-Players can *invent* recipes (late-game unlock), in which case the player's invention IS the target — drift is measured against what they intended.
+#### Two grading channels: self vs. external
+
+Self-evaluation is not the only grade a brew receives. **External evaluation** — by customers, NPCs, and competition judges — uses the **canonical style profile** for the brew's tagged style (BJCP-style guidelines), not the player's recipe. Two channels:
+
+- **Self-grade** (journal post-mortem). Drift between actual and the player's recipe targets. Tells the player "did I succeed at making my recipe?" Useful for the player's own learning loop.
+- **External grade** (customer ratings, NPC tasting feedback, competition scoring). Drift between actual and the canonical style profile. Tells the world "is this a good example of the style?"
+
+The two grades are independent. A player's tightly-executed recipe might self-grade A+ but external-grade B if the recipe drifts from style guidelines (e.g., over-hopped for an APA → "not really a pale ale anymore"). Conversely, a sloppy execution might self-grade C but external-grade B+ if the drift accidentally pushed the brew closer to its style profile than the recipe itself was.
+
+#### Player-invented recipes (late-game unlock)
+
+Players can *invent* recipes once a late-game unlock fires. Invented recipes:
+
+- Become a normal recipe in the player's recipe collection.
+- Carry a **required `target_style` tag** — the player declares what style this is supposed to be. The tag is mandatory; recipes can't be untagged.
+- Are graded on both channels: self-grade against the player's targets (as above); external-grade against the `target_style`'s canonical profile.
+
+This closes the obvious exploit (invent a "recipe" with trivial targets, hit them, score A+). The player's invention only governs self-grade; external graders use the style profile, which is immutable. If the invented recipe's targets drift from the style it claims to be, the self-grade and external-grade diverge — interesting and informative, not gameable.
+
+**Experimental brews without a target style.** A player can brew without declaring a style ("I'm just experimenting"). These exist outside the grading economy: no competition entry, no external grade, NPC casual feedback is "weird, but in a fun way" rather than style-judged. Self-grade still works (you set targets; we grade against them) but the brew is segregated from the rest of the scoring world.
 
 ### 3.7 The Discovery Principle (the daily UX)
 
@@ -432,11 +533,12 @@ These three styles cover three distinct lessons. v1 ships with no others. Lagers
 
 ### 3.9 v1 Mini-Game Catalog
 
-Twelve mini-games covering the apartment-scale brewing arc end-to-end. Three shapes, distinguished by what the player is *doing*:
+Twelve mini-games covering the apartment-scale brewing arc end-to-end. Four shapes, distinguished by what the player is *doing*:
 
 - **Skill challenges** — your hands' precision matters in real-time (gesture quality, timing precision).
 - **Decisions with consequences** — you choose a value/option and the world responds.
-- **Job execution** — you take or skip a series of optional sub-actions; the breadth determines the care factor.
+- **Job execution** — you take or skip a series of optional sub-actions; the *breadth* determines the care factor (per 3.3). Continuous, no catastrophic single-step failures.
+- **Procedure** — discrete actions that must happen in the right *order*. Wrong order produces a specific, often catastrophic event (e.g., LME poured before burner OFF → SCORCH). Distinct from job execution: procedure cares about sequence, not breadth, and failures are discrete events rather than a continuous drift modifier. The canonical example is the LME pour (Mini-game #4 below). A single mini-game can compose shapes (the LME pour is procedure for the order, plus a skill component on the actual pour gesture).
 
 #### The catalog (with consequences)
 
@@ -480,6 +582,12 @@ Every mini-game scene conforms to a shared input/output shape:
 
 Once we build the first 3–4 mini-game scenes, the rest are templated against this shape.
 
+#### Single-touch platform constraint
+
+The game is a phone game on a single-touch screen. Mini-games cannot require two simultaneous drags. When a mini-game's fiction calls for "two things happening at once" (the LME pour requires stirring while pouring), the design pattern is **drag-to-start-autonomous-action**: the player drags the first object to set it in motion (it then animates autonomously and visibly), then proceeds to the second object. The autonomous animation gives the player visual feedback that the first action is "still going" without requiring continuous touch. Skill is graded only on the gesture the player is actively making — the autonomous action is fictional infrastructure, not a precision check.
+
+The LME pour (Mini-game #4 below) is the canonical example of this pattern.
+
 #### Catalog → consequence chains for the first three mini-games
 
 (The full consequence detail for all 12 lives in Section 9 — Mini-Game Build Plan, future. Here are the first three to demonstrate the level of specificity we're committing to.)
@@ -519,23 +627,23 @@ actual_volume = target + drift_stddev × randn()
 
 ##### Mini-game #4 — Pour LME (Step 4 of brewing day; sub-component of "Heat & Mix Wort")
 
-This is the canonical example from Appendix A — see Step 4 in the walkthrough. The mini-game is shape-wise a *decision-and-sequence* interaction: turn off burner FIRST, then add LME WHILE STIRRING.
+This is the canonical **procedure** mini-game (per the four-shape definition above) and the canonical example from Appendix A — see Step 4 in the walkthrough. The order is the load-bearing thing: turn off burner FIRST, then add LME WHILE STIRRING. A skill component rides on top of the procedure (the actual pour gesture quality), but procedure dominates: getting the order wrong produces a discrete catastrophic event (SCORCH) regardless of how skillful the pour was.
 
-**Sub-actions:**
-- Toggle burner OFF (binary)
-- Drag spoon → kettle (start stirring)
-- Drag LME → kettle slowly (controlled pour gesture)
+**Sub-actions (in expected order):**
+1. **Toggle burner OFF** (binary tap on the dial).
+2. **Drag spoon → kettle.** This is a single drag that releases. On release, the spoon enters an autonomous stirring animation (visible loop, communicates "still going") — see the single-touch constraint above. No further touch is needed to keep the spoon stirring; it stirs for as long as this scene runs or until the player drags it back out.
+3. **Drag LME → kettle slowly.** This is a single sustained drag with a controlled-pour gesture (steadiness, speed, arc smoothness). Skill on the pour gesture is computed from THIS drag specifically, not from the spoon's autonomous loop.
 
-**Order matters.** The system observes the order and timing.
+**Order matters.** The system observes the order of (1)→(2)→(3) and the timing between them. The autonomous stirring means the player is never asked to multi-touch; their finger is on the LME drag while the spoon stirs by itself.
 
 **Outcome computation:** modifies several variables of the brew:
-- `risk_profile.scorch` — 0 if burner was off and LME was added with stirring. Otherwise scales with seconds-of-direct-LME-on-hot-burner.
-- `lme_dissolution` — 0.6 to 1.0 based on stirring quality. Affects OG (undissolved LME doesn't contribute to gravity).
+- `risk_profile.scorch` — 0 if burner was off (step 1 done) and the spoon was already stirring (step 2 done before step 3). Otherwise scales with seconds-of-direct-LME-on-hot-burner.
+- `lme_dissolution` — 0.6 to 1.0 based on the LME drag's gesture quality (smooth + slow = full dissolution; jerky or fast = partial). Affects OG (undissolved LME doesn't contribute to gravity).
 
 **Failure modes:**
 - LME dropped without burner off → SCORCH event. `risk_profile.scorch += high`. Visible: dark patch in kettle. Off-flavor in finished beer.
-- LME dropped without stirring → puddle on bottom, slow dissolution → `lme_dissolution = 0.7`. Lower OG.
-- LME poured slowly while stirring with burner off → ideal. `lme_dissolution = 1.0`. No scorch.
+- LME dropped without spoon already stirring → puddle on bottom, slow dissolution → `lme_dissolution = 0.7`. Lower OG.
+- LME poured slowly with smooth gesture, burner off, spoon already in autonomous stir → ideal. `lme_dissolution = 1.0`. No scorch.
 
 ##### Mini-game #5 — Bring to Boil (Step 6 of brewing day)
 
@@ -667,6 +775,126 @@ From brew #2 onward, the issue evaporates. The player's natural cadence is brew 
 | Conditioning (passive bar; 0–2 optional tester probes) | ~1–2 minutes |
 | Tasting (active scene) | ~2 minutes |
 | **Total per brew** | **~25–35 minutes**, distributed across ~20–25 in-game days, played across however many real-life sessions the player chooses. |
+
+### 4.7 Commitments and the Calendar
+
+Commitments are time-bound contracts the player accepts: a friend's tasting in 14 days, an order due in 21 days, a competition entry deadline in 30. They live in the Calendar app (1.4), produce countdown surfaces, and **have specified consequences for being missed** — they are not flavor.
+
+#### Five commitment types
+
+| Type | Example | Cash | Reputation | Recoverable? |
+|---|---|---|---|---|
+| **Social** | Tim's tasting; a Marcus party invite | None | Mild relationship hit if you skip; mild friction if you show empty-handed; relationship gain + Palate XP if you show with beer | Easy |
+| **Friend order** | Mom's stout; Marcus's batch for parties | Cash on delivery | Relationship hit if missed; cash forgone | Easy |
+| **Customer advance** (garage tier) | Bar owner pre-pays for a keg | Advance taken upfront; clawback on miss | Relationship hit + reputation ding | Moderate |
+| **Bar account / wholesale** (pro tier) | Standing order, monthly delivery | Hard contract; clawback + possible penalty | Reputation hit + account may close | Hard |
+| **Competition entry** | Regional homebrew comp deadline | Entry fee paid upfront; non-refundable | None (just disappointing if forfeit) | N/A — deadlines are deadlines |
+
+#### Renegotiation
+
+Most commitments can be modified proactively: the player taps the calendar entry, opens a message thread with the counterparty, and asks for an extension or apologizes preemptively. Different NPCs grant different latitude:
+
+- **Mom**: very forgiving; grants extensions readily, often with a soft remark ("oh honey, take your time")
+- **Marcus**: forgiving; may negotiate small concessions ("alright but you owe me first dibs on the next IPA")
+- **Tim**: friendly; reschedules if asked
+- **Local bar owner**: businesslike; short extension possible with a goodwill cost (slightly lower payout, or a free sampler for the bar)
+- **Competition entries**: zero — deadlines are deadlines, no extensions, no exceptions
+
+Proactive communication universally softens the consequence vs. silent miss: a 2-day-late delivery with a heads-up text the day before is forgiven; the same delay in silence isn't.
+
+#### Pre-flight info at acceptance
+
+When the player accepts a commitment, the calendar surfaces an info line:
+
+> *"Earliest possible delivery for a Dry Stout given your current equipment: 24 days. You committed to 21."*
+
+This is **information, not a block**. The player can still accept commitments they cannot fulfill on time — that's a real choice. The Day-3 Mom's-stout-in-21-days beat in Appendix B is the canonical example: it's a stout (10 ferment + 14 condition = 24 days minimum) with a 21-day deadline. The player either:
+
+- Accepts and plans to renegotiate later (proactive comms → mild dip)
+- Accepts, brews, delivers 3 days late silently (bigger dip, but no permanent loss at apartment scale because it's Mom)
+- Declines politely (no commitment, no consequence — just no birthday stout for Dad and a small relationship-warmth missed beat)
+
+This is intentional teaching: real homebrewers learn to say no to deadlines they can't hit. The game lets the player learn the same lesson via real, recoverable consequences at apartment scale before garage-tier commitments make those consequences harder to recover from.
+
+#### Calendar surfacing
+
+- **Calendar app** shows all open commitments with countdowns ("Mom's stout — 18 days").
+- **Morning summary** at T-3 days mentions the upcoming commitment as ambient context ("Dad's birthday is Saturday").
+- **Daily checklist** at T-1 day promotes the commitment to a line item with the ❗ flag from 3.7's discovery model — a *decision*, not a problem.
+- **On the deadline day**, the commitment shows as a top-level dashboard prompt; failing to act on it that day = silent miss.
+
+#### Save schema implications
+
+Each open commitment persists as a record: type, counterparty, deadline, payment-state (paid-up / advance-taken / nothing-paid-yet), required deliverable (style + minimum-quality?), and renegotiation history (any extensions previously granted). On miss, the consequence record fires (cash adjustment, relationship adjustment, reputation adjustment) and the commitment closes. Section 8 folds this in.
+
+---
+
+## Section 8 — Save Schema Outline
+
+This is the **outline level** — what entities the save needs to persist, the prestige boundary, save cadence, and constraints on the persistence-tech choice. The full schema (field types, table layouts or JSON shape, migration story) is the next pass; this stub locks in the shape so the tech decision (Godot resources vs. JSON vs. SQLite) follows from the schema, not the other way around.
+
+### 8.1 Twelve entity groups
+
+The save persists twelve groups of state. The groups are derived from decisions in 1–4 + 8–9; whatever Sections 5–7 land later will refine but should not contradict the shape below.
+
+1. **Player meta.** Save format version (for migrations), prestige count, current destination ID, settings (audio, visual, control preferences).
+2. **Cash & finance** (per 2.6). Cash balance; outstanding loans (Marcus's apartment-tier bailouts with their explicit terms — bottle owed, party promised, etc.); customer advances (counterparty, amount, delivery deadline, deliverable spec); recurring bills at higher tiers (rent, distribution fees).
+3. **Skills** (per 3.4). Six axes each with: current level, current XP, XP-to-next-level, unlocked-flag (Water Chemistry's flag flips when a pH meter is acquired). Per-axis history of when interactions snapshotted them is part of the brews-in-flight record (not duplicated here).
+4. **Equipment** (per 3.2). List of owned equipment items, each with: type ID, full property bag, current cleanliness state, decay counter, date acquired (used by the journal-as-memorial across prestige).
+5. **Inventory** (per 4.2 + Appendix A). Ingredient quantities (LME, hops by variety with freshness, yeast packets by strain, priming sugar, water chemistry additions); bottle counts (available / in-use); consumables (Star San, ice, towels, etc.).
+6. **Recipe knowledge** (per 2.4 + 3.6). Map of recipe IDs → unlocked + brewed-count + best-grade; player-invented recipes (full recipe definitions); the one pinned recipe that carries forward on prestige.
+7. **Brews in flight** (per 4.2 + 4.3 + 3.9). Active BrewState records: ID, recipe snapshot, equipment-used snapshots, current stage (brewing-day / fermenting / conditioning), per-stage outcomes from completed mini-games, **per-interaction skill snapshots (per #6)**, day-clock entry/exit timestamps per stage, accumulated risk profile, days elapsed in current stage, anomaly state attached to the brew.
+8. **Brewing journal** (per 1.5). Completed brew archive — every BrewState frozen with final grade + tasting notes + post-mortem narrative + NPC/competition feedback received. Past-breweries memorial section (read-only, persists across prestige per 2.4).
+9. **NPCs & relationships** (per 1.3 + 2.7). Per NPC: relationship meter, outstanding promises ("owes Marcus 6 bottles"), preference data. Conversation history is *summarized* state (last interaction, last branching choice taken, key flags) rather than full transcript. Post-prestige, home-destination NPCs may persist as long-distance contacts that text occasionally per 2.3.
+10. **Calendar / commitments** (per 4.7). Open commitments by type (5 categories from 4.7); past-commitment history kept for the journal/relationship record.
+11. **Phone & world state** (per 1.4). Forum threads read / unread / @-mentions; news articles surfaced and read; social account followers + posts; current trends (style + multiplier + window); regional water profile and other destination context; shop browsing cookies (last viewed items, etc.).
+12. **Anomaly / event RNG state.** World-day anomaly seeds so generated anomalies are deterministic per save (the cold-spot day from Appendix B Day 2 is generated against a saved seed, not re-rolled on reload); per-brew RNG state for in-flight drift rolls.
+
+### 8.2 The prestige boundary
+
+Each persistent field is tagged either `persists_across_prestige` or `per_career`. The split mirrors 2.4's table:
+
+**`persists_across_prestige`:**
+- Skill levels (with the 20%-of-levels-rounded-down penalty per 2.4)
+- Recipe knowledge (which styles are mastered — but re-brewed once to "prove" it again)
+- The one pinned recipe selected at prestige time
+- Past breweries journal/memorial (read-only)
+- Modest cash bonus ("you sold the brewery") — initial cash for the new career
+- One mid-tier piece of equipment chosen at prestige time
+- Prestige count
+
+**`per_career` (resets on prestige):**
+- Cash balance (replaced by the bonus above)
+- Equipment owned (except the one chosen item)
+- In-flight brews (ferment / condition all dropped)
+- Customer relationships in the destination being left
+- Recipe collection details (knowledge persists; specific saved variations don't)
+- Skill-gated unlock state (re-unlocked through play)
+- Open commitments
+- World state (trends, calendar, phone state for the abandoned destination)
+
+The home-destination NPCs are a special case (per 2.3): they may surface as long-distance contacts in the new destination — that's a small persistence carrying NPC IDs + summary relationship state, not the full per-NPC record.
+
+### 8.3 Save cadence
+
+- **Auto-save on every "Get some rest" tap** (the day-clock advance per 4.1 is a natural commit point).
+- **Auto-save on scene-pause boundaries** when the player closes the app or backgrounds it during an active scene (the scene-clock pauses cleanly per 4.1).
+- **No mid-scene saves required** — the scene clock is paused while the player is on a non-active screen anyway.
+- **No manual save slot management** per 2.1 (one save per device).
+- **Hard reset** (settings, double-confirmed per 2.1) wipes the per_career state and possibly the persists_across_prestige state too — TBD whether hard-reset preserves the prestige-count history or fully wipes; called out for Section 8's full pass to decide.
+
+### 8.4 Schema characteristics that constrain the tech pick
+
+The persistence technology decision (Godot Resources, JSON, SQLite, or a hybrid) is **not** made in this stub. It will be made in Section 8's full pass once these characteristics are weighed:
+
+- **Large + structured.** Twelve entity groups, several with relations (brews ↔ equipment-used snapshots; commitments ↔ NPCs; journal entries ↔ recipes).
+- **Journal grows monotonically.** Every completed brew adds an entry, never deleted. Over hundreds of brews, this could grow into the multi-megabyte range — relevant for whatever store we pick.
+- **Read-on-load, write-incrementally.** Most data is loaded once at game-start and updated by event. Not heavily transactional.
+- **Mix of small flat fields and structured records.** Settings, cash, skill levels are simple; brew archives and equipment property bags are nested.
+- **Deterministic replay friendly.** RNG state is part of the save, so "load this save and play forward" produces the same anomalies. This rules out tech choices that can't preserve seed state cleanly.
+- **Migration story matters.** Save format version is tracked from day one so future schema changes can migrate forward (a player who started on v0.2.10 should still be able to play on v0.5.x).
+
+The tech decision in Section 8's full pass weighs these characteristics against Godot 4.3's idiomatic options (Resource serialization, FileAccess + JSON, SQLite via GDExtension) and picks one. This stub commits to the schema shape; the next pass commits to the encoding.
 
 ---
 
@@ -1207,14 +1435,15 @@ That last one is the design's secret sauce. The player isn't waiting; they're ke
 What's landed so far:
 
 - Sections 0–3 (Vision, World, Player Journey, Brewing Mechanics)
-- Section 4.1–4.6 (Two clocks; concurrency + brewing-day-start rule + bottle inventory + checklist fan-out; conditioning model; triple-good keg unlock; first-brew onboarding window; per-brew real-time totals)
+- Section 4.1–4.7 (Two clocks; concurrency + brewing-day-start rule + bottle inventory + checklist fan-out; conditioning model; triple-good keg unlock; first-brew onboarding window; per-brew real-time totals; commitments and Calendar)
+- Section 8 (Save Schema Outline — entity groups, prestige boundary, save cadence, tech-pick constraints)
 - Appendices A and B
 
 Still queued, in roughly the order they need to land:
 
 - **Rest of Section 4 — Equipment scheduling rules, cleanliness state machine, anomaly generation.** Full equipment-as-scheduling-constraint specification (when slots clear, what shares with what, how cleaning state gates re-use). The cleanliness state machine for every piece of equipment. Anomaly generation rules (how the world decides "today, the radiator is off") and how those anomalies attach to in-flight brews.
-- **Section 5 — Economy & Progression.** Ingredient pricing, equipment cost curves, customer payouts, competition prizes, bankruptcy thresholds, trends-system mechanics.
+- **Section 5 — Economy & Progression.** Ingredient pricing, equipment cost curves, customer payouts, competition prizes, bankruptcy thresholds, trends-system mechanics. Builds on the "economy load-bearing from day one" decision in 2.6.
 - **Section 6 — UX/UI.** Dashboard layout, brewery view, phone overlay, time control, handbook, recipe view, mini-game scene templates.
 - **Section 7 — Technical Architecture.** Autoload inventory, scene graph, time service, content-pool generator, calendar service, save service.
-- **Section 8 — Save Schema.** What persists, table layout (or JSON shape), migration story, prestige reset semantics.
+- **Rest of Section 8 — Save Schema (full pass).** Persistence-tech pick, field-level schema, migration story, prestige reset implementation. Builds on the outline in 8.1–8.4.
 - **Section 9 — Mini-Game Build Plan.** All 12 v1 mini-games specified at Section-3.9 level of detail (sub-actions, drift formulas, downstream effects). Build order. v2+ mini-games queued.
