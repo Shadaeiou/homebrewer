@@ -22,7 +22,16 @@ fi
 
 if [ -d "$GODOT_DIR/addons/gut" ]; then
   echo "[dev-check] GUT tests"
-  (cd "$GODOT_DIR" && godot --headless -s addons/gut/gut_cmdln.gd -gtest=res://tests/ -gexit 2>&1) | tail -20
+  gut_log="$(mktemp)"
+  (cd "$GODOT_DIR" && godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests/ -ginclude_subdirs -gexit 2>&1) | tee "$gut_log" | tail -25
+  if grep -E '(failing|errors|risky):[[:space:]]+[1-9]' "$gut_log" >/dev/null; then
+    echo "[dev-check] FAIL: GUT reported test failures"
+    exit 1
+  fi
+  if ! grep -E '^Tests' "$gut_log" >/dev/null; then
+    echo "[dev-check] FAIL: GUT did not report a test run"
+    exit 1
+  fi
 else
   echo "[dev-check] GUT not installed yet — skipping tests"
 fi
