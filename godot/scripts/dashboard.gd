@@ -37,6 +37,7 @@ const BREW_DETAILS_MODAL     := preload("res://scenes/modals/brew_details.tscn")
 const MINIGAME_SCENES: Dictionary = {
 	"sanitize":       preload("res://scenes/minigames/sanitize.tscn"),
 	"fill_kettle":    preload("res://scenes/minigames/fill_kettle.tscn"),
+	"heat":           preload("res://scenes/minigames/heat.tscn"),
 	"add_lme":        preload("res://scenes/minigames/pour_lme.tscn"),
 	"boil_with_hops": preload("res://scenes/minigames/boil_with_hops.tscn"),
 	"cool_wort":      preload("res://scenes/minigames/cool_wort.tscn"),

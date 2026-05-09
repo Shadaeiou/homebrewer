@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.2.84",
+    "date": "2026-05-09",
+    "bullets": [
+      "Heat the kettle is a real close-up mini-game now: stove + kettle on burner cross-section, dial control with OFF/LOW/MED/HIGH, vertical thermometer with a highlighted target band at 160-170°F, hold-the-target meter at the top. Tap the dial to cycle settings; flame size scales with the position. Steam rises as the water heats; bubbles when boiling. Hold the temp in the band for 3 seconds to commit. Scorch risk if you push past 200°F.",
+      "Removed wizard chrome from the remaining mini-games (pour LME, boil with hops, cool wort, transfer + pitch). They no longer show \"Step N of M\" titles, instruction text, multi-radio button stacks, or optional-checkbox groups. Each shows a dark close-up backdrop with a single primary action button. The underlying outcome logic is unchanged so the existing tests still pass; richer interactive close-ups for these steps land next.",
+      "Pour LME got real hotspots: stove dial / spoon / LME tin laid out as three tap targets on the close-up. Order still matters (burner-off then stir then pour for an ideal result, scorch otherwise) — same logic, no wizard form."
+    ]
+  },
+  {
     "version": "0.2.83",
     "date": "2026-05-09",
     "bullets": [

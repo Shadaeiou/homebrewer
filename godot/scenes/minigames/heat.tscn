@@ -1,0 +1,54 @@
+[gd_scene load_steps=2 format=3 uid="uid://b8heatkettlehcwma"]
+
+[ext_resource type="Script" path="res://scripts/minigames/heat/heat.gd" id="1_heat"]
+
+[node name="Heat" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_heat")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.06, 0.06, 0.08, 1)
+
+[node name="StageView" type="Control" parent="."]
+unique_name_in_owner = true
+clip_contents = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="DialButton" type="Button" parent="StageView"]
+unique_name_in_owner = true
+layout_mode = 0
+flat = true
+focus_mode = 0
+modulate = Color(1, 1, 1, 0)
+
+[node name="TempLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -136.0
+offset_top = 64.0
+offset_right = -16.0
+offset_bottom = 100.0
+grow_horizontal = 0
+text = "70°F"
+theme_override_font_sizes/font_size = 28
+horizontal_alignment = 2
+modulate = Color(1, 1, 1, 0.95)

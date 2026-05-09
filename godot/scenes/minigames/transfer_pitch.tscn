@@ -11,70 +11,46 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_tp")
 
-[node name="Margin" type="MarginContainer" parent="."]
+[node name="Background" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 16
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_bottom = 16
+color = Color(0.06, 0.06, 0.08, 1)
 
-[node name="Stack" type="VBoxContainer" parent="Margin"]
-layout_mode = 2
-theme_override_constants/separation = 10
+[node name="HiddenForLogic" type="VBoxContainer" parent="."]
+visible = false
+layout_mode = 0
 
-[node name="StageTitle" type="Label" parent="Margin/Stack"]
+[node name="StageTitle" type="Label" parent="HiddenForLogic"]
 unique_name_in_owner = true
-layout_mode = 2
 text = "Transfer + pitch yeast"
-theme_override_font_sizes/font_size = 22
 
-[node name="Hint" type="Label" parent="Margin/Stack"]
-layout_mode = 2
-text = "Pour the wort into the bucket, top off if needed, then pitch the yeast. Splashy pours drive oxygen in; lazy sprinkles let yeast clump."
-theme_override_font_sizes/font_size = 12
-modulate = Color(0.78, 0.74, 0.70, 1)
-autowrap_mode = 3
-
-[node name="PourHeader" type="Label" parent="Margin/Stack"]
-layout_mode = 2
-text = "Transfer pour"
-theme_override_font_sizes/font_size = 14
-modulate = Color(0.96, 0.78, 0.32, 1)
-
-[node name="PourGroup" type="VBoxContainer" parent="Margin/Stack"]
+[node name="PourGroup" type="VBoxContainer" parent="HiddenForLogic"]
 unique_name_in_owner = true
-layout_mode = 2
-theme_override_constants/separation = 4
 
-[node name="PitchHeader" type="Label" parent="Margin/Stack"]
-layout_mode = 2
-text = "Pitch method"
-theme_override_font_sizes/font_size = 14
-modulate = Color(0.96, 0.78, 0.32, 1)
-
-[node name="PitchGroup" type="VBoxContainer" parent="Margin/Stack"]
+[node name="PitchGroup" type="VBoxContainer" parent="HiddenForLogic"]
 unique_name_in_owner = true
-layout_mode = 2
-theme_override_constants/separation = 4
 
-[node name="OptionsHeader" type="Label" parent="Margin/Stack"]
-layout_mode = 2
-text = "Optional"
-theme_override_font_sizes/font_size = 14
-modulate = Color(0.96, 0.78, 0.32, 1)
-
-[node name="OptionsGroup" type="VBoxContainer" parent="Margin/Stack"]
+[node name="OptionsGroup" type="VBoxContainer" parent="HiddenForLogic"]
 unique_name_in_owner = true
-layout_mode = 2
-theme_override_constants/separation = 4
 
-[node name="ConfirmButton" type="Button" parent="Margin/Stack"]
+[node name="ConfirmButton" type="Button" parent="."]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 48)
-layout_mode = 2
-text = "Confirm"
+custom_minimum_size = Vector2(220, 64)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -110.0
+offset_top = -32.0
+offset_right = 110.0
+offset_bottom = 32.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Transfer & pitch"
+theme_override_font_sizes/font_size = 18
