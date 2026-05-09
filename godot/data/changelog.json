@@ -1,5 +1,16 @@
 [
   {
+    "version": "0.2.69",
+    "date": "2026-05-09",
+    "bullets": [
+      "Fill Kettle is a real mini-game now — not a form. Apartment kitchen scene with the stockpot on the counter and a brass goose-neck faucet hanging above. Tap the faucet handle to start the water; tap again to stop. Water level rises in real time as the kettle fills.",
+      "Eyeballing-from-an-unmarked-stockpot is the load-bearing fiction: a faint gold target band shows roughly where 2½ gallons sits, but the band is wide because you're guessing. Stop too early or too late and your actual_volume drifts; the readout colors green/yellow/orange/red by how close you are.",
+      "Pour slowly + Double-check toggles still feed care factor. Tap-stopping the faucet multiple times is also recorded — careful work counts.",
+      "Procedurally drawn — palette + lighting from the kept POC, no sprite assets. The shared kitchen scene + procedural kettle + procedural faucet land here as reusable pieces; every other mini-game in the brewing day will graphify against them next.",
+      "The other six brewing-day stages still use the form-style placeholders for now. Pour LME is next on the list."
+    ]
+  },
+  {
     "version": "0.2.68",
     "date": "2026-05-09",
     "bullets": [

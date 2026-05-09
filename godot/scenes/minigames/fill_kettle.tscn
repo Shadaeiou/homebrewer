@@ -1,6 +1,9 @@
-[gd_scene load_steps=2 format=3 uid="uid://b8fillkettlehcwma"]
+[gd_scene load_steps=5 format=3 uid="uid://b8fillkettlehcwma"]
 
 [ext_resource type="Script" path="res://scripts/minigames/fill_kettle/fill_kettle.gd" id="1_fk"]
+[ext_resource type="Script" path="res://scripts/lib/kitchen_scene.gd" id="2_kitchen"]
+[ext_resource type="Script" path="res://scripts/lib/equipment/kettle_2d.gd" id="3_kettle"]
+[ext_resource type="Script" path="res://scripts/lib/equipment/faucet_2d.gd" id="4_faucet"]
 
 [node name="FillKettle" type="Control"]
 layout_mode = 3
@@ -11,82 +14,116 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_fk")
 
-[node name="Margin" type="MarginContainer" parent="."]
+[node name="Background" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 16
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_bottom = 16
+color = Color(0.07, 0.07, 0.09, 1)
 
-[node name="Stack" type="VBoxContainer" parent="Margin"]
-layout_mode = 2
-theme_override_constants/separation = 14
+[node name="Header" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = 96.0
+grow_horizontal = 2
+theme_override_constants/separation = 2
 
-[node name="StageTitle" type="Label" parent="Margin/Stack"]
+[node name="StageTitle" type="Label" parent="Header"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Fill kettle"
 theme_override_font_sizes/font_size = 22
 
-[node name="Hint" type="Label" parent="Margin/Stack"]
+[node name="Hint" type="Label" parent="Header"]
+unique_name_in_owner = true
 layout_mode = 2
-text = "Target: 2.5 gallons (partial-boil recipe). Top off in the fermenter later."
-theme_override_font_sizes/font_size = 12
+text = "Tap the faucet handle to start the water. Stop near the 2½ gallon band — eyeballing it from a stockpot, so you'll have to feel for it."
+theme_override_font_sizes/font_size = 11
 modulate = Color(0.78, 0.74, 0.70, 1)
 autowrap_mode = 3
 
-[node name="SourceHeader" type="Label" parent="Margin/Stack"]
-layout_mode = 2
-text = "Source"
-theme_override_font_sizes/font_size = 14
-modulate = Color(0.96, 0.78, 0.32, 1)
-
-[node name="SourceGroup" type="VBoxContainer" parent="Margin/Stack"]
+[node name="Readout" type="Label" parent="Header"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/separation = 4
+text = "0.00 / 2.5 gal"
+theme_override_font_sizes/font_size = 16
+horizontal_alignment = 1
 
-[node name="MethodHeader" type="Label" parent="Margin/Stack"]
-layout_mode = 2
-text = "Method"
-theme_override_font_sizes/font_size = 14
-modulate = Color(0.96, 0.78, 0.32, 1)
-
-[node name="MethodGroup" type="VBoxContainer" parent="Margin/Stack"]
+[node name="KitchenScene" type="Control" parent="."]
 unique_name_in_owner = true
-layout_mode = 2
-theme_override_constants/separation = 4
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 0.0
+offset_top = 110.0
+offset_bottom = 730.0
+grow_horizontal = 2
+script = ExtResource("2_kitchen")
 
-[node name="OptionalHeader" type="Label" parent="Margin/Stack"]
+[node name="Kettle" type="Control" parent="KitchenScene"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 28.0
+offset_top = 152.0
+offset_right = 272.0
+offset_bottom = 384.0
+script = ExtResource("3_kettle")
+
+[node name="Faucet" type="Control" parent="KitchenScene"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 110.0
+offset_top = 44.0
+offset_right = 230.0
+offset_bottom = 154.0
+script = ExtResource("4_faucet")
+
+[node name="Controls" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = -180.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 8
+
+[node name="OptionalHeader" type="Label" parent="Controls"]
 layout_mode = 2
 text = "Take your time?"
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 12
 modulate = Color(0.96, 0.78, 0.32, 1)
 
-[node name="SlowToggle" type="CheckBox" parent="Margin/Stack"]
+[node name="Toggles" type="HBoxContainer" parent="Controls"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="SlowToggle" type="CheckBox" parent="Controls/Toggles"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
 text = "Pour slowly"
 
-[node name="VerifyToggle" type="CheckBox" parent="Margin/Stack"]
+[node name="VerifyToggle" type="CheckBox" parent="Controls/Toggles"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
 text = "Double-check"
 
-[node name="Readout" type="Label" parent="Margin/Stack"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Method precision: 0.40 · target: 2.5 gal"
-theme_override_font_sizes/font_size = 12
-modulate = Color(0.65, 0.62, 0.58, 1)
-
-[node name="PourButton" type="Button" parent="Margin/Stack"]
+[node name="ConfirmButton" type="Button" parent="Controls"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
-text = "Pour"
+text = "Done filling"

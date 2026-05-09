@@ -46,10 +46,12 @@ func test_fill_kettle_emits_well_formed_outcome() -> void:
 	var fk: Control = FILL_KETTLE.instantiate()
 	add_child_autofree(fk)
 	await wait_frames(1)
+	# Simulate the player filling roughly to target before confirming.
+	fk._filled_gal = 2.5
 	# Watcher to capture the outcome.
 	var captured := [null]
 	fk.minigame_completed.connect(func(o): captured[0] = o)
-	fk._on_pour_pressed()
+	fk._on_confirm_pressed()
 	await wait_frames(1)
 	assert_not_null(captured[0], "fill_kettle should have emitted")
 	var outcome: Dictionary = captured[0]
@@ -60,6 +62,9 @@ func test_fill_kettle_emits_well_formed_outcome() -> void:
 	assert_true(outcome["actual"].has("water_volume_gal"))
 	assert_true(outcome["actual"].has("water_source"))
 	assert_true(outcome["actual"].has("method"))
+	# v3 visual mini-game records what the player stopped at, not just the drift.
+	assert_true(outcome["actual"].has("player_stopped_at"))
+	assert_true(outcome["actual"].has("flow_starts"))
 	# Skill snapshot covers all six axes.
 	for axis in SkillXP.SKILL_AXES:
 		assert_true(outcome["skill_snapshot"].has(axis))
