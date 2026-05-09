@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.2.50",
+    "date": "2026-05-09",
+    "bullets": [
+      "Dashboard now has a Start brewing button. Tap it to load the brewing-day scene with the Apartment Pale Ale recipe (the only style v1 ships with).",
+      "The brewing-day scene shows the seven stages of the brew (Sanitize · Fill kettle · Heat · Add LME · Boil with hops · Cool · Transfer + pitch) in a sidebar; each stage currently advances on a placeholder Continue button until the real mini-games land in the next builds.",
+      "Career bootstrap — fresh saves now include the Appendix A starter equipment (stove, stockpot, bucket fermenter, spoon, thermometer, capper, pitcher, funnel) and enough ingredients to brew the starter recipe. Existing in-progress saves migrate forward.",
+      "Save format bumped to v2 to carry the bootstrap. Cash, skills, and any in-flight brews are preserved across the migration."
+    ]
+  },
+  {
     "version": "0.2.32",
     "date": "2026-05-09",
     "bullets": [

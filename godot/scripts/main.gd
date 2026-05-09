@@ -32,11 +32,15 @@ func _ready() -> void:
 	# Phone + Modal layers start empty. They're owned by Main; specific
 	# UI flows add/remove children as needed and toggle get_tree().paused.
 
-func mount_active_scene(scene: PackedScene) -> Node:
-	## Helper for upcoming brew flow: instances `scene` under
-	## ActiveSceneContainer and starts the scene clock.
+func mount_active_scene(scene: PackedScene, configure: Callable = Callable()) -> Node:
+	## Helper for the brew flow: instantiates `scene`, runs the optional
+	## `configure(instance)` callable so callers can set fields BEFORE
+	## the node enters the tree (so its _ready sees them), then adds it
+	## under ActiveSceneContainer and starts the scene clock.
 	clear_active_scene()
 	var instance: Node = scene.instantiate()
+	if configure.is_valid():
+		configure.call(instance)
 	active_scene_container.add_child(instance)
 	TimeService.start_scene()
 	return instance

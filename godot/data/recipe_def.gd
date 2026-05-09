@@ -42,3 +42,29 @@ extends Resource
 @export var fermentation_days: int = 5
 @export var condition_days: int = 14
 @export var priming_sugar_oz: float = 5.0
+
+func to_snapshot() -> Dictionary:
+	## Frozen copy of the recipe for BrewState.recipe_snapshot — per 8.6,
+	## brews carry their own snapshot so later edits to the .tres can't
+	## retroactively change in-flight brew targets.
+	return {
+		"recipe_id": recipe_id,
+		"display_name": display_name,
+		"style": style,
+		"method": method,
+		"batch_size_gal": batch_size_gal,
+		"boil_volume_gal": boil_volume_gal,
+		"boil_minutes": boil_minutes,
+		"target_og": target_og,
+		"target_fg": target_fg,
+		"target_ibu": target_ibu,
+		"target_srm": target_srm,
+		"target_abv": target_abv,
+		"fermentables": fermentables.duplicate(true),
+		"hop_schedule": hop_schedule.duplicate(true),
+		"yeast": yeast.duplicate(true),
+		"fermentation_temp_c": fermentation_temp_c,
+		"fermentation_days": fermentation_days,
+		"condition_days": condition_days,
+		"priming_sugar_oz": priming_sugar_oz,
+	}

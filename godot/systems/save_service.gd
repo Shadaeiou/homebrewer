@@ -19,7 +19,7 @@ const SAVE_PATH := "user://save.json"
 const SAVE_TMP_PATH := "user://save.json.tmp"
 const JOURNAL_PATH := "user://journal.jsonl"
 
-const CURRENT_SAVE_VERSION := 1
+const CURRENT_SAVE_VERSION := 2
 
 func _ready() -> void:
 	# Wire auto-save triggers.
@@ -57,6 +57,11 @@ func load_now() -> void:
 	var save_dict: Dictionary = parsed
 	save_dict = _migrate_if_needed(save_dict)
 	GameState.adopt(save_dict)
+	# Defensive: a migration may have left fields the bootstrap fills out
+	# (equipment.owned, recipe_knowledge.known, inventory.ingredients) still
+	# empty if the v1 save predated those bootstrap helpers landing. Top
+	# them up from the bootstrap rather than wiping the player's progress.
+	_reseed_bootstrap_fields_if_empty()
 	load_completed.emit(true)
 
 func save_now() -> void:
@@ -145,16 +150,43 @@ func _notification(what: int) -> void:
 		save_now()
 
 func _migrate_if_needed(save_dict: Dictionary) -> Dictionary:
-	## One-way-forward migration registry per 8.9. Today there's only one version
-	## so this is a no-op except for tagging unlabelled saves as v1.
+	## One-way-forward migration registry per 8.9.
 	var pm: Dictionary = save_dict.get("player_meta", {})
 	var current_version: int = int(pm.get("save_format_version", 0))
 	while current_version < CURRENT_SAVE_VERSION:
-		# Future migrations land here:
-		#   match current_version:
-		#       0: save_dict = _migrate_v0_to_v1(save_dict)
+		match current_version:
+			0, 1:
+				# v1 → v2: the bootstrap helpers (_initial_equipment, etc.)
+				# weren't called when v1 saves were written, so equipment.owned,
+				# recipe_knowledge.known, and inventory.ingredients are empty.
+				# _reseed_bootstrap_fields_if_empty() (called after adopt)
+				# fills them from the .tres archetypes without touching cash,
+				# skills, brews-in-flight, or anything else the player earned.
+				pass
 		current_version += 1
 	if not save_dict.has("player_meta"):
 		save_dict["player_meta"] = {}
 	save_dict["player_meta"]["save_format_version"] = CURRENT_SAVE_VERSION
 	return save_dict
+
+func _reseed_bootstrap_fields_if_empty() -> void:
+	## Called after adopt(). For each field the v1 save may have left empty,
+	## fill from the v2 bootstrap. Never overwrites non-empty fields, so a
+	## player mid-career keeps their owned equipment / known recipes /
+	## ingredient inventory.
+	var equip: Dictionary = GameState.data.get("equipment", {})
+	if Dictionary(equip.get("owned", {})).is_empty():
+		equip["owned"] = GameState._initial_equipment()
+		GameState.data["equipment"] = equip
+	var knowledge: Dictionary = GameState.data.get("recipe_knowledge", {})
+	if Dictionary(knowledge.get("known", {})).is_empty():
+		knowledge["known"] = GameState._initial_recipe_knowledge()
+		GameState.data["recipe_knowledge"] = knowledge
+	var inv: Dictionary = GameState.data.get("inventory", {})
+	if Dictionary(inv.get("ingredients", {})).is_empty():
+		var seeded := GameState._initial_inventory()
+		inv["ingredients"] = seeded["ingredients"]
+		# Don't stomp bottles or consumables — those existed in v1.
+		if not inv.has("consumables") or Dictionary(inv["consumables"]).is_empty():
+			inv["consumables"] = seeded["consumables"]
+		GameState.data["inventory"] = inv

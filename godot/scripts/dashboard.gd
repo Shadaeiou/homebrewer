@@ -14,10 +14,16 @@ extends Control
 ## Dashboard, brewery view, and brewing-day surfaces will fill in as Section
 ## 6 (UX/UI) lands and as mini-games are built.
 
+const BREWING_DAY_SCENE := preload("res://scenes/brewing_day.tscn")
+
+const STARTER_RECIPE_ID := "apartment_pale_ale"
+
 @onready var day_label: Label = %DayLabel
 @onready var cash_label: Label = %CashLabel
 @onready var bottles_label: Label = %BottlesLabel
 @onready var rest_button: Button = %RestButton
+@onready var start_brewing_button: Button = %StartBrewingButton
+@onready var start_brewing_hint: Label = %StartBrewingHint
 @onready var version_label: Label = %VersionLabel
 @onready var update_banner: PanelContainer = %UpdateBanner
 @onready var update_label: Label = %UpdateLabel
@@ -27,6 +33,7 @@ extends Control
 func _ready() -> void:
 	version_label.text = Version.full()
 	rest_button.pressed.connect(_on_rest_pressed)
+	start_brewing_button.pressed.connect(_on_start_brewing_pressed)
 	Updater.update_available.connect(_on_update_available)
 	update_button.pressed.connect(Updater.install_update)
 	GameState.state_loaded.connect(_render_state)
@@ -60,6 +67,41 @@ func _render_state() -> void:
 		int(bottles.get("available", 0)),
 		int(bottles.get("in_use", 0)),
 	]
+	_render_start_brewing()
+
+func _render_start_brewing() -> void:
+	var issues: Array = GameState.start_brewing_issues(STARTER_RECIPE_ID)
+	# Disable + show why if there are blockers; otherwise enable + hide hint.
+	if issues.is_empty():
+		start_brewing_button.disabled = false
+		start_brewing_hint.visible = false
+	else:
+		start_brewing_button.disabled = true
+		start_brewing_hint.text = " · ".join(issues)
+		start_brewing_hint.visible = true
+
+func _on_start_brewing_pressed() -> void:
+	# Re-validate at click time — state may have changed since last render.
+	if not GameState.start_brewing_issues(STARTER_RECIPE_ID).is_empty():
+		_render_start_brewing()
+		return
+	var recipe: RecipeDef = load("res://data/recipes/%s.tres" % STARTER_RECIPE_ID)
+	var brew_id: String = GameState.make_brew_id()
+	var seed: int = int(GameState.data.get("rng_state", {}).get("next_brew_seed", 0))
+	var brew := BrewState.make_new(
+		brew_id,
+		STARTER_RECIPE_ID,
+		recipe.to_snapshot(),
+		TimeService.day_clock,
+		seed,
+	)
+	GameState.data["brews_in_flight"].append(brew)
+	# Roll the next brew seed so the seed actually changes between brews.
+	GameState.data["rng_state"]["next_brew_seed"] = randi()
+
+	var main := get_tree().root.get_node_or_null("Main")
+	if main and main.has_method("mount_active_scene"):
+		main.mount_active_scene(BREWING_DAY_SCENE, func(inst): inst.brew_id = brew_id)
 
 func _on_update_available(latest_name: String, latest_code: int, _release_url: String) -> void:
 	update_label.text = "Update available: v%s (build %d)" % [latest_name, latest_code]
