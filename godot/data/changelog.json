@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.2.76",
+    "date": "2026-05-09",
+    "bullets": [
+      "Faucet redrawn as a proper counter-mounted gooseneck. There's a brass base flange on the counter, a vertical riser, the gooseneck arches forward over the basin, and a short downturn-spout points into the kettle. A side-lever handle pivots when you toggle it on/off. No more floating-faucet-with-no-mount.",
+      "Kettle sits INSIDE the sink basin during fill. Bottom of the kettle is dropped below counter level so the basin rim wraps around it; reads like a stockpot in a sink, not a stockpot on a counter beside a hole.",
+      "Clock moved off the cabinet face. The kitchen clock now hangs on the bare wall above the bottling table; the wall calendar moved to the bare wall between the upper cabinets and the window.",
+      "Home view no longer auto-places a kettle on the counter. The room is empty by default — equipment will come from inventory when you tap a station (kettle into the sink, fermenter into the closet, etc.). The fill-kettle scene still places the kettle for now; full inventory-driven placement lands next."
+    ]
+  },
+  {
     "version": "0.2.75",
     "date": "2026-05-09",
     "bullets": [

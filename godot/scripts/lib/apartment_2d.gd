@@ -80,11 +80,12 @@ func tween_camera_to(parent: Tween, target: int, viewport_width: float, duration
 	var dest: Vector2 = camera_offset_for(target, viewport_width)
 	parent.tween_property(self, "position", dest, duration).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
 
-## Equipment scales: a 5-gal kettle is 12"×13" so 48×52 px on-screen.
-## The Kettle2D source sprite is drawn at 220×220 raw → scale ≈ 0.22.
-## A 12" gooseneck faucet is 48 px tall; Faucet2D raw is 110 → scale ≈ 0.44.
+## Equipment scales:
+##   Kettle2D source sprite is 220 raw px tall for a 12" object → 0.218 scale.
+##   Faucet2D source sprite is now drawn at display size (4 px = 1 inch
+##   already baked in), so its scale is 1.0 — no further adjustment.
 const KETTLE_SCALE: float = 12.0 * PX_PER_INCH / 220.0  # ≈ 0.218
-const FAUCET_SCALE: float = 12.0 * PX_PER_INCH / 110.0  # ≈ 0.436
+const FAUCET_SCALE: float = 1.0
 ## Effective on-screen kettle height/half-width (for placing it).
 const KETTLE_DRAWN_HEIGHT: float = 228.0 * KETTLE_SCALE
 const KETTLE_DRAWN_HALF_W: float = 110.0 * KETTLE_SCALE
@@ -104,15 +105,14 @@ func _ready() -> void:
 	faucet = Faucet2D.new()
 	faucet.name = "SinkFaucet"
 	faucet.scale = Vector2(FAUCET_SCALE, FAUCET_SCALE)
-	# Faucet placement: spout hangs over the sink basin (sink_anchor.x).
-	# Spout tip in raw-local coords = (40, 106); after scaling that's
-	# (17.4, 46.2). We want the spout 8px above where a full kettle's
-	# rim would be when held under it — kettle rim ≈ sink.y - 48 — so
-	# spout y ≈ sink.y - 56, faucet position.y ≈ sink.y - 102.
+	# Faucet base mounts on the counter behind the basin. With FAUCET_SCALE
+	# = 1.0, faucet local (MOUNT_X, MOUNT_Y) needs to land at world
+	# (sink.x, COUNTER_Y - small_offset). The small offset puts the base
+	# slightly behind the basin opening (toward the wall), not on top of it.
 	var sink_anchor: Vector2 = station_anchor(STATION_SINK)
 	faucet.position = Vector2(
-		sink_anchor.x - 40.0 * FAUCET_SCALE,
-		sink_anchor.y - 56.0 - 106.0 * FAUCET_SCALE,
+		sink_anchor.x - Faucet2D.MOUNT_X,
+		sink_anchor.y - Faucet2D.MOUNT_Y - 4.0,
 	)
 	add_child(faucet)
 	queue_redraw()
@@ -161,11 +161,13 @@ func _draw() -> void:
 	# Range hood above the stove.
 	_draw_range_hood(840.0)
 
-	# Wall clock above the sink area.
-	_draw_wall_clock(Vector2(640.0, CEILING_Y + 24.0 * PX_PER_INCH))
+	# Wall clock — on the bare wall above the bottling table (NOT on a
+	# cabinet face). Centered horizontally over the bottling table.
+	_draw_wall_clock(Vector2(360.0, COUNTER_Y - 32.0 * PX_PER_INCH))
 
-	# Wall calendar between closet and bottling table.
-	_draw_wall_calendar(Vector2(210.0, CEILING_Y + 30.0 * PX_PER_INCH))
+	# Wall calendar — on the wall to the right of the upper cabinets,
+	# between the cabinets and the window. Hung above counter level.
+	_draw_wall_calendar(Vector2(940.0, COUNTER_Y - 30.0 * PX_PER_INCH))
 
 	# Window on the far right (decor wall, sill above counter).
 	_draw_window(1080.0)

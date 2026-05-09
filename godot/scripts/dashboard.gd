@@ -82,16 +82,10 @@ func _mount_apartment() -> void:
 	_viewport.add_child(_apartment)
 	await get_tree().process_frame
 	_recenter()
-	# Persistent kettle on the counter at the sink station's rest spot
-	# (right of the basin, so it's not "in" the sink). When the player
-	# starts a brew, the kettle slides to the appropriate station.
-	_kettle = Kettle2D.new()
-	_kettle.name = "Kettle"
-	_apartment.add_child(_kettle)
-	_apartment.place_kettle_at_station(
-		_kettle, Apartment2D.STATION_SINK,
-		Vector2(Apartment2D.KETTLE_REST_OFFSET_X, 0),
-	)
+	# Home view shows the empty room — no equipment auto-placed. Tap a
+	# station to bring its inventory item into view (kettle into the
+	# basin, fermenter into the closet, etc.). Equipment placement is
+	# inventory-driven, not built into the room.
 	_compute_station_rects()
 
 func _compute_station_rects() -> void:

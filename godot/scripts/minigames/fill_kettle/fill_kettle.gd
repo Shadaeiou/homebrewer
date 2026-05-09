@@ -48,14 +48,20 @@ func _mount_apartment() -> void:
 	# wire interactions and place the kettle.
 	await get_tree().process_frame
 	_recenter_apartment()
-	# Drop a kettle on the counter at the sink station.
+	# Place the kettle INSIDE the sink basin (bottom dropped below counter
+	# level by ~half the basin depth, so the basin's rim reads around the
+	# kettle). The faucet's spout already lands above where the kettle's
+	# rim sits at this offset.
 	_kettle = Kettle2D.new()
 	_kettle.name = "Kettle"
 	_kettle.target_fraction = TARGET_GAL / MAX_GAL
 	_kettle.target_band_width = 36.0
 	_kettle.target_color = Color(Palette.ACCENT.r, Palette.ACCENT.g, Palette.ACCENT.b, 0.42)
 	_apartment.add_child(_kettle)
-	_apartment.place_kettle_at_station(_kettle, Apartment2D.STATION_SINK)
+	_apartment.place_kettle_at_station(
+		_kettle, Apartment2D.STATION_SINK,
+		Vector2(0, Apartment2D.SINK_BASIN_H * 0.5),
+	)
 	if _apartment.faucet != null:
 		_apartment.faucet.toggled.connect(_on_faucet_toggled)
 	# Re-center if the viewport gets resized (rotation, window resize, etc.).
