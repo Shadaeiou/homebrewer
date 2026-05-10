@@ -61,6 +61,23 @@ jobs:
           mv /tmp/templates/templates/* "$TARGET/"
           ls "$TARGET" | head -10
 
+      - name: Install dev-check dependencies (xvfb + GL for screenshot harness)
+        # xauth is needed by xvfb-run; without it the screenshot step in
+        # dev-check.sh fails with "xauth command not found".
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xvfb xauth libgl1-mesa-dri libglx-mesa0 libegl1 mesa-utils
+
+      - name: Static checks (dev-check.sh)
+        # Imports the project, runs the changelog-version check + GUT tests +
+        # screenshot harness. Runs BEFORE we sed-inject signing/version values
+        # so the check exercises the project as committed, not as built. If
+        # anything is red, the build below won't run — no broken APK ships.
+        env:
+          CI: "true"
+        run: bash scripts/dev-check.sh
+
       - name: Configure Godot editor settings (Android SDK + debug keystore)
         run: |
           # Godot's Android export validates that android_sdk_path and a debug_keystore

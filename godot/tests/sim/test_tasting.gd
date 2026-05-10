@@ -15,31 +15,40 @@ func _make_conditioning_brew(outcomes_overrides: Dictionary = {}) -> String:
 	b["stage"] = BrewState.STAGE_BOTTLED_CONDITIONING
 	b["days_elapsed_in_stage"] = 14
 
+	# Production code (dashboard._start_new_brew_and_open_first_step,
+	# heat._commit_outcome, etc.) ALWAYS attaches a real skill_snapshot
+	# to every outcome — the snapshot is what Grader.ceiling_for_relevant_skills
+	# consumes. An empty dict here would slip past that ceiling logic
+	# (Grader treats empty snapshots as "no data → no cap → A+"), and
+	# the fresh-career-caps-at-C assertion would silently lie. Snapshot
+	# the current skills (level 0 across the board for a fresh career).
+	var snap: Dictionary = SkillXP.snapshot(GameState.data["skills"])
+
 	# Default: an "ideal play" outcome chain — should grade well.
 	var default_outcomes := {
 		"sanitize":       {"actual": {}, "care_factor": 1.0, "risk_deltas": {},
-			"xp_gained": {}, "journal_notes": [], "skill_snapshot": {}},
+			"xp_gained": {}, "journal_notes": [], "skill_snapshot": snap},
 		"fill_kettle":    {"actual": {"water_volume_gal": recipe.boil_volume_gal,
 			"water_source": "tap", "method": "pitcher"},
 			"care_factor": 1.0, "risk_deltas": {}, "xp_gained": {},
-			"journal_notes": [], "skill_snapshot": {}},
+			"journal_notes": [], "skill_snapshot": snap},
 		"add_lme":        {"actual": {"sequence": ["burner_off", "stir", "lme_pour"],
 			"result": "IDEAL", "lme_dissolution": 1.0},
 			"care_factor": 1.0, "risk_deltas": {}, "xp_gained": {},
-			"journal_notes": [], "skill_snapshot": {}},
+			"journal_notes": [], "skill_snapshot": snap},
 		"boil_with_hops": {"actual": {"ibu_factor": 1.0, "volume_loss_gal": 0.0},
 			"care_factor": 1.0, "risk_deltas": {}, "xp_gained": {},
-			"journal_notes": [], "skill_snapshot": {}},
+			"journal_notes": [], "skill_snapshot": snap},
 		"cool_wort":      {"actual": {"path": "ice_bath", "final_temp_f": 70.0},
 			"care_factor": 1.0, "risk_deltas": {}, "xp_gained": {},
-			"journal_notes": [], "skill_snapshot": {}},
+			"journal_notes": [], "skill_snapshot": snap},
 		"transfer_pitch": {"actual": {"pour_quality": "gentle", "pitch_method": "rehydrate"},
 			"care_factor": 1.0, "risk_deltas": {}, "xp_gained": {},
-			"journal_notes": [], "skill_snapshot": {}},
+			"journal_notes": [], "skill_snapshot": snap},
 		"bottle":         {"actual": {"priming_method": "bulk", "fill_method": "funnel",
 			"carbonation_factor": 1.0},
 			"care_factor": 1.0, "risk_deltas": {}, "xp_gained": {},
-			"journal_notes": [], "skill_snapshot": {}},
+			"journal_notes": [], "skill_snapshot": snap},
 	}
 	for k in outcomes_overrides:
 		default_outcomes[k] = outcomes_overrides[k]
@@ -66,8 +75,11 @@ func test_ideal_play_yields_high_self_grade() -> void:
 	# But the drift_grade itself before ceiling should be A+ on ideal play.
 	# We assert via internal computation here that the unceilinged grade was
 	# at least A-.
-	var actuals := s._compute_actuals()
-	var grades := s._compute_grades(actuals)
+	# Explicit types: tasting.gd has no class_name, so `s` is typed as
+	# Control by _mount, and Godot 4.6's parser refuses to infer the
+	# return type of `s._compute_actuals()` through that loose receiver.
+	var actuals: Dictionary = s._compute_actuals()
+	var grades: Dictionary = s._compute_grades(actuals)
 	# After ceiling, fresh-career skills cap at C. Confirm that's what we see.
 	assert_eq(String(grades["self"]), "C",
 		"fresh-career skills cap the grade at C even with perfect drift")
@@ -80,7 +92,7 @@ func test_ideal_play_yields_high_self_grade() -> void:
 	# Re-stub each outcome's snapshot at level 25.
 	for k in s._brew["outcomes"]:
 		s._brew["outcomes"][k]["skill_snapshot"] = SkillXP.snapshot(GameState.data["skills"])
-	var grades2 := s._compute_grades(actuals)
+	var grades2: Dictionary = s._compute_grades(actuals)
 	assert_true(Grader.grade_index(grades2["self"]) >= Grader.grade_index("A-"),
 		"high-skill ideal play should grade at least A- self-grade")
 
@@ -121,6 +133,6 @@ func test_undissolved_lme_drops_og_and_drift_grade() -> void:
 	var s := _mount(brew_id)
 	await wait_frames(1)
 	# OG should be visibly off-target.
-	var actuals := s._compute_actuals()
+	var actuals: Dictionary = s._compute_actuals()
 	assert_lt(float(actuals["og"]), 1.045 - 0.005,
 		"undissolved LME pulls OG well below target")
