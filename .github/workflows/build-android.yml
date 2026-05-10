@@ -10,8 +10,8 @@ permissions:
   contents: write
 
 env:
-  GODOT_VERSION: "4.3"
-  GODOT_RELEASE: "4.3-stable"
+  GODOT_VERSION: "4.6.2"
+  GODOT_RELEASE: "4.6.2-stable"
 
 jobs:
   build:
@@ -137,6 +137,13 @@ jobs:
           if [ -d godot/android/build_overlay ]; then
             cp -r godot/android/build_overlay/. "$BUILD_DIR/"
           fi
+          # Stop Godot's resource scanner from descending into the gradle build
+          # dir during --import / --export-release. Without this it generates
+          # icon.webp.import sidecars inside res/mipmap-*/ which AAPT2 rejects
+          # ("file name must end with .xml or .png"), and recursively re-imports
+          # build/src/main/assets/ on rebuilds. The overlay also ships a
+          # .gdignore at its root so this is belt-and-suspenders.
+          touch "$BUILD_DIR/.gdignore"
           echo "--- our overlay files in build dir ---"
           find "$BUILD_DIR" -name '*.java' -path '*/shadaeiou/*' -o -name 'file_paths.xml' | sort
 

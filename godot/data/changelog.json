@@ -1,5 +1,12 @@
 [
   {
+    "version": "0.2.92",
+    "date": "2026-05-10",
+    "bullets": [
+      "Build pipeline back on Godot 4.6.2 with min Android 7.0 (API 24). The v0.2.88 force-close was tracked down to the in-app Java overlay (Firebase init, install handler) — its source files were laid out for the older Godot 4.3 build template, so Godot 4.6's gradle build never compiled them, and Android force-closed at launch trying to instantiate a class that wasn't in the APK. Overlay relocated to the layout the new build expects; locally verified the app boots past startup on a clean install."
+    ]
+  },
+  {
     "version": "0.2.89",
     "date": "2026-05-10",
     "bullets": [

@@ -106,9 +106,9 @@ See [`CLAUDE.md`](CLAUDE.md) for the rule that every player-visible commit must 
 
 ## Stack
 
-- Godot 4.3 (GDScript)
+- Godot 4.6.2 (GDScript)
 - compileSdk 34 (via Godot's Android export templates)
-- minSdk 21, targetSdk 34
+- minSdk 24 (Android 7.0), targetSdk 34 — Godot 4.6 raised the floor from 21
 - Java 17
 
 ## Caveats
