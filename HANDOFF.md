@@ -95,7 +95,6 @@ Each scene has: `Background ColorRect` + `StageView Control` (custom `_draw`) + 
 ### Existing infrastructure (untouched)
 - `godot/systems/save_service.gd`, `time_service.gd`, `updater.gd`, `palette.gd`, `lighting.gd`, `changelog.gd`, `version.gd`.
 - `godot/scripts/sim/` — `brew_state.gd`, `drift.gd`, `skill_xp.gd`, `grader.gd`, `care_factor.gd`, `risk_profile.gd`, `outcome.gd`, `time_service` etc. The math contract is unchanged.
-- `godot/scenes/brewing_day.tscn` + `godot/scripts/brewing_day.gd` — **deprecated but not deleted**. Scene tests (`test_brewing_day_scaffold.gd`) still reference it; dashboard no longer mounts it.
 
 ## Build sequence — what's left
 
