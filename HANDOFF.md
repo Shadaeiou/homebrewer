@@ -2,188 +2,114 @@
 
 This file is the current working state. Read this first, then [`DESIGN.md`](DESIGN.md), then [`CLAUDE.md`](CLAUDE.md), then continue.
 
-## Status (2026-05-09, post-0.2.68)
+## Status (2026-05-09, post-0.2.85)
 
-The full apartment-pale-ale **gameplay loop is reachable end-to-end** in form-style placeholder UIs. Steps 1–9 of the original build sequence are landed; Step 10 is partially landed; Step 11 is parked. The current priority is **Step 12 — real mini-games with graphics** (added below).
+The game has been **substantially rebuilt** since the original handoff. The form-style placeholders, brewing-day wizard wrapper, and dashboard landing page are all gone. Every brewing-day step is now a real interactive close-up scene. The home screen IS the apartment, with swipe-to-pan navigation across a 1620 px panorama and tap-to-act stations.
 
-**What's playable now:**
-- Phone overlay → Shop → buy ingredients with $30 against $51 list (canonical Appendix A trade-off).
-- Dashboard → Today checklist + morning summary; tap brew row → Check fermenter modal.
-- Start brewing → walk seven brewing-day stages (sanitize, fill kettle, heat placeholder, add LME, boil with hops, cool wort, transfer + pitch) → fermenting → bottle (24-bottle hard-block) → conditioning → pour & taste → grades + journal entry.
-- Brewery journal viewer.
-- Phone Messages with the Marcus cold-open thread + recipe card.
-- Save migration v1→v2; day_clock persists; dev "Reset save" button on the dashboard.
-- 133 GUT tests / 383 asserts green. 13 screenshot captures verified.
+**What's playable now (end-to-end real interactions):**
+
+- **Apartment as home view.** Pan left/right across one continuous panorama: front door (left) → bottling table (with shelf + journal + calendar) → kitchen counter (sink with brass gooseneck faucet, basin) → stove (with range hood) → bed under the bedroom window → closet (right). Real-world scale rule of 4 px = 1 inch is applied to every wall object.
+- **Tap stations to act.** Tap the sink with the kettle in inventory → fill kettle close-up. Tap the stove → heat the kettle. Tap the bottling table → transfer + pitch. Tap the bed → advance the day. Tap the closet → check fermenter. Tap the journal on the wall shelf → journal scene. Tap the front door → (placeholder; deliveries / bar / festivals coming).
+- **Inventory-driven station picker.** Tap a station with no active brew step → bottom-anchored modal lists items in your inventory that fit there.
+- **Active-brews HUD.** Sidebar list on the left shows every brew in flight with name + stage. Tap a card → BrewDetails modal shows ingredient list (green / red), step list (sanitize → fill → heat → add LME → boil → cool → transfer/pitch → ferment → bottle → condition → taste) with checkmarks + care-factor scores per completed step.
+- **Phone is the financial / settings surface.** Phone home shows bank balance in big gold type + bottle count. Apps grid: Messages, Shop, Settings. Settings holds the changelog scroll + Reset Save flow. (Forum, News, Calendar still placeholders.)
+- **Real interactive mini-games for every brewing-day step:**
+  - **Fill kettle** — cross-section close-up with cutaway side wall. Tap brass gooseneck faucet handle to toggle. Water enters the kettle with surface waves (sum-of-sines), splash particles at impact point, slosh decay after the tap shuts off. No target band — eyeball the level.
+  - **Heat** — stove with kettle on burner (cross-section), round dial cycling OFF/LOW/MED/HIGH. Flame size scales with dial; steam rises as it heats; bubbles when boiling. Vertical thermometer with target band highlighted at 160-170°F. Hold-the-target meter at top fills as you stay in band. Scorch tracked above 200°F.
+  - **Pour LME** — stove + kettle + spoon + LME tin as four hotspots. Tap dial → flame disappears. Tap spoon → kettle surface swirls. Tap LME tin → brown stream into kettle, tin empties, water turns wort-brown. Order matters (burner-off → stir → pour for ideal; wrong order = mild glob / scorch / catastrophic scorch).
+  - **Boil with hops** — real-time 28 s compressed boil. Brown wort + bubbles + foam. Three hop bags glow at their drop windows (60/15/0 min); tap each in window → animated bag falls into kettle. Boil-over event mid-boil: foam climbs, BOIL OVER warning, tap dial to lower heat. Flameout at end: tap dial to OFF.
+  - **Cool wort** — kettle in sink basin (cross-section). Tap faucet → cold water flows in basin + visible stream. Tap ice bags (3 available) → animated ice falls into kettle, instant temp drop. Press-and-hold spoon → stir, surface swirls, cooling rate boost. Thermometer drops from 210°F → 70°F target. Auto-resolves at target.
+  - **Transfer + pitch** — kettle (left) + fermenter bucket (right) + auto-siphon arch + funnel + yeast packet. Tap funnel to sanitize. Tap siphon → wort drops in kettle, rises in fermenter, brown wort visible flowing through tube. Yeast packet glows when transfer done; tap to pitch (yeast cloud appears on wort surface).
+- **Post-brew flow** still works (fermenting → bottling → conditioning → tasting → journal entry).
+- **Save migration** backfills `equipment` + `journal` keys for pre-equipment careers.
 
 **What's NOT real yet:**
-- Every brewing-day mini-game is a **form**, not a real mini-game. Radio buttons + checkboxes that satisfy the math contract (`Outcome` dict — actual / care / risk / xp / journal_notes / skill_snapshot) but not the gestures, timing, or visuals from DESIGN.md 3.9. **This is what Step 12 fixes.**
-- No anomalies / cleanliness state machine / equipment scheduling (Step 11).
-- No Forum / News / Calendar phone apps (Step 10 leftover).
-- No commitments (Marcus's party deadline, Mom's stout, etc).
-- No inventory consumption — one Shop trip carries arbitrarily many brews.
-- Only one recipe (Apartment Pale Ale). West Coast IPA + Dry Stout per 3.8 are unbuilt; the recipe-driven prereq walker (0.2.68) is ready to handle them.
+
+- **Sanitize step** is auto-completed when you start a brew (default care factor 0.7) — there's no dedicated mini-game for it. The wipe-down step felt too thin to be its own scene; re-add later if it earns its place.
+- **Front door** has a hotspot but tapping does nothing yet. Hooks for deliveries / going out to the bar / beer festivals (research) come later.
+- **No Forum / News / Calendar phone apps.**
+- **No commitments** (Marcus's party deadline, Mom's stout, etc.).
+- **No inventory consumption** — one Shop trip carries arbitrarily many brews.
+- **Only one recipe** (Apartment Pale Ale). West Coast IPA + Dry Stout per DESIGN.md 3.8 are unbuilt.
+- **No anomalies / cleanliness state machine / equipment scheduling** (Step 11 in the original sequence — still parked).
+
+## What changed since the original handoff (high-level)
+
+| Was | Now |
+|---|---|
+| Dashboard with "Today" checklist + Get-some-rest button + start-brewing button + changelog scroll | Apartment IS the dashboard. Day chip + Phone icon on HUD; everything else on the phone or in-world. |
+| Form-style mini-games (radio buttons, check toggles, "Confirm" CTA) | Real interactive close-ups for every brewing-day step. No wizard chrome. |
+| Brewing-day scene mounts each mini-game inside a "Step N of 7" wrapper | Brewing-day wizard is gone. Each station tap mounts ONE mini-game directly; player drives advancement by tapping the next station. |
+| Kettle tap → start brew → wizard runs through stages | Tap sink → picker → pick kettle → fill_kettle. After completion, return to apartment. Tap stove → heat. Etc. |
+| One small panorama with stations as separate scenes | Single 1620 px panorama (closet / bottling / sink / stove / bed / window / front door). Swipe to pan across; clamp at edges. |
+| HUD: title + day + cash + bottles + morning-summary + checklist + start-brewing + rest + journal + phone + dev-reset + changelog scroll | HUD: Day chip + Phone icon. That's it. |
+| Phone: Messages + Shop only | Phone home shows bank balance prominently. Adds Settings app (changelog + reset save). |
+| Journal accessed via HUD button | Journal is a physical green leather notebook on the wall shelf above the bottling table. Tap it. |
+| Equipment hardcoded on the canvas (kettle always on counter) | Equipment is inventory-driven. Tap sink → station picker → choose what to put there from your inventory. |
+| Faucet drawn as a wall-mounted bracket with no visible mount | Counter-mounted brass gooseneck: base flange + riser + arch + downturn-spout + side lever. |
+| Cabinet faces drawn with generic 24" doors all the way across | Real sink-base double-door under the basin (knobs facing inward, below the basin recess); over-sink upper cabinet matches the lower double width; alternating-side knobs for adjacent doors. |
+| Wall: empty | Wall clock between stove and window; wall calendar above bottling table (below the journal shelf); range hood above stove; baseboard along visible wall gaps. |
 
 ## Verification status
 
 `scripts/dev-check.sh` exits clean (Godot 4.6.2 import + 133/133 GUT tests + 13 screenshot captures). Run on Windows via the `godot` shim in `~/bin`; the Linux/CI path wraps in Xvfb. Screenshots in `screenshots/` reflect current state of every scene that matters.
 
-## Build sequence
+All sim tests for the brewing-day mini-games still pass — when the close-ups were rewritten, internal field contracts (`_heat`, `_selected_path`, `_option_toggles`, `_selected_pour`, `_selected_pitch`, etc.) were preserved so the unit tests that drive the controllers via private fields continue to work. The interactive UIs just drive those fields via taps now instead of radio buttons.
 
-In order. Don't skip; each step builds on the previous.
+## File map (what lives where)
 
-### 1. Validate the skeleton
+### Apartment + dashboard
+- `godot/scripts/lib/apartment_2d.gd` — single-file panorama draw. Holds `STATION_X` array (closet, bottling table, sink, stove, decor/window, bed, front door), `PX_PER_INCH = 4`, helpers like `place_kettle_at_station()` and `journal_rect_world()` and `bed_rect_world()`. Every wall object's draw helper is in here.
+- `godot/scenes/lib/apartment_2d.tscn` — wrapper. Auto-spawns the `Faucet2D` at the sink station.
+- `godot/scenes/dashboard.tscn` + `godot/scripts/dashboard.gd` — the home view. Mounts the apartment, computes hit-test rects, owns the gesture / pan / tap routing, holds the active-brews HUD, dispatches station taps to mini-games.
 
-```bash
-scripts/dev-check.sh
-```
+### Equipment (procedural, not sprites)
+- `godot/scripts/lib/equipment/kettle_2d.gd` — side-view stockpot with optional water level + target band.
+- `godot/scripts/lib/equipment/faucet_2d.gd` — counter-mounted brass gooseneck with toggleable water stream.
 
-Expected: import succeeds with no `SCRIPT ERROR` or `ERROR:` in the log; harness writes `screenshots/main.png` showing the dashboard (title "Homebrewer", "Day 0", "$30", "Bottles: 24 available · 0 in use", "Get some rest →" button, version label, changelog).
+### Brewing-day mini-games (real close-ups)
+- `godot/scenes/minigames/fill_kettle.tscn` + `godot/scripts/minigames/fill_kettle/fill_kettle.gd`
+- `godot/scenes/minigames/heat.tscn` + `godot/scripts/minigames/heat/heat.gd`
+- `godot/scenes/minigames/pour_lme.tscn` + `godot/scripts/minigames/pour_lme/pour_lme.gd`
+- `godot/scenes/minigames/boil_with_hops.tscn` + `godot/scripts/minigames/boil_with_hops/boil_with_hops.gd`
+- `godot/scenes/minigames/cool_wort.tscn` + `godot/scripts/minigames/cool_wort/cool_wort.gd`
+- `godot/scenes/minigames/transfer_pitch.tscn` + `godot/scripts/minigames/transfer_pitch/transfer_pitch.gd`
 
-If anything errors, fix in place. The most likely problems are GDScript 4.x syntax issues in the new autoload/sim files or the `@onready var` resolution in `dashboard.gd`.
+Each scene has: `Background ColorRect` + `StageView Control` (custom `_draw`) + invisible `Button` hotspots at specific positions over visual elements + a `HiddenForLogic` `VBoxContainer` that retains the named nodes the existing `.gd` logic reads (`StageTitle`, `_path_radios`, etc.) so sim tests still work.
 
-### 2. Vendor GUT and write the first sim tests
+### Modals
+- `godot/scenes/modals/station_picker.tscn` + `godot/scripts/modals/station_picker.gd` — bottom-anchored picker. Lists owned equipment compatible with a given station (driven by `EquipmentDefs`).
+- `godot/scenes/modals/brew_details.tscn` + `godot/scripts/modals/brew_details.gd` — opened from the active-brews HUD. Shows ingredient have/missing + step list with care-factor scores.
+- `godot/scenes/modals/check_fermenter.tscn` — existing closet check-in modal.
 
-```bash
-cd godot
-git clone https://github.com/bitwes/Gut.git addons/gut
-```
+### Inventory
+- `godot/scripts/lib/equipment_defs.gd` — `EquipmentDefs.DEFS` dict with `display`, `hint`, `stations` per item id (kettle_5gal, fermenter_bucket, bottling_bucket, bottle_capper, auto_siphon). `owned_at_station(station)` returns the items the player owns that fit there.
+- `godot/systems/game_state.gd` — `_initial_inventory()` seeds equipment + journal alongside ingredients, bottles, consumables.
+- `godot/systems/save_service.gd` — `_reseed_ingredients()` backfills `equipment` and `journal` keys for pre-equipment saves so existing careers see the new stuff.
 
-Then write tests under `godot/tests/sim/` (pure-domain, no scene tree):
+### Phone
+- `godot/scenes/phone/phone_overlay.tscn` + `godot/scripts/phone/phone_overlay.gd` — apps grid + home stats panel (big bank balance + bottle count).
+- `godot/scenes/phone/settings_app.tscn` + `godot/scripts/phone/settings_app.gd` — changelog scroll + reset save flow + version label.
+- `godot/scenes/phone/shop_app.tscn`, `messages_app.tscn`, `recipe_card.tscn` — existing.
 
-- `test_drift.gd` — `Drift.compute_actual()` returns within ~3σ of target for a known seed; `skill_factor_from_level()` clamps correctly at 0 and 30.
-- `test_skill_xp.gd` — `add_xp` levels up correctly; `apply_prestige_penalty` rounds 30 → 24, 7 → 5, 0 → 0.
-- `test_grader.gd` — `max_grade_for_level(0..30)` matches the table in 3.4; `compose_final("A+", "C")` returns "C"; `ceiling_for_relevant_skills` takes the worst across snapshots.
-- `test_care_factor.gd` — 0/N → 0.6; N/N → 1.0; midpoint linear.
-- `test_risk_profile.gd` — `add_deltas` clamps at 10; `is_critical` threshold check.
+### Existing infrastructure (untouched)
+- `godot/systems/save_service.gd`, `time_service.gd`, `updater.gd`, `palette.gd`, `lighting.gd`, `changelog.gd`, `version.gd`.
+- `godot/scripts/sim/` — `brew_state.gd`, `drift.gd`, `skill_xp.gd`, `grader.gd`, `care_factor.gd`, `risk_profile.gd`, `outcome.gd`, `time_service` etc. The math contract is unchanged.
+- `godot/scenes/brewing_day.tscn` + `godot/scripts/brewing_day.gd` — **deprecated but not deleted**. Scene tests (`test_brewing_day_scaffold.gd`) still reference it; dashboard no longer mounts it.
 
-These tests pin the math. Don't proceed to mini-games without them green.
+## Build sequence — what's left
 
-### 3. Define static-content Resource classes
+The original 1–11 build sequence is mostly landed or deprioritized. Step 12 (real mini-games) is **done for the apartment-pale-ale extract path**. What's open:
 
-Create GDScript `Resource` subclasses with `@export` properties (these are the static content from DESIGN.md 8.10):
-
-- `godot/data/recipe_def.gd` — class_name `RecipeDef extends Resource`. @export every field from 3.6's recipe schema (style, method, batch_size_gal, target_og, target_fg, target_ibu, target_srm, target_abv, fermentables array, hop_schedule array, yeast dict, ferment_temp_c, ferment_days, condition_days, priming_sugar_oz).
-- `godot/data/equipment_archetype.gd` — class_name `EquipmentArchetype extends Resource`. @export the property bag fields per 3.2.
-- `godot/data/style_profile.gd` — class_name `StyleProfile extends Resource`. @export BJCP-style guideline ranges (target_og_min/max, etc.) for use by `Grader` external evaluation per 3.6.
-
-Then create the first content files:
-
-- `godot/data/recipes/apartment_pale_ale.tres` (per 3.8 + Appendix A recipe card)
-- `godot/data/equipment/apartment_stockpot.tres` (per 3.2 example + Appendix A equipment table)
-- `godot/data/equipment/plastic_bucket_fermenter.tres`
-- `godot/data/equipment/bi_metal_thermometer.tres`
-- `godot/data/equipment/wing_capper.tres`
-- `godot/data/styles/american_pale_ale.tres`
-
-Add `tests/sim/test_recipe_def.gd` to confirm the .tres files load and have the expected fields.
-
-### 4. Recipe-bootstrap the GameState
-
-`GameState.reset_to_new_career()` currently leaves equipment + recipe_knowledge empty. Update it to load Appendix A's starter equipment from the .tres files and seed `recipe_knowledge.known["apartment_pale_ale"]` as unlocked.
-
-Add `tests/scene/test_save_round_trip.gd` that calls `reset_to_new_career()`, has `SaveService` write to a temp save file, loads it back into a fresh `GameState`, asserts equality. This pins the persistence contract.
-
-### 5. Brewing-day scene scaffold
-
-Create `godot/scenes/brewing_day.tscn` + `godot/scripts/brewing_day.gd`. Lives under `ActiveSceneContainer` (per 7.2). On mount:
-
-- Take `brew_id` and look up the brew from `GameState.data["brews_in_flight"]`.
-- Render the recipe's stage list as a sidebar (mash/boil/cool/...).
-- Slot for the current stage's mini-game scene to mount inside.
-- Listen for `minigame_completed(outcome)` signal from child mini-games; call `BrewState.record_outcome()` and advance to the next stage.
-- When all stages complete: transition the brew to "fermenting", call `Main.clear_active_scene()`, return to dashboard.
-
-### 6. Dashboard "Start brewing" button
-
-Add a button to `dashboard.gd` that:
-
-- Validates: at least one fermenter is free (per 4.2 brewing-day-start rule); ingredients in inventory; cash for any consumables.
-- Creates a fresh `BrewState` via `BrewState.make_new(...)` and pushes it onto `GameState.data["brews_in_flight"]`.
-- Calls `Main.mount_active_scene(BREWING_DAY_SCENE)`.
-
-Test: the button is disabled until conditions met; tapping it loads the brewing-day scene; closing the brewing-day scene returns to dashboard with the brew in flight.
-
-### 7. Fill Kettle mini-game v2 (the first concrete mini-game)
-
-Reimplement the prior proof-of-concept against the new contract per DESIGN.md 3.9 Mini-game #1:
-
-- Sub-actions per the spec (source choice + method choice + optional verify).
-- Outputs `Outcome` dict matching the universal scaffolding (`actual`, `care_factor`, `risk_deltas`, `xp_gained`, `journal_notes`, `skill_snapshot`).
-- Care factor from `CareFactor.from_breadth(actions_taken, actions_available)`.
-- Drift from `Drift.compute_actual(target=2.5, base_drift=0.5, ...)`.
-- Skill snapshot from `SkillXP.snapshot(GameState.data["skills"])`.
-
-The user already has good visual code for the kettle (the deleted `fill_kettle/kettle.gd` etc.). Pull the rendering / water-body / faucet visuals out of git history (look at SHA `4fa4a71` or earlier — pre-skeleton) for the pixel art and procedural drawing; rewrite the controller against the new mini-game contract.
-
-Add `tests/sim/test_outcome_shape.gd` to lint the Outcome dict shape.
-
-### 8. Stage placeholders → real mini-games
-
-Implement the rest of Mini-games #2-12 from DESIGN.md 3.9 in this order:
-
-- #4 Pour LME (the canonical procedure mini-game per 3.9 — implement procedure as a 4th interaction shape)
-- #5 Bring to Boil (recognition + dial)
-- #3 Boil + hops (mixed timing + decision)
-- #6 Pitch yeast
-- #5 Transfer to fermenter
-- #4 Cool wort
-- #11 Sanitize equipment
-- #10 Clean equipment (closes the cleanliness state machine — needs Section 4 rest-of-section to land first)
-- #8 Bottle fill
-- #9 Cap bottles
-- #12 Pour & taste
-- #2 Mash temp hold (deferred until all-grain unlocks; v1 starts extract-only per 3.8)
-
-Each mini-game gets its own subdirectory under `godot/scripts/minigames/<name>/` with a controller + visuals.
-
-### 9. Bottling day + tasting scenes
-
-Once Mini-game #5 (bottling) and #12 (tasting) land, add the bottling-day and tasting active scenes that orchestrate them. Tasting writes the completed `BrewState` as a journal entry via `SaveService.append_journal_entry()`.
-
-### 10. Fermentation day rhythm + Phone overlay
-
-The dashboard needs to handle Appendix B's day-by-day rhythm:
-
-- Daily checklist computed from active brews + pending commitments + maintenance state.
-- Morning summary card.
-- Phone overlay (`PhoneLayer`) with Messages, Forum, News, Calendar, Shop apps. Each is its own subscene under `scenes/phone/`.
-- Modal panels (`ModalLayer`) for "Check fermenter" perception, anomaly mitigation, decision dialogs.
-
-This is when DESIGN.md 5 (Economy) and 6 (UX/UI) start needing real numbers and layouts. Talk to the user before locking either.
-
-### 11. Rest of Section 4 (equipment scheduling + cleanliness state machine + anomalies)
-
-The cleanliness state machine and anomaly generation are gating later mini-games (the cold-spot day from Appendix B Day 2 needs `ContentPool` + anomaly seeds wired to the calendar). Spec these out *before* implementing the fermentation rhythm in step 10.
-
-### 12. Real mini-games — replace the form-style placeholders
-
-**Highest current priority.** The form-style mini-games shipped 0.2.32–0.2.67 satisfy the `Outcome` math contract but are nothing like the four shapes from DESIGN.md 3.9 — they're radio buttons and checkboxes. Each form has a real-graphics commit pending. The Outcome contract stays unchanged across the swap; only the input affordance + visuals change.
-
-**The "render pipeline" is Claude.** Per the `homebrewer_assets.md` memory: physical-scene art (kitchen, kettle, fermenter, faucet, water, foam, scorch, krausen) is built procedurally in Godot — `Polygon2D` + `Line2D` + `_draw()` overrides + `Tween` / `AnimationPlayer` + shaders. The kept POC files are reference: `scripts/lib/draw_helpers.gd`, `scripts/icons/procedural_*.gd`, `systems/palette.gd`, `systems/lighting.gd`, `scenes/components/post_process.tscn`, `shaders/post_process.gdshader`. Sprite PNGs under `assets/sprites/` are **icons only** — never use them for scene-scale art.
-
-**Order to graphify** (one mini-game per commit; ship + playtest each before moving on):
-
-1. **Fill Kettle** (skill: `process`, shape: skill challenge). Kitchen counter scene with stockpot + faucet (or jug placement). Tap faucet → water stream animation, kettle fills procedurally, water level rises with line marks if pitcher chosen. "Stop" commits actual_volume_gal; quality of stop timing → care factor. Deliverable: visible water in a visible kettle.
-2. **Pour LME** (skill: `process` + `temp_control`, shape: procedure). Stove + kettle on burner. Drag stove dial OFF, drag spoon → kettle (autonomous stir loop kicks in), drag LME tin → kettle (controlled-pour gesture). The spoon stirring loop is the canonical single-touch demo per 3.9. SCORCH visual when player gets the order wrong (kettle darkens, smoke effect).
-3. **Sanitize** (skill: `sanitation`, shape: job execution). Bucket fermenter on the counter. Drag sponge / sanitizer / drip-rack onto the bucket; visible state shifts (USED → SERVICEABLE → CLEAN → SANITIZED rendered as bucket cleanliness sheen).
-4. **Cool Wort** (skill: `temp_control`, shape: decision + skill). Sink with kettle in ice OR fermenter top-off. Real-time temp gauge falls; stir gesture maintains circulation.
-5. **Transfer + Pitch** (skill: `process` + `sanitation`, shape: skill). Drag-pour gesture from kettle to fermenter; pour smoothness scored. Yeast packet sprinkle gesture or rehydrate flow.
-6. **Boil + Hops** (skill: `timing`, shape: mixed timing + decision). The most ambitious — real-time scene over ~30 compressed seconds. Heat dial + visible foam climb + hot break recognition tap + hop drops at scheduled prompts + boil-over response window + flameout. Hooks into TimeService.start_scene + event_pending.
-7. **Bottling**. Priming sugar add → siphon flow → cap-by-cap visual.
-8. **Pour & taste**. Glass pour visual, color/clarity check based on actuals, head retention from carbonation.
-
-**Each mini-game commit ships:**
-- The new scene with procedural art (no sprite assets).
-- Replace the form scene in `MINIGAME_SCENES` registry (or in `dashboard.gd` for bottling/tasting).
-- Tests for the visual scene's gesture → outcome path.
-- A standalone screenshot capture in the harness.
-- A `brewing_day_<stage>.png` composite if the stage lives in brewing-day.
-- Changelog entry — player-visible.
-
-**Scaffolding to land first** (one prep commit before mini-games start):
-- A `kitchen_scene.gd` shared visual root that draws the apartment kitchen background (counter, stove, sink, shelf) procedurally. Each brewing-stage mini-game mounts equipment over this background.
-- A small gesture-quality helper: smoothness + speed + arc scoring for drag inputs. Reusable across pour-style mini-games.
-- A `palette.gd` audit — the kept palette is the source of truth for color choices.
+1. **Recipe-from-journal flow.** The user wants to tap the journal → see recipes → pick one → it starts a brew. Right now starting a brew goes through the sink picker. Wire the journal to be the recipe-selection surface.
+2. **Sanitize as a real mini-game** (low priority — currently auto-completed).
+3. **Front-door interactions.** Deliveries (UPS dropping ingredients), going out to the bar (research / relationships), beer festivals (research / inspiration). Picker with "going out?" options.
+4. **Forum / News / Calendar phone apps** (Step 10 leftover). News drives the trends-and-opportunities flow per DESIGN.md.
+5. **Inventory consumption.** Brewing should DEDUCT ingredients from inventory. Currently doesn't.
+6. **More recipes.** West Coast IPA + Dry Stout per DESIGN.md 3.8.
+7. **Anomalies + cleanliness state machine + equipment scheduling** (Step 11 in the original sequence — still parked).
+8. **Bottling close-up rewrite.** Bottling still uses the older (somewhat wizardy) flow. Convert to a real close-up like the brewing-day steps.
+9. **Tasting close-up.** Same — convert to a real glass-pour interaction.
 
 ## Open questions punted to playtest
 
@@ -196,6 +122,7 @@ These have placeholder numbers in DESIGN.md and the code; tune in playtest, don'
 - `RiskProfile.is_critical` threshold (currently 7.0/10).
 - Skill-level → grade-ceiling table in `Grader` (currently 0→C, 5→B, 10→A-, 15→A, 20→A+).
 - `Drift` factors min/max bounds.
+- Care factor for auto-completed sanitize (currently 0.7 — placeholder).
 
 ## Repo rules (don't break)
 
@@ -210,17 +137,27 @@ Per `CLAUDE.md`:
 
 ## Pushing to main
 
-Local Claude on the user's physical PC pushes directly with `git push origin main`. No proxy / no MCP fallback needed in that environment. (Cloud / sandbox sessions may have a 403 proxy issue with `CCR_TEST_GITPROXY=1`; if you hit that, fall back to `mcp__github__push_files` per file.)
+Local Claude on the user's physical PC pushes directly with `git push origin main`. No proxy / no MCP fallback needed.
 
 ## Things a fresh Claude should NOT do
 
-- Try to recover the proof-of-concept brew flow from before commit `f03e105`. It was intentionally removed because it didn't conform to the new contract; rebuild against Sections 7 + 8 instead.
-- Add `BrewSession` or `Recipes` autoloads back. They're replaced by `GameState` + Resource files.
+- Reintroduce the brewing-day wizard wrapper. Each station tap mounts a single mini-game directly; the player drives advancement.
+- Reintroduce form-style placeholder mini-games. Every brewing-day step is now a real close-up; if you add a new step, build a real interactive close-up for it.
+- Add a HUD landing page or dashboard checklist back. The apartment IS the home screen.
 - Push to feature branches. Use `main` only.
 - Touch the keystore or signing config without an explicit user instruction.
 - Decide design questions that are deferred in DESIGN.md without asking the user. The design has been hard-fought; respect what's locked.
-- Delete or "clean up" the four kept proof-of-concept files: `palette.gd`, `lighting.gd`, `scripts/icons/*`, `scripts/lib/draw_helpers.gd`, `scenes/components/post_process.tscn`, and the FCM/updater stack. These survived the architecture rebuild on purpose.
 
 ## When you finish reading this
 
-Confirm to the user that you're up to speed, then continue on Step 12 (real mini-games). Steps 1–11 are either landed or deprioritized; the priority now is replacing form-style placeholders with real procedural-graphics + gesture mini-games per Step 12's order. Don't start writing new code until `dev-check.sh` is green.
+Confirm to the user that you're up to speed, then ask which of the open items they want next:
+
+1. Recipe-from-journal flow
+2. Front-door interactions (deliveries / bar / festivals)
+3. Forum / News / Calendar phone apps
+4. Inventory consumption
+5. More recipes (West Coast IPA, Dry Stout)
+6. Anomalies / cleanliness state machine
+7. Bottling + tasting close-up rewrites
+
+Don't start writing code until `scripts/dev-check.sh` is green.

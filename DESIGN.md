@@ -78,20 +78,26 @@ Additional NPCs unlock as the player progresses (local bar owner, brewing club m
 
 ### 1.4 Phone Interface
 
-The phone is the central UI surface. **Always accessible** from the dashboard via a phone icon at the bottom of the screen. Tapping opens an overlay shaped like a phone screen with apps:
+The phone is the central UI surface for **anything that isn't a physical action in the apartment**. Always accessible from the apartment via a phone icon in the top-right HUD. Tapping opens an overlay shaped like a phone screen.
+
+The phone home screen leads with the player's bank balance in big gold type and bottle count below — that's the screen the player checks before deciding what to spend, and it's where they shop. Below the stats is the apps grid:
 
 - **Messages** — text threads with NPCs. Replies are choice-based (pick from 2–3 options). Each conversation can affect relationship meters; choices have small consequences.
-- **Social** — your brewery's social-media account. Compose posts about brews (image generated procedurally from the brew's data — bottle render, style tag, color from SRM). Posts can hype upcoming releases and grow followers. Late game: collabs, viral moments, influencers.
-- **News** — read-only feed. Trend signals ("Hazy IPAs trending"), competition announcements, supplier promotions, regulatory news. This is the source for opportunities.
-- **Email** — formal correspondence. Bulk customer orders with deadlines, competition entry confirmations, supplier invoices, angel-investor offers in bankruptcy moments.
-- **Forums** — recipe browsing, brewing-tip reading (Knowledge XP), recipe purchase. Drives recipe collection growth.
 - **Shop** — the homebrew supply store. Ingredients, equipment, consumables. Some items unlock only after relevant News articles or Forum threads appear.
-- **Calendar** — upcoming events: customer order deadlines, competitions, social commitments. Drives long-term planning.
-- **Journal** — your brewing log. Every brew is recorded with its outcomes, ratings, and post-mortem reflections.
+- **Settings** — changelog scroll + Reset Save flow + version label. *Implemented.*
+- **Social** *(planned)* — your brewery's social-media account. Compose posts about brews (image generated procedurally from the brew's data — bottle render, style tag, color from SRM). Posts can hype upcoming releases and grow followers. Late game: collabs, viral moments, influencers.
+- **News** *(planned)* — read-only feed. Trend signals ("Hazy IPAs trending"), competition announcements, supplier promotions, regulatory news. This is the source for opportunities.
+- **Email** *(planned)* — formal correspondence. Bulk customer orders with deadlines, competition entry confirmations, supplier invoices, angel-investor offers in bankruptcy moments.
+- **Forums** *(planned)* — recipe browsing, brewing-tip reading (Knowledge XP), recipe purchase. Drives recipe collection growth.
+- **Calendar** *(planned)* — upcoming events: customer order deadlines, competitions, social commitments. Drives long-term planning.
+
+Critically: the **brewing journal is NOT a phone app**. It's a physical green leather notebook on a wall shelf above the bottling table inside the apartment — see 1.5.
 
 The phone is never *modal* in a way that blocks brewing actions. You can pull it up between sub-actions of a mini-game without losing state. (Implementation note: the phone is a `CanvasLayer` overlay above gameplay scenes; gameplay pauses while it's open.)
 
 ### 1.5 The brewery journal
+
+The journal is a **physical object in the apartment** — a green leather notebook standing on a wall shelf above the bottling table. The player taps it to open the journal scene. Discovered recipes, brew log entries, and post-mortems live inside. It's the only thing in the player's life that doesn't go on the phone — the journal is the brewer's working tool, and they take it with them everywhere they take their craft.
 
 Every brew you complete is logged with:
 - Recipe used
@@ -104,6 +110,8 @@ Every brew you complete is logged with:
 - Tasting notes (what NPCs said, what competitions said)
 
 The journal is browsable. It's the player's history and self-evaluation tool. It also surfaces *what you missed* during the brew — the cold spot you didn't notice on Day 3 of fermentation shows up in the post-mortem along with its consequence ("attenuation 3% lower than recipe target — that cold snap on day 3 stalled the yeast briefly").
+
+The journal also doubles as the **recipe browser**. Discovered recipes get pages; tapping a recipe page is the entry point to start a brew of that recipe (planned — currently brews start from the sink picker).
 
 This is a teaching mechanism. The journal makes you better.
 
@@ -535,6 +543,8 @@ These three styles cover three distinct lessons. v1 ships with no others. Lagers
 
 ### 3.9 v1 Mini-Game Catalog
 
+> **Implementation status (2026-05-09):** Every brewing-day mini-game (#1, #3, #4, #5, #6) is implemented as a real interactive close-up — cross-section visuals, hotspots over equipment, animated water/foam/steam/flame/wort, no wizard form chrome. See HANDOFF.md for the per-game breakdown. Bottling (#8/#9) and tasting (#12) still use the older flow and are scheduled for the same close-up rewrite next. Sanitize (#11) is auto-completed when a brew starts (default 0.7 care factor) — re-add as a real mini-game if it earns its place. Mash (#2) is gated on all-grain unlock and remains unbuilt for v1.
+
 Twelve mini-games covering the apartment-scale brewing arc end-to-end. Four shapes, distinguished by what the player is *doing*:
 
 - **Skill challenges** — your hands' precision matters in real-time (gesture quality, timing precision).
@@ -877,19 +887,34 @@ A single persistent `Main.tscn` is the runtime root:
 ```
 Main (Node)
 ├── BackgroundLayer (CanvasLayer, layer=0)
-│   └── Dashboard.tscn        # apartment view; persistent across all states
-├── ActiveSceneContainer (Node)
-│   └── (current brewing-day / bottling-day / tasting / mini-game scene; or empty)
+│   └── Dashboard.tscn        # apartment view; the home screen and persistent under everything
+├── ActiveSceneContainer (CanvasLayer, layer=10)
+│   └── (current mini-game scene; or empty)
 ├── PhoneLayer (CanvasLayer, layer=50)
-│   └── Phone.tscn            # hidden when not in use; pauses gameplay when shown per 1.4
+│   └── PhoneOverlay.tscn     # hidden when not in use; pauses gameplay when shown per 1.4
 ├── ModalLayer (CanvasLayer, layer=100)
-│   └── (perception panel, anomaly mitigation, decision dialog, NPC text thread, or empty)
+│   └── (station picker, brew details, check-fermenter, reset confirm, or empty)
 └── BootSequence (Node)        # version check, save load, splash; frees itself after handoff
 ```
 
-The Dashboard in BackgroundLayer is **always present**. When `ActiveSceneContainer` has a child, that child renders on top of the dashboard (the dashboard is still alive but not interactive). Phone and Modal layers are CanvasLayers above gameplay; when shown, the layer below is paused via `process_mode = PROCESS_MODE_DISABLED` propagation, enforcing 1.4's "phone is never modal in a way that blocks brewing actions, but gameplay pauses while it's open."
+**Dashboard IS the apartment view.** The dashboard scene mounts a `Apartment2D` panorama (1620 px wide × 620 px tall) that the player swipes left/right to pan across. The HUD is intentionally minimal: a "Day N" chip top-left, a Phone icon top-right. Everything else lives in the apartment itself: a brew-list sidebar shows active brews, the journal is a physical notebook on the wall shelf, money is on the phone, etc. The dashboard is **always present** — when `ActiveSceneContainer` has a child (a mini-game close-up), the close-up renders on top.
 
-Mini-game scenes live under `ActiveSceneContainer` and conform to the universal scaffolding from 3.9: they take BrewState + equipment + skills as input, produce an `Outcome` dict on completion, and emit `minigame_completed(outcome: Dictionary)` for the parent (brewing-day scene) to receive.
+**No "wizard" wrapper.** The brewing-day flow used to be a step-by-step wrapper that mounted each mini-game inside a "Step N of 7" sidebar with a Close button. That wrapper is gone. Instead: each station tap on the dashboard finds the active brew's current step, decides whether the tapped station is responsible for that step, and mounts the appropriate mini-game scene **directly** under `ActiveSceneContainer`. When the mini-game emits `minigame_completed(outcome)`, the dashboard records the outcome on the brew, advances the step, and clears the active scene — returning the player to the apartment so they can tap the next station themselves. The player drives the order of operations.
+
+**Station ↔ step mapping:**
+
+- **Sink** → sanitize (auto-completed currently), fill_kettle, cool_wort
+- **Stove** → heat, add_lme, boil_with_hops
+- **Bottling table** → transfer_pitch (and bottling, when its close-up rewrite lands)
+- **Closet** → check fermenter / conditioning rack (modal)
+- **Bed** → advance the day clock
+- **Journal (wall shelf)** → journal scene (recipes + brew log)
+- **Phone icon** → phone overlay (financial, settings, shop)
+- **Front door** → going-out interactions (planned)
+
+Phone and Modal layers are CanvasLayers above gameplay; when shown, the layer below is paused via `get_tree().paused = true`, enforcing 1.4's "phone is never modal in a way that blocks brewing actions, but gameplay pauses while it's open."
+
+Mini-game scenes conform to the universal scaffolding from 3.9: they take BrewState + equipment + skills as input, produce an `Outcome` dict on completion, and emit `minigame_completed(outcome: Dictionary)` for the dashboard to receive.
 
 ### 7.3 TimeService
 
