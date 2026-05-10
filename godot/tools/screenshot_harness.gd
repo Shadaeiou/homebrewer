@@ -28,7 +28,7 @@ const SCENES := [
 		"frames": 5, "props": {"initial_stage_index": 3}},
 	{"name": "apartment_panorama", "path": "res://scenes/lib/apartment_2d.tscn", "frames": 5},
 	{"name": "fill_kettle", "path": "res://scenes/minigames/fill_kettle.tscn", "frames": 12},
-	{"name": "pour_lme", "path": "res://scenes/minigames/pour_lme.tscn", "frames": 5},
+	{"name": "add_lme", "path": "res://scenes/minigames/add_lme.tscn", "frames": 5},
 	{"name": "sanitize", "path": "res://scenes/minigames/sanitize.tscn", "frames": 5},
 	{"name": "cool_wort", "path": "res://scenes/minigames/cool_wort.tscn", "frames": 5},
 	{"name": "boil_with_hops", "path": "res://scenes/minigames/boil_with_hops.tscn", "frames": 5},

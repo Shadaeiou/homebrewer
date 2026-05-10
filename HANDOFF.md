@@ -70,7 +70,7 @@ All sim tests for the brewing-day mini-games still pass — when the close-ups w
 ### Brewing-day mini-games (real close-ups)
 - `godot/scenes/minigames/fill_kettle.tscn` + `godot/scripts/minigames/fill_kettle/fill_kettle.gd`
 - `godot/scenes/minigames/heat.tscn` + `godot/scripts/minigames/heat/heat.gd`
-- `godot/scenes/minigames/pour_lme.tscn` + `godot/scripts/minigames/pour_lme/pour_lme.gd`
+- `godot/scenes/minigames/add_lme.tscn` + `godot/scripts/minigames/add_lme/add_lme.gd`
 - `godot/scenes/minigames/boil_with_hops.tscn` + `godot/scripts/minigames/boil_with_hops/boil_with_hops.gd`
 - `godot/scenes/minigames/cool_wort.tscn` + `godot/scripts/minigames/cool_wort/cool_wort.gd`
 - `godot/scenes/minigames/transfer_pitch.tscn` + `godot/scripts/minigames/transfer_pitch/transfer_pitch.gd`

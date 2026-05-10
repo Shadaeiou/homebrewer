@@ -45,7 +45,7 @@ const ALL_GRAIN_PREFIX := [
 const MINIGAME_SCENES := {
 	"sanitize":       preload("res://scenes/minigames/sanitize.tscn"),
 	"fill_kettle":    preload("res://scenes/minigames/fill_kettle.tscn"),
-	"add_lme":        preload("res://scenes/minigames/pour_lme.tscn"),
+	"add_lme":        preload("res://scenes/minigames/add_lme.tscn"),
 	"boil_with_hops": preload("res://scenes/minigames/boil_with_hops.tscn"),
 	"cool_wort":      preload("res://scenes/minigames/cool_wort.tscn"),
 	"transfer_pitch": preload("res://scenes/minigames/transfer_pitch.tscn"),

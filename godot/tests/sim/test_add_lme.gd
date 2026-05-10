@@ -4,7 +4,7 @@ extends GutTest
 ## Step 4. The four sequence categories must produce distinct outcomes,
 ## and the emitted Outcome dict must satisfy the universal contract.
 
-const SCENE := preload("res://scenes/minigames/pour_lme.tscn")
+const SCENE := preload("res://scenes/minigames/add_lme.tscn")
 
 func _mount() -> Control:
 	GameState.reset_to_new_career()
