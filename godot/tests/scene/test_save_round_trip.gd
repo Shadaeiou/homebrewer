@@ -15,11 +15,15 @@ func _parse(s: String) -> Dictionary:
 func before_each() -> void:
 	GameState.reset_to_new_career()
 
-func test_fresh_career_seeds_8_starter_equipment() -> void:
-	# Per Appendix A: stove + stockpot + bucket + spoon + thermometer +
-	# capper + pitcher + funnel = 8 archetypes.
+func test_fresh_career_seeds_starter_equipment() -> void:
+	# Appendix A's "Equipment present at start" table is 8 items: stove,
+	# stockpot, bucket, spoon, thermometer, capper, pitcher, funnel.
+	# bottling_bucket and auto_siphon are also seeded so the bottling-day
+	# flow has something to mount; they're listed under "Notable absences"
+	# in the design, scheduled to become Shop-only once Shop consumption
+	# lands. Spec deviation tracked for resolution.
 	var owned: Dictionary = GameState.data["equipment"]["owned"]
-	assert_eq(owned.size(), 8, "8 starter equipment instances")
+	assert_eq(owned.size(), 10, "10 starter equipment instances (8 per Appendix A + 2 transitional)")
 	for instance_id in owned.keys():
 		var inst: Dictionary = owned[instance_id]
 		assert_true(inst.has("archetype_id"))
@@ -49,11 +53,12 @@ func test_save_round_trip_preserves_top_level_groups() -> void:
 func test_save_round_trip_preserves_starter_equipment_ids() -> void:
 	var loaded := _parse(_serialize())
 	var owned: Dictionary = loaded["equipment"]["owned"]
-	assert_eq(owned.size(), 8)
+	assert_eq(owned.size(), 10)
 	for expected_id in ["apartment_stove_1", "apartment_stockpot_1",
 						"plastic_bucket_fermenter_1", "long_plastic_spoon_1",
 						"bi_metal_thermometer_1", "wing_capper_1",
-						"measuring_pitcher_1", "funnel_1"]:
+						"measuring_pitcher_1", "funnel_1",
+						"bottling_bucket_1", "auto_siphon_1"]:
 		assert_true(owned.has(expected_id), "missing %s after round trip" % expected_id)
 
 func test_save_round_trip_preserves_recipe_knowledge() -> void:

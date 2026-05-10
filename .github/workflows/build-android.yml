@@ -10,8 +10,8 @@ permissions:
   contents: write
 
 env:
-  GODOT_VERSION: "4.3"
-  GODOT_RELEASE: "4.3-stable"
+  GODOT_VERSION: "4.6"
+  GODOT_RELEASE: "4.6.2-stable"
 
 jobs:
   build:
@@ -60,6 +60,19 @@ jobs:
           unzip -q /tmp/templates.tpz -d /tmp/templates
           mv /tmp/templates/templates/* "$TARGET/"
           ls "$TARGET" | head -10
+
+      - name: Install dev-check dependencies (xvfb + GL for screenshot harness)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xvfb libgl1-mesa-dri libglx-mesa0 libegl1 mesa-utils
+
+      - name: Static checks (dev-check.sh)
+        # Imports the project, runs GUT tests, renders the screenshot harness.
+        # Runs BEFORE we sed-inject signing/version values so the check exercises
+        # the project as committed, not as built. If anything is red, the build
+        # below won't run — no broken APK ships.
+        run: bash scripts/dev-check.sh
 
       - name: Configure Godot editor settings (Android SDK + debug keystore)
         run: |

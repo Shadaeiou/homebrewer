@@ -1,5 +1,13 @@
 [
   {
+    "version": "0.2.87",
+    "date": "2026-05-10",
+    "bullets": [
+      "Equipment picker labels are honest now: tap the sink and you see your specific kettle (\"Apartment Stockpot\") instead of a generic role (\"5 gal kettle\"). Same kettle, name that matches the one your future upgrade will replace.",
+      "Bottling bucket and auto-siphon are now real items in your inventory rather than picker-only labels — they show up at the bottling table and the closet by their proper names."
+    ]
+  },
+  {
     "version": "0.2.85",
     "date": "2026-05-09",
     "bullets": [
