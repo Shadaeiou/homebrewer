@@ -19,6 +19,12 @@ const STAGES_ORDERED := [
 ]
 
 static func make_new(brew_id: String, recipe_id: String, recipe_snapshot: Dictionary, day_started: int, rng_seed: int) -> Dictionary:
+	# rng_state is the brew's deterministic seed for outcome computation.
+	# It's set once at creation (from GameState.rng_state.next_brew_seed)
+	# and intentionally never mutated thereafter — the contract is that
+	# given the same brew and the same player actions, drift / outcome
+	# computations produce the same result every time. Per-brew variance
+	# comes from the seed itself being randomized at creation.
 	return {
 		"brew_id": brew_id,
 		"recipe_id": recipe_id,

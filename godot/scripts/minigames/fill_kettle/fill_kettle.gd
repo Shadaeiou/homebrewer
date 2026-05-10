@@ -475,7 +475,16 @@ func _commit_fill() -> void:
 	minigame_completed.emit(outcome)
 
 func _brew_rng_seed() -> int:
+	# Reads the active brew's rng_state straight (no Time-based XOR). The
+	# whole point of storing a seed on the brew is determinism: the same
+	# brew + the same player actions should grade the same way every time
+	# the outcome is computed (replays, debug reloads, headless tests).
+	# The previous XOR-with-millisecond-clock broke that contract — same
+	# brew + same actions could produce different outcomes depending on
+	# how many ms had elapsed at commit time. The brew's seed itself was
+	# randomized via randi() at brew creation, so per-brew variance is
+	# preserved at the source.
 	for b in GameState.data.get("brews_in_flight", []):
 		if String(b.get("stage", "")) == BrewState.STAGE_BREWING_DAY:
-			return int(b.get("rng_state", 0)) ^ Time.get_ticks_msec()
+			return int(b.get("rng_state", 0))
 	return randi()
