@@ -1,5 +1,18 @@
 [
   {
+    "version": "0.2.85",
+    "date": "2026-05-09",
+    "bullets": [
+      "Every brewing-day step is now a real interactive close-up — no more placeholder buttons. Tap stations, work the equipment, the outcome reflects what you did.",
+      "Pour LME: stove with kettle on a burner, wooden spoon in front, LME tin to the right. Tap the dial to turn the burner off (flame disappears), tap the spoon to start stirring (animated stir + swirl in the kettle), tap the LME tin to pour (visible brown stream, tin empties, water turns wort-brown). Order still matters — burner-off → stir → pour for ideal. Wrong order = mild glob, scorch, or full catastrophic scorch.",
+      "Boil with hops: real-time mini-game. Kettle boiling on the stove with brown wort + bubbles + foam. Three hop bags on the counter glow in their drop windows (60-min bittering, 15-min flavor, 0-min aroma). Tap each during its window to drop it in (animated bag falling into the kettle). Boil-over event fires mid-boil — foam climbs and a BOIL OVER warning shows; tap the dial to lower heat (HIGH→MED→LOW) before time runs out. At the end, tap the dial to OFF for flameout.",
+      "Cool wort: kettle in a sink basin viewed cross-section. Faucet hangs above (tap to start cold water flow — visible water in the basin and a stream from the spout). Three ice bags on a side shelf (tap to drop one in — instant temp drop + ice cube animation). Wooden spoon (press-and-hold to stir — surface swirls + cooling rate boost). Thermometer on the right shows wort temp dropping from 210°F to the 70°F target band. Auto-resolves at target.",
+      "Transfer + pitch: kettle on the left, fermenter bucket on the right, auto-siphon arching between them. Funnel and yeast packet on the counter. Tap the funnel to sanitize first (improves outcome). Tap the siphon tube to start the transfer (animated wort level dropping in the kettle, rising in the fermenter; siphon tube shows the brown wort flowing through). After transfer the yeast packet glows — tap to pitch (yeast cloud appears on the wort surface).",
+      "Heat (added last commit): stove + dial + flame + steam + bubbles + hold-target meter — already real.",
+      "All sim tests still pass — internal field contracts (_heat, _selected_path, _option_toggles, etc.) preserved; the interactive UI just drives them via taps now."
+    ]
+  },
+  {
     "version": "0.2.84",
     "date": "2026-05-09",
     "bullets": [

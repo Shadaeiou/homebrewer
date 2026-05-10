@@ -20,13 +20,8 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.06, 0.06, 0.08, 1)
 
-[node name="StageTitle" type="Label" parent="."]
-unique_name_in_owner = true
-visible = false
-layout_mode = 2
-text = "Heat & add malt extract"
-
 [node name="StageView" type="Control" parent="."]
+unique_name_in_owner = true
 clip_contents = true
 layout_mode = 1
 anchors_preset = 15
@@ -35,67 +30,40 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Hotspots" type="Control" parent="."]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -180.0
-offset_top = -40.0
-offset_right = 180.0
-offset_bottom = 80.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="BurnerOffButton" type="Button" parent="Hotspots"]
+[node name="BurnerOffButton" type="Button" parent="StageView"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(110, 110)
 layout_mode = 0
-offset_left = -150.0
-offset_top = -40.0
-offset_right = -40.0
-offset_bottom = 70.0
-text = "Stove dial"
 flat = true
-modulate = Color(0.95, 0.78, 0.32, 0.95)
+focus_mode = 0
+modulate = Color(1, 1, 1, 0)
 
-[node name="StirButton" type="Button" parent="Hotspots"]
+[node name="StirButton" type="Button" parent="StageView"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(110, 110)
 layout_mode = 0
-offset_left = -55.0
-offset_top = -40.0
-offset_right = 55.0
-offset_bottom = 70.0
-text = "Spoon"
 flat = true
-modulate = Color(0.95, 0.91, 0.84, 0.95)
+focus_mode = 0
+modulate = Color(1, 1, 1, 0)
 
-[node name="LmePourButton" type="Button" parent="Hotspots"]
+[node name="LmePourButton" type="Button" parent="StageView"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(110, 110)
 layout_mode = 0
-offset_left = 40.0
-offset_top = -40.0
-offset_right = 150.0
-offset_bottom = 70.0
-text = "LME tin"
 flat = true
-modulate = Color(0.95, 0.78, 0.32, 0.95)
+focus_mode = 0
+modulate = Color(1, 1, 1, 0)
 
-[node name="ReadAloudToggle" type="CheckBox" parent="."]
-unique_name_in_owner = true
+[node name="HiddenForLogic" type="VBoxContainer" parent="."]
 visible = false
-layout_mode = 2
-text = "Read recipe aloud"
+layout_mode = 0
 
-[node name="PreWarmToggle" type="CheckBox" parent="."]
+[node name="StageTitle" type="Label" parent="HiddenForLogic"]
 unique_name_in_owner = true
-visible = false
-layout_mode = 2
-text = "Pre-warm LME tin"
+text = "Heat & add malt extract"
+
+[node name="ReadAloudToggle" type="CheckBox" parent="HiddenForLogic"]
+unique_name_in_owner = true
+
+[node name="PreWarmToggle" type="CheckBox" parent="HiddenForLogic"]
+unique_name_in_owner = true
 
 [node name="ResultLabel" type="Label" parent="."]
 unique_name_in_owner = true
@@ -114,4 +82,4 @@ grow_vertical = 0
 text = ""
 horizontal_alignment = 1
 autowrap_mode = 3
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 14
