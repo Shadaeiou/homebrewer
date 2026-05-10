@@ -63,6 +63,7 @@ const EXTRACT_STEPS: Array = [
 ## it can't collide with a real Apartment2D station enum value.
 const JOURNAL_STATION_ID: int = -100
 
+const STARTER_RECIPE_ID := "apartment_pale_ale"
 const PAN_THRESHOLD: float = 8.0  # Pixels of motion before we treat the press as a pan, not a tap.
 
 @onready var _viewport: Control = %ApartmentViewport
@@ -255,32 +256,10 @@ func _handle_station_tap(station: int) -> void:
 	_open_picker_for(station, "What goes in the sink?", _on_sink_item_picked)
 
 func _on_sink_item_picked(equipment_id: String) -> void:
-	# The picker shows archetype IDs (per DESIGN.md §8.6's equipment schema).
-	# A starter career owns the apartment_stockpot kettle; tapping it kicks
-	# off a fresh brew. Future kettles (marked_brew_kettle, stainless, ...)
-	# enter the same flow once they're added as picker-eligible archetypes.
-	#
-	# Recipe selection is intentionally a sink-tap shortcut for v1 (one
-	# recipe known by default). Once HANDOFF #1 lands (recipe-from-journal
-	# flow), the journal becomes the recipe-selection surface and the
-	# sink stops auto-picking — it just opens the kettle.
-	if equipment_id != "apartment_stockpot":
-		return
-	var recipe_id: String = _first_known_recipe_id()
-	if recipe_id == "":
-		return
-	var issues: Array = GameState.start_brewing_issues(recipe_id)
-	if issues.is_empty():
-		_start_new_brew_and_open_first_step(recipe_id)
-
-func _first_known_recipe_id() -> String:
-	# Returns the first unlocked recipe in the player's collection (insertion
-	# order, which mirrors STARTER_RECIPE_PATHS for the starter set). Empty
-	# string if the player owns no recipes — the sink just no-ops then.
-	var known: Dictionary = GameState.data.get("recipe_knowledge", {}).get("known", {})
-	for recipe_id in known:
-		return String(recipe_id)
-	return ""
+	if equipment_id == "kettle_5gal":
+		var issues: Array = GameState.start_brewing_issues(STARTER_RECIPE_ID)
+		if issues.is_empty():
+			_start_new_brew_and_open_first_step()
 
 func _current_brew_step(brew: Dictionary) -> String:
 	# Returns the first brewing-day step that hasn't been completed.
@@ -334,14 +313,12 @@ func _all_brewing_day_steps_done(brew: Dictionary) -> bool:
 			return false
 	return true
 
-func _start_new_brew_and_open_first_step(recipe_id: String) -> void:
-	var recipe: RecipeDef = load("res://data/recipes/%s.tres" % recipe_id)
-	if recipe == null:
-		return
+func _start_new_brew_and_open_first_step() -> void:
+	var recipe: RecipeDef = load("res://data/recipes/%s.tres" % STARTER_RECIPE_ID)
 	var brew_id: String = GameState.make_brew_id()
 	var seed: int = int(GameState.data.get("rng_state", {}).get("next_brew_seed", 0))
 	var brew := BrewState.make_new(
-		brew_id, recipe_id, recipe.to_snapshot(),
+		brew_id, STARTER_RECIPE_ID, recipe.to_snapshot(),
 		TimeService.day_clock, seed,
 	)
 	GameState.data["brews_in_flight"].append(brew)

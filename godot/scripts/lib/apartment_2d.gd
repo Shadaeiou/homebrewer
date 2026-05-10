@@ -7,23 +7,21 @@ class_name Apartment2D
 ## the player upgrades to garage / pro scale later, this scene grows
 ## new stations rather than getting replaced.
 ##
-## Layout (1620×620 panorama; station centers in STATION_X below):
-##   cx=120   Front door (far left, way out — placeholder for deliveries
-##                        / bar / festival hooks)
-##   cx=480   Bottling table (with wall shelf above holding the journal,
-##                            and a wall calendar between)
-##   cx=720   Sink station (basin + brass gooseneck faucet)
-##   cx=960   Stove station (4-burner gas range + range hood)
-##   cx=1200  Bedroom wall — window above bed at the same x
-##   cx=1500  Closet (door — fermenter sits here between bottling day
-##                    and tasting; visible cue when conditioning)
+## Layout (1200×620 panorama):
+##   x=0..240    Closet (door — fermenter goes here between bottling
+##                       day and tasting; visible cue when conditioning)
+##   x=240..480  Bottling table (small wooden table, where the player
+##                               sits down with the capper)
+##   x=480..720  Sink station (counter recess + brass faucet)
+##   x=720..960  Stove station (4-burner gas range)
+##   x=960..1200 Window + small decor (life, no interaction)
 ##
 ## Camera control: parent positions/tweens this Control's `position.x`
 ## to bring a station to viewport center. `clip_contents = true` on
 ## the parent viewport keeps the off-screen apartment clipped.
 ##
 ## Equipment nodes (kettle, fermenter, etc.) are children of this
-## node. The apartment exposes station_anchor(id) so equipment can
+## node. The apartment exposes station_world_pos(id) so equipment can
 ## be placed/moved between stations.
 
 ## SCALE RULE: 4 pixels = 1 inch (48 px = 1 foot).

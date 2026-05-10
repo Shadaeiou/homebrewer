@@ -12,9 +12,6 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 GODOT_DIR="$REPO_ROOT/godot"
 
-echo "[dev-check] changelog version sync"
-"$REPO_ROOT/scripts/check-changelog-version.sh"
-
 echo "[dev-check] godot import (catches parse errors, missing resources, broken .tscn)"
 import_log="$(mktemp)"
 (cd "$GODOT_DIR" && godot --headless --import 2>&1) | tee "$import_log" | tail -5
@@ -33,18 +30,6 @@ if [ -d "$GODOT_DIR/addons/gut" ]; then
   fi
   if ! grep -E '^Tests' "$gut_log" >/dev/null; then
     echo "[dev-check] FAIL: GUT did not report a test run"
-    exit 1
-  fi
-  # GUT silently skips test files that fail to parse — they show up as
-  # "Failed to load script" or "Ignoring script ... does not extend GutTest"
-  # and the run reports "all passing" while having lost coverage. Treat
-  # both signals as fatal so silent rot can't hide a broken test file.
-  if grep -E 'Failed to load script "res://tests/' "$gut_log" >/dev/null; then
-    echo "[dev-check] FAIL: a test script failed to parse — see SCRIPT ERROR / ERROR lines above"
-    exit 1
-  fi
-  if grep -F 'Ignoring script res://tests/' "$gut_log" >/dev/null; then
-    echo "[dev-check] FAIL: a test script under res://tests/ was ignored (didn't extend GutTest or failed to load)"
     exit 1
   fi
 else

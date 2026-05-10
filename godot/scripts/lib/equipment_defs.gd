@@ -1,64 +1,66 @@
 extends Object
 class_name EquipmentDefs
 
-## Maps equipment categories to the apartment stations where they fit, and
-## holds the one-line picker hint shown when listing them. Display names
-## come from the EquipmentArchetype itself (`display_name`) so the picker
-## says "Apartment Stockpot" instead of a generic "5 gal kettle" — the
-## label is tied to the specific instance, the fit logic stays per-category.
+## Static lookup for owned equipment: display name, short description,
+## and which station(s) the player can place each piece at. Drives the
+## station picker UX.
 ##
-## Single source of truth: `equipment.owned[uuid]` per DESIGN.md §8.6.
-## There is no parallel `inventory.equipment` mirror anymore.
-##
-## Categories not listed in CATEGORY_FITS_STATIONS are filtered out of every
-## picker — that's how fixed infrastructure (stove) and small tools (spoon,
-## thermometer, pitcher, funnel) stay owned but unselectable.
+## The picker filters items by current station — e.g., tapping the sink
+## offers anything water-going (kettle, fermenter to wash). Tapping the
+## closet offers items that LIVE in storage (empty fermenter when not
+## fermenting, capper, siphon).
 
-const CATEGORY_FITS_STATIONS: Dictionary = {
-	"kettle":          [Apartment2D.STATION_SINK, Apartment2D.STATION_STOVE],
-	"fermenter":       [Apartment2D.STATION_SINK, Apartment2D.STATION_CLOSET],
-	"bottling_bucket": [Apartment2D.STATION_BOTTLING_TABLE],
-	"capper":          [Apartment2D.STATION_BOTTLING_TABLE],
-	"auto_siphon":     [Apartment2D.STATION_BOTTLING_TABLE, Apartment2D.STATION_CLOSET],
+const STATION_SINK: int = 2
+const STATION_STOVE: int = 3
+const STATION_CLOSET: int = 0
+const STATION_BOTTLING_TABLE: int = 1
+
+## id → { display, hint, stations: [int...] }
+const DEFS: Dictionary = {
+	"kettle_5gal": {
+		"display": "5 gal kettle",
+		"hint": "Fill it, boil in it, brew in it.",
+		"stations": [STATION_SINK, STATION_STOVE],
+	},
+	"fermenter_bucket": {
+		"display": "Fermenter bucket",
+		"hint": "Pitches yeast and sits in the closet.",
+		"stations": [STATION_SINK, STATION_CLOSET],
+	},
+	"bottling_bucket": {
+		"display": "Bottling bucket",
+		"hint": "Used on bottling day.",
+		"stations": [STATION_BOTTLING_TABLE],
+	},
+	"bottle_capper": {
+		"display": "Bottle capper",
+		"hint": "Crimps caps on day-of.",
+		"stations": [STATION_BOTTLING_TABLE],
+	},
+	"auto_siphon": {
+		"display": "Auto-siphon",
+		"hint": "Transfers wort/beer between vessels.",
+		"stations": [STATION_BOTTLING_TABLE, STATION_CLOSET],
+	},
 }
 
-const CATEGORY_HINT: Dictionary = {
-	"kettle":          "Fill it, boil in it, brew in it.",
-	"fermenter":       "Pitches yeast and sits in the closet.",
-	"bottling_bucket": "Used on bottling day.",
-	"capper":          "Crimps caps on day-of.",
-	"auto_siphon":     "Transfers wort/beer between vessels.",
-}
+static func display(id: String) -> String:
+	return String(DEFS.get(id, {}).get("display", id))
+
+static func hint(id: String) -> String:
+	return String(DEFS.get(id, {}).get("hint", ""))
 
 static func owned_at_station(station: int) -> Array:
-	## Returns archetype_ids of every owned equipment archetype whose category
-	## fits the station. Deduped — even if the player owns two instances of
-	## the same archetype, the picker shows one row.
-	var owned: Dictionary = GameState.data.get("equipment", {}).get("owned", {})
+	## Returns equipment IDs the player owns that are compatible with
+	## the given station. Order is stable (DEFS keys order).
+	var equipment: Dictionary = GameState.data.get("inventory", {}).get("equipment", {})
 	var result: Array = []
-	var seen: Dictionary = {}
-	for instance_id in owned:
-		var archetype_id: String = String(owned[instance_id].get("archetype_id", ""))
-		if archetype_id == "" or seen.has(archetype_id):
+	for id in DEFS.keys():
+		var def: Dictionary = DEFS[id]
+		var stations: Array = def.get("stations", [])
+		if not (station in stations):
 			continue
-		var arche: EquipmentArchetype = _load(archetype_id)
-		if arche == null:
-			continue
-		var stations: Array = CATEGORY_FITS_STATIONS.get(arche.category, [])
-		if station in stations:
-			result.append(archetype_id)
-			seen[archetype_id] = true
+		var owned: Dictionary = equipment.get(id, {})
+		if int(owned.get("qty", 0)) > 0:
+			result.append(id)
 	return result
-
-static func display(archetype_id: String) -> String:
-	var arche: EquipmentArchetype = _load(archetype_id)
-	return arche.display_name if arche != null else archetype_id
-
-static func hint(archetype_id: String) -> String:
-	var arche: EquipmentArchetype = _load(archetype_id)
-	if arche == null:
-		return ""
-	return String(CATEGORY_HINT.get(arche.category, ""))
-
-static func _load(archetype_id: String) -> EquipmentArchetype:
-	return load("res://data/equipment/%s.tres" % archetype_id)

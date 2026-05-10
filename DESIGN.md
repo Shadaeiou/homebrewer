@@ -1204,8 +1204,6 @@ Per entity group. Types are GDScript primitives or named struct shapes (defined 
 ```
 {
   "save_format_version": int,         # bumped on schema migrations
-  "day_clock": int,                   # persisted day count per 4.1; mirrored
-                                       # by TimeService at load time
   "prestige_count": int,
   "current_destination_id": String,   # "home_town" for v1
   "settings": {
