@@ -1,6 +1,6 @@
 [
   {
-    "version": "0.2.97",
+    "version": "0.2.99",
     "date": "2026-05-10",
     "bullets": [
       "Internal save schema cleanup. Equipment now lives in one place (the owned-equipment ledger that the picker reads) instead of being mirrored under inventory; the journal is permanent apartment furniture, not an inventory line item. Bottling bucket and auto-siphon now seed for fresh careers since the bottling flow has always assumed both — they used to be implicitly granted, now they're real items in your inventory from day one.",
