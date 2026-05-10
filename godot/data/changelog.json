@@ -1,10 +1,11 @@
 [
   {
-    "version": "0.2.87",
+    "version": "0.2.88",
     "date": "2026-05-10",
     "bullets": [
       "Equipment picker labels are honest now: tap the sink and you see your specific kettle (\"Apartment Stockpot\") instead of a generic role (\"5 gal kettle\"). Same kettle, name that matches the one your future upgrade will replace.",
-      "Bottling bucket and auto-siphon are now real items in your inventory rather than picker-only labels — they show up at the bottling table and the closet by their proper names."
+      "Bottling bucket and auto-siphon are now real items in your inventory rather than picker-only labels — they show up at the bottling table and the closet by their proper names.",
+      "Minimum supported Android version is now 7.0 (API 24), bumped from 5.0 (API 21). Required by the Godot 4.6 engine the build pipeline now uses; devices below 7.0 won't be able to install future updates."
     ]
   },
   {

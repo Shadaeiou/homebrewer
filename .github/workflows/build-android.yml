@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 env:
-  GODOT_VERSION: "4.6"
+  GODOT_VERSION: "4.6.2"
   GODOT_RELEASE: "4.6.2-stable"
 
 jobs:
