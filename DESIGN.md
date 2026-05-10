@@ -1204,6 +1204,8 @@ Per entity group. Types are GDScript primitives or named struct shapes (defined 
 ```
 {
   "save_format_version": int,         # bumped on schema migrations
+  "day_clock": int,                   # persisted day count per 4.1; mirrored
+                                       # by TimeService at load time
   "prestige_count": int,
   "current_destination_id": String,   # "home_town" for v1
   "settings": {
@@ -1621,8 +1623,12 @@ Items appear in the kitchen — LME tin on counter, hops in fridge, yeast packet
 | 1L measuring pitcher | `precision: 0.85` (for volumes), 1L per pour |
 | Funnel | for transfers |
 | Sponge + dish soap | basic cleaning, NOT sanitizer |
+| Bottling bucket | `volume_capacity_gal: 5`, integrated spigot, single-stage transfer |
+| Auto-siphon | racking cane + pump bulb, `precision: 0.95` |
 
-Notable absences: hydrometer, dedicated brewing thermometer, auto-siphon, bottling wand, wort chiller, refractometer, brewing scale, pH meter, thermotape, brew belt. All future purchases.
+Notable absences: hydrometer, dedicated brewing thermometer, bottling wand, wort chiller, refractometer, brewing scale, pH meter, thermotape, brew belt. All future purchases.
+
+(Bottling bucket and auto-siphon are seeded for v1 because the bottling-day flow assumes both. They'll move to the Shop once Shop consumption lands and the bottling flow can gate on owned equipment instead of always-present.)
 
 ## Brewing — step by step
 

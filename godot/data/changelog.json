@@ -1,5 +1,14 @@
 [
   {
+    "version": "0.2.97",
+    "date": "2026-05-10",
+    "bullets": [
+      "Internal save schema cleanup. Equipment now lives in one place (the owned-equipment ledger that the picker reads) instead of being mirrored under inventory; the journal is permanent apartment furniture, not an inventory line item. Bottling bucket and auto-siphon now seed for fresh careers since the bottling flow has always assumed both — they used to be implicitly granted, now they're real items in your inventory from day one.",
+      "Dashboard's sink-tap is now recipe-aware. The starter recipe slot used to be hardcoded; with one recipe unlocked the behavior is identical, but adding a second recipe to the journal (next on the build sequence) won't require a code change.",
+      "Old saves auto-migrate on load. If you started a career before this update, the migration tops up any missing starter equipment without touching your cash, skills, brews-in-flight, or shop progress."
+    ]
+  },
+  {
     "version": "0.2.92",
     "date": "2026-05-10",
     "bullets": [

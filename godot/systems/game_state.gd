@@ -32,6 +32,8 @@ const STARTER_EQUIPMENT_PATHS := [
 	"res://data/equipment/wing_capper.tres",
 	"res://data/equipment/measuring_pitcher.tres",
 	"res://data/equipment/funnel.tres",
+	"res://data/equipment/bottling_bucket.tres",
+	"res://data/equipment/auto_siphon.tres",
 ]
 
 const STARTER_RECIPE_PATHS := [
@@ -100,11 +102,13 @@ func reset_to_new_career(destination_id: String = "home_town") -> void:
 	notify_state_loaded()
 
 func adopt(loaded_data: Dictionary) -> void:
-	## Called by SaveService.load() with the deserialized tree. Replaces our
-	## current state. Caller is responsible for migration before adopt AND
-	## for calling notify_state_loaded() once any post-adopt repair work
-	## (bootstrap reseed, etc.) is done — UI consumers must render against
-	## fully-migrated state, not the raw load.
+	## Called by SaveService.load() with the FULLY-MIGRATED deserialized
+	## tree. Replaces our current state and fires state_loaded so UI
+	## consumers re-render against the new world.
+	##
+	## Migration must happen before this is called — adopt does no further
+	## repair. SaveService._migrate_if_needed is the canonical pre-adopt
+	## transform.
 	data = loaded_data
 	# Pull day_clock back out of the save. Older saves that predate the
 	# day_clock field default to 0 — better than rolling back to Day 0
@@ -113,11 +117,13 @@ func adopt(loaded_data: Dictionary) -> void:
 	if not data.has("player_meta"):
 		data["player_meta"] = {}
 	TimeService.day_clock = int(data["player_meta"].get("day_clock", 0))
+	state_loaded.emit()
 
 func notify_state_loaded() -> void:
-	## Emit `state_loaded` so UI re-renders against the current data. Split
-	## from adopt() because load_now needs to run reseed migrations between
-	## adopt and notify; firing inside adopt() would notify too early.
+	## Re-emit `state_loaded` so UI consumers re-render after a state
+	## mutation (e.g., dashboard records an outcome on a brew). adopt()
+	## fires state_loaded automatically; this is for non-load mutations
+	## that aren't covered by a finer-grained signal.
 	state_loaded.emit()
 
 func _initial_skills() -> Dictionary:
@@ -167,7 +173,12 @@ func _initial_inventory() -> Dictionary:
 	## fill-kettle mini-game treats source=tap as free.
 	##
 	## Existing pre-shop saves keep whatever ingredients they had — the
-	## save_service reseed only adds missing keys, never removes them.
+	## migration only adds missing keys, never removes them.
+	##
+	## Per DESIGN.md §8.6: inventory is {ingredients, bottles, consumables}.
+	## Owned equipment lives in equipment.owned per §8.6's equipment schema —
+	## NOT a parallel inventory.equipment dict. The journal is fixed apartment
+	## furniture (the wall shelf), not an inventory item.
 	return {
 		"ingredients": {},
 		"bottles": {"available": 24, "in_use": 0},
@@ -175,14 +186,6 @@ func _initial_inventory() -> Dictionary:
 			"dish_soap": {"qty": 1, "unit": "bottle"},
 			"sponge":    {"qty": 1, "unit": "piece"},
 		},
-		"equipment": {
-			"kettle_5gal":      {"qty": 1},
-			"fermenter_bucket": {"qty": 1},
-			"bottling_bucket":  {"qty": 1},
-			"bottle_capper":    {"qty": 1},
-			"auto_siphon":      {"qty": 1},
-		},
-		"journal": {"owned": true},
 	}
 
 func _initial_recipe_knowledge() -> Dictionary:

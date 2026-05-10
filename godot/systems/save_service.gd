@@ -19,7 +19,9 @@ const SAVE_PATH := "user://save.json"
 const SAVE_TMP_PATH := "user://save.json.tmp"
 const JOURNAL_PATH := "user://journal.jsonl"
 
-const CURRENT_SAVE_VERSION := 2
+# Migration target = the schema version GameState stamps when reset_to_new_career
+# initializes player_meta. The two values must agree — read through to GameState
+# rather than holding a parallel constant that can silently drift.
 
 func _ready() -> void:
 	# Wire auto-save triggers.
@@ -30,8 +32,9 @@ func _ready() -> void:
 	call_deferred("load_now")
 
 func load_now() -> void:
-	## Called once at boot. If save.json exists, load + adopt it. Else GameState
-	## stays at its post-_ready fresh state, and we initialize a new career.
+	## Called once at boot. If save.json exists, load + migrate + adopt it.
+	## Else GameState stays at its post-_ready fresh state, and we initialize
+	## a new career.
 	if not FileAccess.file_exists(SAVE_PATH):
 		GameState.reset_to_new_career()
 		load_completed.emit(false)
@@ -54,15 +57,12 @@ func load_now() -> void:
 		load_completed.emit(false)
 		return
 
-	var save_dict: Dictionary = parsed
-	save_dict = _migrate_if_needed(save_dict)
+	# Migration is a pure dict-in / dict-out transform — by the time we hand
+	# the result to GameState.adopt, every key is in its current-schema shape.
+	# adopt() then fires state_loaded, so UI consumers always render against
+	# fully-migrated state.
+	var save_dict: Dictionary = _migrate_if_needed(parsed)
 	GameState.adopt(save_dict)
-	# Top up bootstrap-owned fields the load may have left empty (a v1
-	# save predates the bootstrap helpers; partial-shape saves predate
-	# this defensive logic). Has to run BEFORE state_loaded fires —
-	# UI rendered against the raw, un-migrated tree shows stale state.
-	_reseed_bootstrap_fields_if_empty()
-	GameState.notify_state_loaded()
 	load_completed.emit(true)
 
 func save_now() -> void:
@@ -165,57 +165,71 @@ func _notification(what: int) -> void:
 		save_now()
 
 func _migrate_if_needed(save_dict: Dictionary) -> Dictionary:
-	## One-way-forward migration registry per 8.9.
-	var pm: Dictionary = save_dict.get("player_meta", {})
-	var current_version: int = int(pm.get("save_format_version", 0))
-	while current_version < CURRENT_SAVE_VERSION:
-		match current_version:
-			0, 1:
-				# v1 → v2: the bootstrap helpers (_initial_equipment, etc.)
-				# weren't called when v1 saves were written, so equipment.owned,
-				# recipe_knowledge.known, and inventory.ingredients are empty.
-				# _reseed_bootstrap_fields_if_empty() (called after adopt)
-				# fills them from the .tres archetypes without touching cash,
-				# skills, brews-in-flight, or anything else the player earned.
-				pass
-		current_version += 1
+	## One-way-forward migration registry per DESIGN.md 8.9.
+	##
+	## Each migration is a function `_migrate_vN_to_vN_plus_1(save_dict) ->
+	## Dictionary` that takes the dict in its v(N) shape and returns it in
+	## v(N+1) shape. We walk the version chain from the save's recorded
+	## version up to GameState.SAVE_FORMAT_VERSION, applying each one.
+	##
+	## A save newer than the current schema (player rolled back the app) is
+	## loaded as-is with a warning; we don't downgrade the version field
+	## because future fields would be lost silently.
 	if not save_dict.has("player_meta"):
 		save_dict["player_meta"] = {}
-	save_dict["player_meta"]["save_format_version"] = CURRENT_SAVE_VERSION
+	var target_version: int = GameState.SAVE_FORMAT_VERSION
+	var current_version: int = int(save_dict["player_meta"].get("save_format_version", 0))
+	if current_version > target_version:
+		push_warning("[SaveService] save format v%d is newer than this build (v%d); loading as-is" % [
+			current_version, target_version,
+		])
+		return save_dict
+	while current_version < target_version:
+		match current_version:
+			0, 1:
+				save_dict = _migrate_v1_to_v2(save_dict)
+			_:
+				push_error("[SaveService] no migration path from v%d to v%d" % [
+					current_version, current_version + 1,
+				])
+				return save_dict
+		current_version += 1
+	save_dict["player_meta"]["save_format_version"] = current_version
 	return save_dict
 
-func _reseed_bootstrap_fields_if_empty() -> void:
-	## Called after adopt(). For each bootstrap-owned field a v1 save may
-	## have left empty (or containing the wrong shape), fill from the
-	## current bootstrap. Never overwrites earned content — we top up,
-	## not replace.
+func _migrate_v1_to_v2(save_dict: Dictionary) -> Dictionary:
+	## v1 saves predate the bootstrap helpers (GameState._initial_equipment,
+	## _initial_recipe_knowledge, _initial_inventory). Equipment.owned,
+	## recipe_knowledge.known, and inventory keys may be empty, missing,
+	## or null. Top them up from the current bootstrap WITHOUT overwriting
+	## anything earned — we add missing keys, never replace.
 	##
-	## "Empty" here is more permissive than `Dictionary.is_empty()`:
-	## a save with `{"known": null}` or `{"known": {"junk_key": ...}}`
-	## but missing the canonical apartment_pale_ale entry still gets
-	## the starter recipe added. Same for the starter equipment IDs
-	## and starter ingredients. This keeps a returning save unbricked
-	## even if a previous schema wrote partial data.
-	_reseed_owned_equipment()
-	_reseed_known_recipes()
-	_reseed_ingredients()
+	## Defensive against `null` values where we expect a dict — players who
+	## hit an old bug or hand-edited their save shouldn't be bricked.
+	save_dict = _bootstrap_equipment_into(save_dict)
+	save_dict = _bootstrap_recipes_into(save_dict)
+	save_dict = _bootstrap_inventory_into(save_dict)
+	return save_dict
 
-func _reseed_owned_equipment() -> void:
-	var equip: Dictionary = GameState.data.get("equipment", {})
+func _bootstrap_equipment_into(save_dict: Dictionary) -> Dictionary:
+	var equip_raw: Variant = save_dict.get("equipment", {})
+	var equip: Dictionary = (equip_raw if equip_raw is Dictionary else {})
 	var owned_raw: Variant = equip.get("owned", {})
 	var owned: Dictionary = (owned_raw if owned_raw is Dictionary else {})
-	# Build the set of starter archetype_ids we expect — if any are
-	# missing as instances, top them up. We key instances by
-	# `<archetype_id>_1` per GameState._initial_equipment.
+	# Each starter archetype is keyed `<archetype_id>_1` per
+	# GameState._initial_equipment. If any are missing as instances,
+	# top them up; never replace an existing instance.
 	var bootstrap: Dictionary = GameState._initial_equipment()
 	for instance_id in bootstrap:
 		if not owned.has(instance_id):
 			owned[instance_id] = bootstrap[instance_id]
 	equip["owned"] = owned
-	GameState.data["equipment"] = equip
+	save_dict["equipment"] = equip
+	return save_dict
 
-func _reseed_known_recipes() -> void:
-	var knowledge: Dictionary = GameState.data.get("recipe_knowledge", {})
+func _bootstrap_recipes_into(save_dict: Dictionary) -> Dictionary:
+	var knowledge_raw: Variant = save_dict.get("recipe_knowledge", {})
+	var knowledge: Dictionary = (knowledge_raw if knowledge_raw is Dictionary else {})
 	var known_raw: Variant = knowledge.get("known", {})
 	var known: Dictionary = (known_raw if known_raw is Dictionary else {})
 	var bootstrap: Dictionary = GameState._initial_recipe_knowledge()
@@ -227,10 +241,12 @@ func _reseed_known_recipes() -> void:
 		knowledge["invented"] = []
 	if not knowledge.has("pinned_for_prestige"):
 		knowledge["pinned_for_prestige"] = ""
-	GameState.data["recipe_knowledge"] = knowledge
+	save_dict["recipe_knowledge"] = knowledge
+	return save_dict
 
-func _reseed_ingredients() -> void:
-	var inv: Dictionary = GameState.data.get("inventory", {})
+func _bootstrap_inventory_into(save_dict: Dictionary) -> Dictionary:
+	var inv_raw: Variant = save_dict.get("inventory", {})
+	var inv: Dictionary = (inv_raw if inv_raw is Dictionary else {})
 	var ing_raw: Variant = inv.get("ingredients", {})
 	var ingredients: Dictionary = (ing_raw if ing_raw is Dictionary else {})
 	var seeded: Dictionary = GameState._initial_inventory()
@@ -242,12 +258,5 @@ func _reseed_ingredients() -> void:
 		inv["bottles"] = seeded["bottles"]
 	if not inv.has("consumables"):
 		inv["consumables"] = seeded["consumables"]
-	# Equipment and journal were added after the initial schema, so
-	# pre-migration saves don't have them. Backfill so the inventory
-	# picker can show the kettle, fermenter, etc., and the journal
-	# notebook is present in the apartment for existing careers.
-	if not inv.has("equipment"):
-		inv["equipment"] = seeded["equipment"]
-	if not inv.has("journal"):
-		inv["journal"] = seeded["journal"]
-	GameState.data["inventory"] = inv
+	save_dict["inventory"] = inv
+	return save_dict
